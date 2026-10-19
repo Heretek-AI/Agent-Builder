@@ -1,0 +1,12 @@
+# CODEOWNERS — Agent-Builder registry
+#
+# Every change requires review from the registry maintainers (fail-closed:
+# no auto-merge without an owner review). The catalog data files additionally
+# require a catalog-owner review because entries become executable agent
+# configurations (permissions, MCP servers, install bundles).
+
+* @Heretek-AI/agent-builder-maintainers
+/data/ @Heretek-AI/agent-builder-maintainers
+/.github/ @Heretek-AI/agent-builder-maintainers
+/scripts/ @Heretek-AI/agent-builder-maintainers
+/src/ @Heretek-AI/agent-builder-maintainers

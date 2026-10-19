@@ -1,6 +1,6 @@
 id: linux-desktop-patterns
 name: Linux Desktop Patterns
-repo: https://github.com/example/linux-desktop-patterns
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: GTK4, Qt/QML, Flatpak, and Wayland integration.
 description: >-
   A skill for Linux desktop development covering GTK4 and Qt/QML patterns, Wayland and X11
@@ -17,4 +17,5 @@ tags:
   - qt
   - flatpak
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

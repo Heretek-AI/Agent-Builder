@@ -76,7 +76,11 @@
         "plugins": { "type": "array", "items": { "type": "string", "minLength": 1 } }
       }
     },
-    "content_file": { "type": "string", "minLength": 1 },
+    "content_file": { "type": "string", "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\\.md$" },
+    "synthetic": {
+      "type": "boolean",
+      "description": "Fail-closed marker for curated seed entries with no external upstream. synthetic:true entries must not claim a third-party repo URL."
+    },
     "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "compat": { "type": "string", "minLength": 1 },
     "scope": { "type": "string", "minLength": 1 },

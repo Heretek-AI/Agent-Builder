@@ -1,6 +1,6 @@
 id: android-compose-patterns
 name: Android Compose Patterns
-repo: https://github.com/example/android-compose-patterns
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Jetpack Compose, ADB automation, and Gradle tuning.
 description: >-
   A mobile Android skill covering Jetpack Compose patterns, Kotlin Android SDK usage, ADB automation
@@ -18,4 +18,5 @@ tags:
   - compose
   - gradle
 license: Apache-2.0
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, Apache-2.0).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, Apache-2.0).
+synthetic: true

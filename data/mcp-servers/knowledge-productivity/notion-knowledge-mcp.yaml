@@ -1,6 +1,6 @@
 id: notion-knowledge-mcp
 name: Notion Knowledge MCP Server
-repo: https://github.com/makersu/notion-mcp-server
+repo: https://github.com/makenotion/notion-mcp-server
 tagline: Docs and knowledge-base search over MCP.
 description: >-
   Notion MCP server: page search, page retrieval, and page creation tools for knowledge-base and
@@ -18,11 +18,13 @@ mcp:
     - '-y'
     - '@notionhq/notion-mcp-server'
   tools:
-    - search_pages
-    - get_page
-    - create_page
+    # Verified 2026-10-19 against @notionhq/notion-mcp-server@2.5.2 tools/list
+    # (24 API-* tools): search, retrieve, and create page mappings below.
+    - API-post-search
+    - API-retrieve-a-page
+    - API-post-page
 tags:
   - notion
   - knowledge
 license: MIT
-source_attribution: Curated for Agent-Builder; inspired by makersu/notion-mcp-server (MIT).
+source_attribution: Curated for Agent-Builder; inspired by makenotion/notion-mcp-server (MIT).

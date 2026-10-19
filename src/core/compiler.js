@@ -7,7 +7,9 @@
 // Implements the Verified OpenCode Per-Agent Skill & MCP Scoping Rules:
 // deny-first ordering (OpenCode evaluates rules in order and the last
 // matching rule wins), MCP tool naming normalization
-// (`<serverName>_<toolName>` with all non-alphanumerics mapped to `_`),
+// (`<serverName>_<toolName>` preserving hyphens and underscores, all other
+// non-alphanumeric runs mapped to `_`, matching upstream OpenCode/Claude
+// `mcp__plugin_my-plugin_database-tools__query` style),
 // and deterministic exports for OpenCode v2 JSON, OpenCode v1 JSON,
 // OpenCode agent Markdown, Claude Code (`.mcp.json` + agent `.md`),
 // Codex CLI (`config.toml`), a safe placeholder install script, and a
@@ -29,10 +31,15 @@
   var V1_SCHEMA_URL = 'https://opencode.ai/config.json';
   var RESOURCE_ACTIONS = ['opencode_list_mcp_resources', 'opencode_read_mcp_resource'];
 
-  // Verified normalization: all non-alphanumeric runs become `_`,
-  // with leading/trailing underscores trimmed.
+  // Verified normalization: hyphens and underscores are preserved (upstream
+  // OpenCode `tool/mcp.ts` and Claude Code keep `-` in MCP ids, e.g.
+  // `mcp__plugin_my-plugin_database-tools__query`); every other run of
+  // non-alphanumeric characters becomes a single `_`, with leading/trailing
+  // underscores trimmed. Preserving `-` is fail-closed: deny rules such as
+  // `postgres-prod_*` match the real runtime action names instead of
+  // missing them (AB-7.4).
   function normalizeMcpId(str) {
-    return String(str).trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    return String(str).trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
   function escapeRegExpPart(s) {
@@ -40,11 +47,16 @@
   }
 
   function wildcardToRegExp(pattern) {
-    return new RegExp('^' + String(pattern).split('*').map(escapeRegExpPart).join('.*') + '$');
+    // `*` -> `.*` (any sequence); `?` -> `.` (exactly one character).
+    // Every other regexp metacharacter is escaped literally.
+    return new RegExp('^' + String(pattern).split('*').map(escapeRegExpPart).join('.*').replace(/\\\?/g, '.') + '$');
   }
 
-  // Deterministic permission simulator: last matching rule wins,
-  // `*` matches any sequence, default decision is `allow` (no match).
+  // Deterministic permission simulator: last matching rule wins. `*`
+  // matches any sequence (including empty) and `?` matches exactly one
+  // character (single-char wildcard, upstream OpenCode semantics); the
+  // default decision is `allow` (no match). The compiler never emits `?`
+  // in rule actions, so this path is simulator-only (AB-2.1).
   function evaluateV2Permission(permissions, action, resource) {
     if (!Array.isArray(permissions)) {
       throw new Error('evaluateV2Permission: permissions must be an array');
@@ -231,6 +243,46 @@
 
   function shQ(s) {
     return "'" + String(s).replace(/'/g, "'\\''") + "'";
+  }
+
+  // Shared transport resolution for the Claude Code (`.mcp.json`) and Codex
+  // CLI (`config.toml`) exports. Registry `mcp.command`/`mcp.args`/`mcp.env`
+  // win; otherwise a safe `npx -y <server>` placeholder without secrets.
+  // Remote (`mcp.url`) entries map to `{ type, url }` (Claude Code remote
+  // transport) instead of a stdio command. Never emits the non-spec
+  // `transport: stdio` key (AB-7.4-claude-transport-key).
+  function serverTransport(sel, reg) {
+    var out = { command: 'npx', args: ['-y', sel.server], env: {} };
+    if (reg && isPlainObject(reg.mcp)) {
+      var m = reg.mcp;
+      if (typeof m.url === 'string') {
+        var remote = { url: m.url };
+        var t = typeof m.transport === 'string' ? m.transport : '';
+        remote.type = t === 'http' || t === 'streamable-http' ? 'http'
+          : t === 'websocket' ? 'websocket'
+          : 'sse';
+        if (isPlainObject(m.env)) {
+          remote.env = {};
+          Object.keys(m.env).forEach(function (k) {
+            remote.env[k] = m.env[k];
+          });
+        }
+        return remote;
+      }
+      if (typeof m.command === 'string') {
+        out.command = m.command;
+      }
+      if (Array.isArray(m.args)) {
+        out.args = m.args.slice();
+      }
+      if (isPlainObject(m.env)) {
+        out.env = {};
+        Object.keys(m.env).forEach(function (k) {
+          out.env[k] = m.env[k];
+        });
+      }
+    }
+    return out;
   }
 
   function buildClaudeTools(selections, registryEntries, deniedByServer) {
@@ -428,32 +480,7 @@
     var claudeServers = {};
     selections.forEach(function (sel) {
       var reg = findRegistryMcp(sel.server, regs);
-      if (reg && isPlainObject(reg.mcp)) {
-        var def = {};
-        if (typeof reg.mcp.command === 'string') {
-          def.command = reg.mcp.command;
-        } else if (typeof reg.mcp.url === 'string') {
-          def.url = reg.mcp.url;
-        } else {
-          def.command = 'npx';
-        }
-        if (Array.isArray(reg.mcp.args)) {
-          def.args = reg.mcp.args.slice();
-        }
-        if (isPlainObject(reg.mcp.env)) {
-          def.env = {};
-          Object.keys(reg.mcp.env).forEach(function (k) {
-            def.env[k] = reg.mcp.env[k];
-          });
-        }
-        if (typeof reg.mcp.transport === 'string') {
-          def.transport = reg.mcp.transport;
-        }
-        claudeServers[sel.server] = def;
-      } else {
-        // Safe placeholder without secrets; reviewer fills in transport details.
-        claudeServers[sel.server] = { command: 'npx', args: ['-y', sel.server], env: {} };
-      }
+      claudeServers[sel.server] = serverTransport(sel, reg);
     });
     var claudeCodeMcp = { mcpServers: claudeServers };
 
@@ -490,11 +517,15 @@
     var claudeCodeAgentMd = mdLines.join('\n') + '\n';
 
     // ---- Codex CLI export ----
+    // Every block carries a real transport (`command`/`args`, plus `env`
+    // when the registry provides one): bare tools-only blocks are rejected
+    // by `codex mcp list` as invalid transport (AB-2.5-codex-transport).
     var tomlBlocks = selections.map(function (sel) {
+      var reg = findRegistryMcp(sel.server, regs);
+      var transport = serverTransport(sel, reg);
       var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
       var enabled;
       if (wildcard) {
-        var reg = findRegistryMcp(sel.server, regs);
         if (reg && isPlainObject(reg.mcp) && Array.isArray(reg.mcp.tools)) {
           var deniedNorms = deniedByServer[normalizeMcpId(sel.server)] || [];
           enabled = reg.mcp.tools.map(function (t) { return String(t); }).filter(function (t) {
@@ -510,6 +541,17 @@
         return t !== '*';
       });
       var block = ['[mcp_servers.' + tomlKey(sel.server) + ']'];
+      if (transport.url !== undefined) {
+        block.push('url = ' + tomlQ(transport.url));
+      } else {
+        block.push('command = ' + tomlQ(transport.command));
+        block.push('args = [' + transport.args.map(tomlQ).join(', ') + ']');
+        if (transport.env && Object.keys(transport.env).length > 0) {
+          block.push('env = { ' + Object.keys(transport.env).map(function (k) {
+            return tomlQ(k) + ' = ' + tomlQ(transport.env[k]);
+          }).join(', ') + ' }');
+        }
+      }
       block.push('enabled_tools = [' + enabled.map(tomlQ).join(', ') + ']');
       if (disabled.length > 0) {
         block.push('disabled_tools = [' + disabled.map(tomlQ).join(', ') + ']');

@@ -7,13 +7,15 @@ A curated, machine-validated multi-harness AI Agent Registry & Awesome List — 
 ## Quick Start
 
 - 🌐 **Agent Builder WebUI:** https://heretek-ai.github.io/Agent-Builder/
-- 💻 **CLI:** `npx @heretek-ai/agent-builder serve`
+- 💻 **CLI:** `node bin/agent-builder.js serve` (from a local checkout; `npm pack` for a tarball — the package is not published to npm yet, see note below)
 - 📦 **Machine-readable registry:** https://heretek-ai.github.io/Agent-Builder/registry.json ([repository](https://github.com/Heretek-AI/Agent-Builder))
 
 ```bash
-npx @heretek-ai/agent-builder serve
+node bin/agent-builder.js serve
 # then open the printed local URL, or use the hosted WebUI above
 ```
+
+> **Note:** `@heretek-ai/agent-builder` is not published on the npm registry yet (`npm view` still 404s — a known gap, AB-6.1). Do not use `npx @heretek-ai/agent-builder`; run from source as above or `npm pack` until `npm publish` lands.
 
 **Registry stats:** 63 entries (4 agent, 3 design-md, 8 mcp-server, 12 plugin, 3 prompt, 33 skill) across the taxonomy below.
 
@@ -103,8 +105,8 @@ OpenCode v1 & v2 plugins, custom tools, and session hooks.
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
 | [Awesome OpenCode Catalog](https://github.com/Heretek-AI/awesome-opencode) | Upstream awesome list of OpenCode plugins, agents, and configs. | [opencode] | — | — |
-| [OpenCode Native Toolchain](https://github.com/sst/opencode) | Official OpenCode runtime: custom tools, hooks, and plugin API. | [opencode] | — | — |
-| [OpenCode Session Hooks Plugin](https://github.com/example/opencode-session-hooks) | Session lifecycle hooks and custom tools for OpenCode. | [opencode] | — | — |
+| [OpenCode Native Toolchain](https://github.com/anomalyco/opencode) | Official OpenCode runtime: custom tools, hooks, and plugin API. | [opencode] | — | — |
+| [OpenCode Session Hooks Plugin](https://github.com/Heretek-AI/Agent-Builder) | Session lifecycle hooks and custom tools for OpenCode. | [opencode] | — | — |
 
 ### Claude Code Plugins
 
@@ -116,7 +118,7 @@ Claude Code slash-command bundles, hook scripts, and marketplace plugins.
 | --- | --- | --- | --- | --- |
 | [Awesome Claude Code Resources](https://github.com/hesreallyhim/awesome-claude-code) | Community catalog of Claude Code commands, agents, and hooks. | [claude-code] | — | — |
 | [Claude Code Runtime](https://github.com/anthropics/claude-code) | Official Claude Code CLI: slash commands, hooks, and MCP support. | [claude-code] | — | — |
-| [Claude Code Slash Bundle](https://github.com/example/claude-slash-bundle) | Slash-command bundle and hook scripts for Claude Code. | [claude-code] | — | — |
+| [Claude Code Slash Bundle](https://github.com/Heretek-AI/Agent-Builder) | Slash-command bundle and hook scripts for Claude Code. | [claude-code] | — | — |
 
 ### Codex Plugins & Extensions
 
@@ -157,7 +159,7 @@ Multi-agent routers, harness adapters, and cross-provider bridges.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Harness Adapter Kit](https://github.com/sst/opencode) | Adapter patterns for running one agent across harnesses. | [opencode] [claude-code] [codex] [universal] | — | — |
+| [Harness Adapter Kit](https://github.com/anomalyco/opencode) | Adapter patterns for running one agent across harnesses. | [opencode] [claude-code] [codex] [universal] | — | — |
 | [LiteLLM Router Bridge](https://github.com/BerriAI/litellm) | Multi-provider LLM router bridging harnesses to 100+ models. | [opencode] [claude-code] [codex] [universal] | — | — |
 
 ## 2. Agent Skills (By Subject & Domain)
@@ -178,7 +180,7 @@ Modern C++20/23, CMake, embedded C, memory safety, and sanitizer workflows.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Modern C++ Playbook](https://github.com/example/modern-cpp-playbook) | Modern C++20/23, CMake, and sanitizer workflows. | [opencode] [claude-code] [universal] | cpp, c | — |
+| [Modern C++ Playbook](https://github.com/Heretek-AI/Agent-Builder) | Modern C++20/23, CMake, and sanitizer workflows. | [opencode] [claude-code] [universal] | cpp, c | — |
 
 #### Rust
 
@@ -188,7 +190,7 @@ Cargo workspaces, unsafe auditing, async Tokio, lifetime refactoring, and FFI.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Rust Secure Coding Skill](https://github.com/example/rust-secure-coding) | Cargo workspaces, unsafe auditing, and Tokio patterns. | [opencode] [claude-code] [universal] | rust | — |
+| [Rust Secure Coding Skill](https://github.com/Heretek-AI/Agent-Builder) | Cargo workspaces, unsafe auditing, and Tokio patterns. | [opencode] [claude-code] [universal] | rust | — |
 
 #### Lua & Neovim / Game Scripting
 
@@ -198,7 +200,7 @@ LuaJIT, Neovim plugin development, LÖVE2D, and embedded Lua scripting.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Lua and Neovim Scripting Skill](https://github.com/example/lua-neovim-scripting) | LuaJIT, Neovim plugins, and embedded Lua scripting. | [opencode] [universal] | lua | — |
+| [Lua and Neovim Scripting Skill](https://github.com/Heretek-AI/Agent-Builder) | LuaJIT, Neovim plugins, and embedded Lua scripting. | [opencode] [universal] | lua | — |
 
 #### Python
 
@@ -283,7 +285,7 @@ React, Next.js, Vue, Svelte, Tailwind CSS, accessibility (WCAG), and motion desi
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [WebUI Frontend Patterns](https://github.com/example/webui-frontend-patterns) | React, Tailwind, and accessible motion design patterns. | [opencode] [claude-code] [universal] | typescript, javascript | — |
+| [WebUI Frontend Patterns](https://github.com/Heretek-AI/Agent-Builder) | React, Tailwind, and accessible motion design patterns. | [opencode] [claude-code] [universal] | typescript, javascript | — |
 
 #### Desktop Apps — Windows
 
@@ -313,7 +315,7 @@ GTK4, Qt/QML, Wayland/X11 compositors, Flatpak, and systemd desktop integration.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Linux Desktop Patterns](https://github.com/example/linux-desktop-patterns) | GTK4, Qt/QML, Flatpak, and Wayland integration. | [opencode] [universal] | linux | — |
+| [Linux Desktop Patterns](https://github.com/Heretek-AI/Agent-Builder) | GTK4, Qt/QML, Flatpak, and Wayland integration. | [opencode] [universal] | linux | — |
 
 #### Desktop Apps — Cross-Platform
 
@@ -333,7 +335,7 @@ Jetpack Compose, Kotlin Android SDK, ADB automation, and Gradle build tuning.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Android Compose Patterns](https://github.com/example/android-compose-patterns) | Jetpack Compose, ADB automation, and Gradle tuning. | [opencode] [universal] | kotlin, android | — |
+| [Android Compose Patterns](https://github.com/Heretek-AI/Agent-Builder) | Jetpack Compose, ADB automation, and Gradle tuning. | [opencode] [universal] | kotlin, android | — |
 
 #### Mobile — iOS & iPadOS
 
@@ -367,7 +369,7 @@ Ghidra, IDA Pro, Binary Ninja, radare2/rizin, firmware unpacking, and protocol d
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Ghidra RE Workflows](https://github.com/example/ghidra-re-workflows) | Ghidra, rizin, and firmware unpacking workflows. | [opencode] [claude-code] [universal] | — | — |
+| [Ghidra RE Workflows](https://github.com/Heretek-AI/Agent-Builder) | Ghidra, rizin, and firmware unpacking workflows. | [opencode] [claude-code] [universal] | — | — |
 
 #### Malware Analysis & Triage
 
@@ -377,7 +379,7 @@ Static/dynamic binary triage, YARA rule authoring, deobfuscation, and sandbox de
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Malware Triage Playbook](https://github.com/example/malware-triage-playbook) | Static/dynamic triage, YARA, and sandbox detonation. | [opencode] [universal] | — | — |
+| [Malware Triage Playbook](https://github.com/Heretek-AI/Agent-Builder) | Static/dynamic triage, YARA, and sandbox detonation. | [opencode] [universal] | — | — |
 
 #### Security Auditing & Code Review
 
@@ -387,7 +389,7 @@ SAST/DAST triage, threat modeling, smart contract auditing, and differential vul
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Secure Code Audit Skill](https://github.com/example/secure-code-audit) | SAST/DAST triage, threat modeling, and audit checklists. | [opencode] [claude-code] [universal] | — | — |
+| [Secure Code Audit Skill](https://github.com/Heretek-AI/Agent-Builder) | SAST/DAST triage, threat modeling, and audit checklists. | [opencode] [claude-code] [universal] | — | — |
 
 #### Web, API & Network Pentesting
 
@@ -525,7 +527,7 @@ Local file operations, sandboxed command execution, and desktop automation.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Filesystem & Shell MCP Server](https://github.com/modelcontextprotocol/servers) | Sandboxed file operations and command execution over MCP. | [opencode] [claude-code] [codex] | — | 4 tools |
+| [Filesystem & Shell MCP Server](https://github.com/modelcontextprotocol/servers) | Sandboxed file operations and command execution over MCP. | [opencode] [claude-code] [codex] | — | 3 tools |
 
 ### Git, GitHub & Code Intelligence
 
@@ -545,7 +547,7 @@ PostgreSQL, SQLite, ClickHouse, Supabase, Neon, and Redis MCP connectors.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Postgres MCP Connector](https://github.com/example/postgres-mcp-connector) | Read-only Postgres MCP server with audited tools. | [opencode] [claude-code] | — | 3 tools |
+| [Postgres MCP Connector](https://github.com/kristofer84/mcp-postgres) | Read-only Postgres MCP server with audited tools. | [opencode] [claude-code] | — | 3 tools |
 
 ### Browser Automation, Search & Scraping
 
@@ -575,7 +577,7 @@ Figma, Stitch, Storybook, and screenshot diffing MCP servers.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Figma Design MCP Server](https://github.com/Framelink/figma-mcp-server) | Design context, components, and screenshots from Figma. | [opencode] [claude-code] | — | 3 tools |
+| [Figma Design MCP Server](https://github.com/planetabhi/figma-mcp-server) | Design context, components, and screenshots from Figma. | [opencode] [claude-code] | — | 3 tools |
 
 ### Cloud, Containers & Observability
 
@@ -595,7 +597,7 @@ Obsidian, Notion, NotebookLM, Slack, and Google Workspace MCP servers.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Notion Knowledge MCP Server](https://github.com/makersu/notion-mcp-server) | Docs and knowledge-base search over MCP. | [opencode] [claude-code] | — | 3 tools |
+| [Notion Knowledge MCP Server](https://github.com/makenotion/notion-mcp-server) | Docs and knowledge-base search over MCP. | [opencode] [claude-code] | — | 3 tools |
 
 ## 4. DESIGN.md Systems
 
@@ -611,7 +613,7 @@ Terminal-first, dark-mode, and high-contrast engineering design systems.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Terminal Dev Design System](https://github.com/example/terminal-dev-design) | Terminal-first dark-mode DESIGN.md for dev tools. | [universal] | — | — |
+| [Terminal Dev Design System](https://github.com/Heretek-AI/Agent-Builder) | Terminal-first dark-mode DESIGN.md for dev tools. | [universal] | — | — |
 
 ### SaaS, Dashboards & Productivity
 
@@ -657,7 +659,7 @@ Red-team, threat-modeling, and multi-subagent code audit prompts.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [Adversarial Audit Prompt](https://github.com/example/adversarial-audit-prompt) | Red-team multi-subagent code audit prompt. | [opencode] [claude-code] [universal] | — | — |
+| [Adversarial Audit Prompt](https://github.com/Heretek-AI/Agent-Builder) | Red-team multi-subagent code audit prompt. | [opencode] [claude-code] [universal] | — | — |
 
 ### Product, UI/UX & Technical Writing Prompts
 
@@ -693,7 +695,7 @@ Least-privilege security auditing and reverse-engineering agents.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
-| [DB Security Auditor Agent](https://github.com/example/db-security-auditor) | Least-privilege database security auditor agent. | [opencode] | — | — |
+| [DB Security Auditor Agent](https://github.com/Heretek-AI/Agent-Builder) | Least-privilege database security auditor agent. | [opencode] | — | — |
 
 ### UI/UX & Cross-Platform Design Agents
 
@@ -726,15 +728,15 @@ Every agent compiled by the Agent Builder WebUI and CLI follows **deny-first con
       "permissions": [
         { "action": "skill", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "rust-secure-coding", "effect": "allow" },
-        { "action": "postgres_prod_*", "resource": "*", "effect": "deny" },
-        { "action": "postgres_prod_query", "resource": "*", "effect": "allow" }
+        { "action": "postgres-prod_*", "resource": "*", "effect": "deny" },
+        { "action": "postgres-prod_execute_query", "resource": "*", "effect": "allow" }
       ]
     }
   }
 }
 ```
 
-MCP tool names are normalized as `<serverName>_<toolName>` with all non-alphanumeric characters converted to `_` (e.g. server `postgres-prod` + tool `list-tables` → `postgres_prod_list_tables`).
+MCP tool names are normalized as `<serverName>_<toolName>` preserving hyphens and underscores (matching upstream OpenCode/Claude Code `mcp__plugin_my-plugin_database-tools__query` style); every other run of non-alphanumeric characters becomes `_` (e.g. server `postgres-prod` + tool `execute_query` → `postgres-prod_execute_query`).
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 id: rust-secure-coding
 name: Rust Secure Coding Skill
-repo: https://github.com/example/rust-secure-coding
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Cargo workspaces, unsafe auditing, and Tokio patterns.
 description: >-
   A skill bundle for Rust development covering Cargo workspaces, unsafe block auditing, async Tokio
@@ -18,4 +18,5 @@ tags:
   - unsafe-audit
   - tokio
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

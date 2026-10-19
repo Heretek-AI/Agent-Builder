@@ -32,7 +32,10 @@
   // frontmatter parser (used in the browser and when js-yaml is absent).
   // NOTE: `normalizeMcpId` is intentionally duplicated from
   // `src/core/compiler.js` so this module stays dependency-free in the
-  // browser (no cross-file `require` needed).
+  // browser (no cross-file `require` needed). It must stay identical to the
+  // compiler's copy: hyphens and underscores preserved (upstream OpenCode /
+  // Claude Code keep `-` in MCP ids); all other non-alphanumeric runs map
+  // to a single `_` (AB-7.4 fail-closed: deny rules match real names).
   var yamlLib = null;
   try {
     if (typeof require === 'function' && typeof module !== 'undefined' && module.exports) {
@@ -45,7 +48,7 @@
   var RESOURCE_ACTIONS = ['opencode_list_mcp_resources', 'opencode_read_mcp_resource'];
 
   function normalizeMcpId(str) {
-    return String(str).trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    return String(str).trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
   function isPlainObject(v) {
@@ -455,10 +458,27 @@
     };
   }
 
+  // AB-3.3 (silent default): a recipe with zero `allow` rules compiles to a
+  // deny-only (fully locked) agent. That is the safe deny-closed outcome,
+  // but an empty upload is almost always a mistake, so warn loudly instead
+  // of silently succeeding. Shape is unchanged (fail-closed, deny-only).
+  function warnDenyOnly(slug) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(
+        'parseUploadedConfig: agent "' + slug + '" has no allow rules ' +
+        '(no skills, no MCP tools); imported as deny-only — every skill ' +
+        'and MCP action will be denied until you scope explicit allows.'
+      );
+    }
+  }
+
   function recipeFromV2(slug, cfg) {
     var meta = recipeMeta(cfg, slug);
     var perms = Array.isArray(cfg.permissions) ? cfg.permissions : [];
     var parts = buildSelectionsFromRules(perms);
+    if (parts.skills.length === 0 && parts.selections.length === 0) {
+      warnDenyOnly(slug);
+    }
     return {
       slug: slug,
       description: meta.description,
@@ -488,6 +508,9 @@
       rules.push({ action: key, resource: '*', effect: normalizeEffect(val, slug) });
     });
     var parts = buildSelectionsFromRules(rules);
+    if (parts.skills.length === 0 && parts.selections.length === 0) {
+      warnDenyOnly(slug);
+    }
     return {
       slug: slug,
       description: meta.description,
@@ -504,11 +527,15 @@
     if (!isPlainObject(servers)) {
       throw new Error('parseUploadedConfig: "' + filename + '" mcpServers must be an object');
     }
+    var slug = slugFromFilename(filename);
     var selections = Object.keys(servers).map(function (s) {
       return { server: s, tools: ['*'], deniedTools: [], allowResources: false };
     });
+    if (selections.length === 0) {
+      warnDenyOnly(slug);
+    }
     return [{
-      slug: slugFromFilename(filename),
+      slug: slug,
       description: 'Imported from ' + String(filename).split('/').pop(),
       mode: 'subagent',
       model: undefined,

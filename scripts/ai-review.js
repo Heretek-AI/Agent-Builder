@@ -16,7 +16,7 @@ const REVIEW_RUBRIC = [
   '1. category placement: entry.category must be a leaf id in data/taxonomy.json matching the entry subject.',
   '2. kind/folder match: kind plugin->data/plugins, skill->data/skills, mcp-server->data/mcp-servers, design-md->data/design-md, prompt->data/prompts, agent->data/agents.',
   '3. harnesses compatibility: every claimed harness must be plausible for the entry (opencode/claude-code/codex/etc.).',
-  '4. MCP tool names: mcp.tools must be exact exported tool names; compiled ids use <normServer>_<normTool> normalization (non-alphanumerics -> _).',
+  '4. MCP tool names: mcp.tools must be exact exported tool names; compiled ids use <normServer>_<normTool> normalization (hyphens/underscores preserved, other non-alphanumeric runs -> _).',
   '5. deny-first scoping: agent presets must compile to deny "*" first, then explicit allows (last match wins).',
   '6. license/attribution: license SPDX + source_attribution must credit upstream.',
 ];
@@ -45,6 +45,104 @@ function cmdCollect(rootDir) {
   void rootDir;
 }
 
+const KIND_FOLDERS = {
+  plugin: 'data/plugins',
+  skill: 'data/skills',
+  'mcp-server': 'data/mcp-servers',
+  'design-md': 'data/design-md',
+  prompt: 'data/prompts',
+  agent: 'data/agents',
+  'agent-preset': 'data/agents',
+};
+
+// Fail-closed catalog audit (AB-ai-review-no-enforcement). Beyond schema
+// validity this enforces the reviewer rubric as machine checks:
+//   - every claimed harness exists in data/taxonomy.json,
+//   - kind matches the data/ folder the file lives in,
+//   - agent mcp_selections reference a real registry server_name and only
+//     tools that server actually exports (invented tools fail),
+//   - agent presets compile to deny-first v2 permissions (first rule denies).
+// Returns { findings: Array<string> }; empty findings means REVIEW_OK.
+function auditCatalogEntries(rootDir, wrappedEntries, taxonomy) {
+  const findings = [];
+  const harnessIds = new Set((taxonomy.harnesses || []).map((h) => h.id));
+  const serverTools = new Map();
+  for (const { entry } of wrappedEntries) {
+    if (entry.kind === 'mcp-server' && entry.mcp && typeof entry.mcp.server_name === 'string') {
+      serverTools.set(entry.mcp.server_name, Array.isArray(entry.mcp.tools) ? entry.mcp.tools : []);
+    }
+  }
+  const mcpRegistry = wrappedEntries
+    .map((w) => w.entry)
+    .filter((e) => e.kind === 'mcp-server');
+  let compileAgentRecipe = null;
+  try {
+    ({ compileAgentRecipe } = require('../src/core/compiler'));
+  } catch (_e) {
+    findings.push('compiler unavailable: cannot verify deny-first scoping');
+    compileAgentRecipe = null;
+  }
+
+  for (const { file, entry } of wrappedEntries) {
+    const rel = path.relative(rootDir, file).replace(/\\/g, '/');
+    const wantDir = KIND_FOLDERS[entry.kind];
+    if (!wantDir) {
+      findings.push(`${rel}: unknown kind '${entry.kind}'`);
+    } else if (!rel.startsWith(`${wantDir}/`)) {
+      findings.push(`${rel}: kind '${entry.kind}' must live under ${wantDir}/ (kind/folder mismatch)`);
+    }
+    for (const h of entry.harnesses || []) {
+      if (!harnessIds.has(h)) {
+        findings.push(`${rel}: unknown harness '${h}' (not in data/taxonomy.json harnesses)`);
+      }
+    }
+    const sels =
+      entry.agent_preset && Array.isArray(entry.agent_preset.mcp_selections)
+        ? entry.agent_preset.mcp_selections
+        : [];
+    for (const sel of sels) {
+      if (!sel || typeof sel.server !== 'string' || !serverTools.has(sel.server)) {
+        findings.push(
+          `${rel}: unknown mcp server '${sel && sel.server}' (no mcp-server entry defines it)`
+        );
+        continue;
+      }
+      const known = new Set(serverTools.get(sel.server).map((t) => String(t)));
+      for (const t of sel.tools || []) {
+        if (String(t).trim() === '*') continue;
+        if (!known.has(String(t))) {
+          findings.push(
+            `${rel}: invented tool '${t}' for server '${sel.server}' (not in that server's mcp.tools)`
+          );
+        }
+      }
+    }
+    const isAgent = entry.kind === 'agent' || entry.kind === 'agent-preset' || sels.length > 0;
+    if (isAgent && compileAgentRecipe) {
+      let perms;
+      try {
+        const recipe = {
+          slug: entry.id,
+          description: entry.description || '',
+          mode: (entry.agent_preset && entry.agent_preset.mode) || 'subagent',
+          skills: (entry.agent_preset && entry.agent_preset.skills) || [],
+          mcp: sels.map((s) => ({ server: s.server, tools: s.tools || ['*'] })),
+        };
+        const compiled = compileAgentRecipe(recipe, mcpRegistry);
+        const agent = compiled.opencodeV2 && compiled.opencodeV2.agents[entry.id];
+        perms = agent && agent.permissions;
+      } catch (err) {
+        findings.push(`${rel}: agent preset does not compile: ${err.message}`);
+        continue;
+      }
+      if (!Array.isArray(perms) || perms.length === 0 || perms[0].effect !== 'deny') {
+        findings.push(`${rel}: agent preset is not deny-first (first v2 permission must deny)`);
+      }
+    }
+  }
+  return { findings };
+}
+
 function cmdRun(rootDir) {
   const { entries, errors } = loadCatalog(rootDir);
   if (errors.length > 0) {
@@ -52,6 +150,24 @@ function cmdRun(rootDir) {
       console.error(`ERROR: ${err}`);
     }
     console.error(`REVIEW FAILED: ${errors.length} catalog error(s)`);
+    process.exit(1);
+  }
+  let taxonomy;
+  try {
+    taxonomy = JSON.parse(
+      require('fs').readFileSync(path.join(rootDir, 'data', 'taxonomy.json'), 'utf8')
+    );
+  } catch (err) {
+    console.error(`ERROR: unable to load data/taxonomy.json: ${err.message}`);
+    console.error('REVIEW FAILED: taxonomy unreadable');
+    process.exit(1);
+  }
+  const { findings } = auditCatalogEntries(rootDir, entries, taxonomy);
+  if (findings.length > 0) {
+    for (const f of findings) {
+      console.error(`ERROR: ${f}`);
+    }
+    console.error(`REVIEW FAILED: ${findings.length} rubric violation(s)`);
     process.exit(1);
   }
   console.log('REVIEW RUBRIC (catalog-reviewer):');
@@ -120,4 +236,16 @@ function main() {
   process.exit(1);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  REVIEW_RUBRIC,
+  KIND_FOLDERS,
+  auditCatalogEntries,
+  cmdCollect,
+  cmdRun,
+  cmdSelftest,
+  cmdApply,
+};

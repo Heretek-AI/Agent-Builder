@@ -126,13 +126,17 @@ function main() {
   lines.push('## Quick Start');
   lines.push('');
   lines.push(`- 🌐 **Agent Builder WebUI:** ${WEBUI_URL}`);
-  lines.push('- 💻 **CLI:** `npx @heretek-ai/agent-builder serve`');
+  lines.push('- 💻 **CLI:** `node bin/agent-builder.js serve` (from a local checkout; `npm pack` for a tarball — the package is not published to npm yet, see note below)');
   lines.push(`- 📦 **Machine-readable registry:** ${REGISTRY_URL} ([repository](${REPO_URL}))`);
   lines.push('');
   lines.push('```bash');
-  lines.push('npx @heretek-ai/agent-builder serve');
+  lines.push('node bin/agent-builder.js serve');
   lines.push('# then open the printed local URL, or use the hosted WebUI above');
   lines.push('```');
+  lines.push('');
+  lines.push(
+    '> **Note:** `@heretek-ai/agent-builder` is not published on the npm registry yet (`npm view` still 404s — a known gap, AB-6.1). Do not use `npx @heretek-ai/agent-builder`; run from source as above or `npm pack` until `npm publish` lands.'
+  );
   lines.push('');
   lines.push(
     `**Registry stats:** ${entries.length} entries (${Object.entries(byKind)
@@ -158,8 +162,8 @@ function main() {
   lines.push('      "permissions": [');
   lines.push('        { "action": "skill", "resource": "*", "effect": "deny" },');
   lines.push('        { "action": "skill", "resource": "rust-secure-coding", "effect": "allow" },');
-  lines.push('        { "action": "postgres_prod_*", "resource": "*", "effect": "deny" },');
-  lines.push('        { "action": "postgres_prod_query", "resource": "*", "effect": "allow" }');
+  lines.push('        { "action": "postgres-prod_*", "resource": "*", "effect": "deny" },');
+  lines.push('        { "action": "postgres-prod_execute_query", "resource": "*", "effect": "allow" }');
   lines.push('      ]');
   lines.push('    }');
   lines.push('  }');
@@ -167,7 +171,7 @@ function main() {
   lines.push('```');
   lines.push('');
   lines.push(
-    'MCP tool names are normalized as `<serverName>_<toolName>` with all non-alphanumeric characters converted to `_` (e.g. server `postgres-prod` + tool `list-tables` → `postgres_prod_list_tables`).'
+    'MCP tool names are normalized as `<serverName>_<toolName>` preserving hyphens and underscores (matching upstream OpenCode/Claude Code `mcp__plugin_my-plugin_database-tools__query` style); every other run of non-alphanumeric characters becomes `_` (e.g. server `postgres-prod` + tool `execute_query` → `postgres-prod_execute_query`).'
   );
   lines.push('');
   lines.push('## Contributing');
