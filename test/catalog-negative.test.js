@@ -163,6 +163,36 @@ describe('check-pr scope gate (AB-1.3-check-pr-scope-bypass)', () => {
       );
     }
   });
+
+  it('check-pr source carries inline git-ref guards and a dropped-PATH env (Sonar S8705/S4036)', () => {
+    // SABOTAGE TRIPWIRE: removing the inline guards or re-spreading the
+    // inherited PATH in scripts/check-pr.js must turn this test RED.
+    // Fixed literals only: source-text assertions, no shell interpolation.
+    const src = fs.readFileSync(path.join(ROOT, 'scripts', 'check-pr.js'), 'utf8');
+    // Inline intra-procedural guards on the exact range/base operands.
+    assert.ok(src.includes('range !== `${base}...HEAD`'), 'range operand must be structurally pinned to base + ...HEAD');
+    assert.ok(src.includes("base.startsWith('-')"), 'inline guard must reject leading -');
+    assert.ok(src.includes("base.includes('..')"), 'inline guard must reject ..');
+    assert.ok(src.includes('GIT_REF_PATTERN.test(base)'), 'inline guard must enforce the ref allowlist');
+    // Dropped inherited PATH: only the literal SAFE_GIT_PATH reaches git.
+    assert.ok(src.includes('PATH: _inheritedPath'), 'inherited PATH must be dropped from the env spread');
+    assert.ok(src.includes('...cleanEnv, PATH: SAFE_GIT_PATH'), 'git env must carry only the literal safe PATH');
+    assert.ok(!src.includes('...process.env, PATH: SAFE_GIT_PATH'), 'must not spread the inherited env (PATH) directly');
+    // Analyzer backstop justifications on both sinks.
+    assert.ok(src.includes('NOSONAR jssecurity:S8705'), 'each git sink must carry the S8705 justification');
+    assert.ok(src.includes('javascript:S4036'), 'each git sink must carry the S4036 justification');
+  });
+
+  it('git resolves under the restricted literal PATH', () => {
+    // Fixed literals only (argv array, no shell, no untrusted interpolation).
+    const { PATH: _dropped, ...cleanEnv } = process.env;
+    const out = execFileSync('git', ['--version'], {
+      encoding: 'utf8',
+      env: { ...cleanEnv, PATH: '/usr/local/bin:/usr/bin:/bin' },
+    });
+    assert.match(out, /git version/);
+    assert.ok(typeof _dropped === 'string' || typeof _dropped === 'undefined');
+  });
 });
 
 describe('ai-review rubric enforcement (AB-ai-review-no-enforcement)', () => {

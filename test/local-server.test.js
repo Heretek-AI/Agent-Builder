@@ -477,6 +477,38 @@ describe('static traversal containment', () => {
       assert.ok([400, 403, 404].includes(res.status), `${p} -> ${res.status}, expected 400/403/404`);
     }
   });
+
+  it('encoded traversal yields 403 fail-closed (never file bytes)', async () => {
+    // SABOTAGE TRIPWIRE: weakening the `..`/isAbsolute/resolve-containment
+    // guards in serveStatic must turn this test RED.
+    // NOTE: plain %2e%2e collapses to /package.json under WHATWG URL dot-
+    // segment normalization (404); the %2f form below survives parsing and
+    // reaches the `..` guard, which must answer 403.
+    const res = await fetch(baseUrl() + '/..%2fpackage.json');
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.match(String(body.error || ''), /forbidden/i);
+  });
+
+  it('missing static file yields 404 with not-found error (single-syscall read)', async () => {
+    const res = await fetch(baseUrl() + '/no-such-file-xyz-12345.html');
+    assert.equal(res.status, 404);
+    const body = await res.json();
+    assert.match(String(body.error || ''), /not found/);
+  });
+
+  it('HEAD / returns 200 headers-only with an empty body', async () => {
+    const res = await fetch(baseUrl() + '/', { method: 'HEAD' });
+    assert.equal(res.status, 200);
+    assert.match(String(res.headers.get('content-type') || ''), /text\/html/);
+    const text = await res.text();
+    assert.equal(text, '');
+  });
+
+  it('HEAD on a missing file yields 404', async () => {
+    const res = await fetch(baseUrl() + '/no-such-file-xyz-12345.html', { method: 'HEAD' });
+    assert.equal(res.status, 404);
+  });
 });
 
 function baseValidEntry() {

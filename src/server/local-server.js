@@ -772,20 +772,22 @@ function serveStatic(reqUrl, staticRoot, res, req, bootToken) {
     sendJson(res, 403, { error: 'forbidden path' }, req);
     return;
   }
-  fs.stat(dest, (err, st) => {
-    if (err || !st.isFile()) {
-      sendJson(res, 404, { error: 'not found: ' + pathname }, req);
-      return;
-    }
-    // Same-origin WebUI token bridge: inject bootToken into index.html so
-    // same-origin callers of /api/llm/chat, /api/mcp/introspect, /api/install
-    // can send it back as x-ab-token (fallback ?token=).
-    if (pathname === '/index.html' && typeof bootToken === 'string' && bootToken.length > 0) {
-      let html;
-      try {
-        html = fs.readFileSync(dest, 'utf8');
-      } catch (_e) {
-        sendJson(res, 500, { error: 'unable to read index.html' }, req);
+  // Single-syscall reads (CodeQL js/file-system-race): no stat-then-use
+  // sequence. Each branch reads `dest` directly; missing/not-file paths map
+  // to the same 404 the stat-failure path returned before.
+  // Same-origin WebUI token bridge: inject bootToken into index.html so
+  // same-origin callers of /api/llm/chat, /api/mcp/introspect, /api/install
+  // can send it back as x-ab-token (fallback ?token=).
+  if (pathname === '/index.html' && typeof bootToken === 'string' && bootToken.length > 0) {
+    fs.readFile(dest, 'utf8', (readErr, html) => {
+      if (readErr) {
+        // ENOENT/ENOTDIR/EISDIR all mean "no readable file here" (the old
+        // `!st.isFile()` 404); anything else keeps the 500 read failure.
+        if (readErr.code === 'ENOENT' || readErr.code === 'ENOTDIR' || readErr.code === 'EISDIR') {
+          sendJson(res, 404, { error: 'not found: ' + pathname }, req);
+        } else {
+          sendJson(res, 500, { error: 'unable to read index.html' }, req);
+        }
         return;
       }
       const injected = injectAbToken(html, bootToken);
@@ -798,6 +800,12 @@ function serveStatic(reqUrl, staticRoot, res, req, bootToken) {
       }
       res.writeHead(200, headers);
       res.end(injected);
+    });
+    return;
+  }
+  fs.readFile(dest, (err, data) => {
+    if (err) {
+      sendJson(res, 404, { error: 'not found: ' + pathname }, req);
       return;
     }
     setCors(res, req);
@@ -807,7 +815,7 @@ function serveStatic(reqUrl, staticRoot, res, req, bootToken) {
       return;
     }
     res.writeHead(200, { 'Content-Type': contentTypeFor(dest) });
-    fs.createReadStream(dest).pipe(res);
+    res.end(data);
   });
 }
 

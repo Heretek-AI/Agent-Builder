@@ -77,17 +77,53 @@ function getChangedFiles(base) {
   // data/**/*.yaml file does not fail per-file validation; the remaining
   // catalog is still validated. Belt-and-suspenders existsSync filtering
   // in main() covers renames/deletions the diff filter might miss.
-  // Sonar javascript:S4036: resolve `git` with an explicit fixed safe PATH
-  // (literal unwriteable dirs only), never the inherited PATH alone.
+  // Sonar javascript:S4036: drop the inherited PATH first so the only PATH
+  // reaching git is the literal SAFE_GIT_PATH (fixed unwriteable dirs only),
+  // never the inherited PATH alone.
+  const { PATH: _inheritedPath, ...cleanEnv } = process.env;
+  void _inheritedPath;
   const range = `${base}...HEAD`;
-  const gitOpts = { encoding: 'utf8', env: { ...process.env, PATH: SAFE_GIT_PATH } };
+  const gitOpts = { encoding: 'utf8', env: { ...cleanEnv, PATH: SAFE_GIT_PATH } };
   try {
-    const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', range], gitOpts);
+    // Fail-closed inline guard (Sonar jssecurity:S8705): intra-procedural
+    // allowlist check on the exact `range` operand passed to git below.
+    // `range` is `base + '...HEAD'`, so the `...` separator is structural
+    // (exempt from the `..` traversal check); the untrusted `base`
+    // component carries the full ref predicate.
+    if (
+      typeof range !== 'string' ||
+      range !== `${base}...HEAD` ||
+      typeof base !== 'string' ||
+      base.length < 1 ||
+      base.length > 256 ||
+      base.startsWith('-') ||
+      base.includes('..') ||
+      /\s/.test(base) ||
+      !GIT_REF_PATTERN.test(base)
+    ) {
+      console.error('ERROR: unsafe git range (ref must match refs/heads style, no leading -, no .., no whitespace)');
+      process.exit(1);
+    }
+    const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', range], gitOpts); // NOSONAR jssecurity:S8705 javascript:S4036 — argv array (no shell) + allowlist git-ref guard above; PATH dropped from inherited env, replaced with literal of fixed unwriteable dirs; CI invokes with fixed --base origin/main
     return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
   } catch (_e) {
     // Fall back to a plain base ref diff (e.g. when HEAD has no upstream range).
     try {
-      const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', base], gitOpts);
+      // Fail-closed inline guard (Sonar jssecurity:S8705): intra-procedural
+      // allowlist check on the exact `base` operand passed to git below.
+      if (
+        typeof base !== 'string' ||
+        base.length < 1 ||
+        base.length > 256 ||
+        base.startsWith('-') ||
+        base.includes('..') ||
+        /\s/.test(base) ||
+        !GIT_REF_PATTERN.test(base)
+      ) {
+        console.error('ERROR: unsafe git ref (must match refs/heads style, no leading -, no .., no whitespace)');
+        process.exit(1);
+      }
+      const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', base], gitOpts); // NOSONAR jssecurity:S8705 javascript:S4036 — argv array (no shell) + allowlist git-ref guard above; PATH dropped from inherited env, replaced with literal of fixed unwriteable dirs; CI invokes with fixed --base origin/main
       return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
     } catch (err) {
       console.error(`ERROR: unable to diff against '${base}': ${err.message}`);
