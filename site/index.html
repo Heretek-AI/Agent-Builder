@@ -88,9 +88,9 @@
             <label class="radio"><input type="radio" name="harness" value="claude"> Claude Code</label>
             <label class="radio"><input type="radio" name="harness" value="codex"> Codex CLI</label>
           </fieldset>
-          <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-label="Upload an existing config file">
-            <p>Drag &amp; drop <code>opencode.json</code>, <code>claude.json</code>, <code>.mcp.json</code> or an agent <code>.md</code> here, or</p>
-            <input id="fileInput" type="file" accept=".json,.jsonc,.md,.markdown,.mcp.json,application/json">
+          <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-labelledby="dropZoneText">
+            <p id="dropZoneText">Drag &amp; drop <code>opencode.json</code>, <code>claude.json</code>, <code>.mcp.json</code> or an agent <code>.md</code> here, or</p>
+            <input id="fileInput" type="file" aria-label="Choose config file" accept=".json,.jsonc,.md,.markdown,.mcp.json,application/json">
           </div>
           <p id="uploadStatus" class="muted" role="status"></p>
         </div>

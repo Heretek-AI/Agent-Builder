@@ -163,7 +163,9 @@
     var tree = $('categoryTree');
     tree.innerHTML = '';
     var root = document.createElement('ul');
-    root.appendChild(treeItem('', 'All entries'));
+    var allLi = document.createElement('li');
+    allLi.appendChild(treeItem('', 'All entries'));
+    root.appendChild(allLi);
     var cats = (state.registry && state.registry.taxonomy && state.registry.taxonomy.categories) || [];
     cats.forEach(function (top) {
       root.appendChild(treeNode(top));
@@ -232,7 +234,7 @@
       }).join('');
       var toolInfo = e.kind === 'mcp-server' ? ' <span class="badge">' + toolsOf(e).length + ' tools</span>' : '';
       card.innerHTML =
-        '<h4>' + escHtml(e.name) + '</h4>' +
+        '<h3>' + escHtml(e.name) + '</h3>' +
         '<p class="tagline">' + escHtml(e.tagline || '') + '</p>' +
         '<div class="badges"><span class="badge">' + escHtml(e.kind) + '</span>' +
         '<span class="badge">' + escHtml(e.category) + '</span>' + badges + toolInfo + '</div>';
@@ -367,7 +369,7 @@
     if (nonMcp.length > 0) {
       var div = document.createElement('div');
       div.className = 'scope-server';
-      div.innerHTML = '<h4>Skills / Plugins / DESIGN.md / Prompts (' + nonMcp.length + ')</h4>' +
+      div.innerHTML = '<h3>Skills / Plugins / DESIGN.md / Prompts (' + nonMcp.length + ')</h3>' +
         '<p class="muted">Each becomes an <code>allow</code> skill rule after the leading <code>deny "*"</code>.</p>';
       var ul = document.createElement('ul');
       nonMcp.forEach(function (e) {
@@ -389,8 +391,8 @@
     var div = document.createElement('div');
     div.className = 'scope-server';
     var norm = Compiler.normalizeMcpId(server);
-    div.innerHTML = '<h4>' + escHtml(server) + ' <span class="muted">(<code>' +
-      escHtml(norm) + '_*</code>)</span></h4>';
+    div.innerHTML = '<h3>' + escHtml(server) + ' <span class="muted">(<code>' +
+      escHtml(norm) + '_*</code>)</span></h3>';
     var grid = document.createElement('div');
     grid.className = 'tool-grid';
 
