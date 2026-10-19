@@ -1,0 +1,9 @@
+# Declined discovery URLs (scripts/scout.js)
+# One repo URL per line. Lines starting with '#' and blank lines are ignored.
+# Add URLs here to permanently exclude them from scout candidate batches
+# (spam, malware, license-incompatible, duplicate, or dead upstreams).
+#
+# Examples:
+# https://github.com/example/spam-plugin
+# https://github.com/example/license-incompatible-fork
+https://github.com/example/declined-placeholder

@@ -1,0 +1,84 @@
+name: 🤖 Publish Agent Preset
+description: Publish a ready-to-run scoped agent preset from the Agent Builder WebUI.
+title: "[agent] <agent name>"
+labels: ["new-agent"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is pre-filled by the WebUI "Publish Agent" button. Submit it and a maintainer (or the `issues.yml` bot) will convert it into a `data/agents/**/*.yaml` preset. Never paste API keys here.
+  - type: input
+    id: agent_name
+    attributes:
+      label: Agent name / slug *
+      description: Lowercase kebab-case slug (e.g. db-security-auditor).
+      placeholder: my-agent
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description *
+      description: One-paragraph summary of what the agent does.
+      placeholder: Database security auditor with read-only Postgres MCP...
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Preferred model id (optional, e.g. anthropic/claude-sonnet-4-5).
+      placeholder: anthropic/claude-sonnet-4-5
+    validations:
+      required: false
+  - type: textarea
+    id: prompt
+    attributes:
+      label: System prompt *
+      description: Full system prompt body for the agent.
+      placeholder: Audit SQL queries and schema migrations for injection...
+    validations:
+      required: true
+  - type: textarea
+    id: skills
+    attributes:
+      label: Skills
+      description: Comma-separated skill ids allowed for this agent (deny-first; all others denied).
+      placeholder: rust-secure-coding, sql-query-audit
+    validations:
+      required: false
+  - type: textarea
+    id: mcp
+    attributes:
+      label: MCP selections (JSON)
+      description: JSON array of { server, tools, deniedTools, allowResources } selections.
+      placeholder: '[{"server": "postgres-prod", "tools": ["query"], "deniedTools": ["drop-table"]}]'
+    validations:
+      required: false
+  - type: dropdown
+    id: harness
+    attributes:
+      label: Target harness
+      description: Primary harness this preset was built for.
+      options:
+        - opencode
+        - claude-code
+        - codex
+        - universal
+    validations:
+      required: false
+  - type: textarea
+    id: recipe
+    attributes:
+      label: Recipe YAML
+      description: Full AgentRecipe YAML exported by the WebUI (optional; overrides the fields above when present).
+    validations:
+      required: false
+  - type: input
+    id: contact
+    attributes:
+      label: Contact
+      description: GitHub handle or email for follow-up questions (optional).
+      placeholder: "@octocat"
+    validations:
+      required: false

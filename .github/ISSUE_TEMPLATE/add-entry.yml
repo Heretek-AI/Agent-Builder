@@ -1,0 +1,93 @@
+name: ➕ Add Catalog Entry
+description: Submit a new plugin, skill, MCP server, DESIGN.md system, prompt, or agent to the registry.
+title: "[entry] <entry name>"
+labels: ["new-entry"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to the Agent-Builder registry! Fill out this form and a maintainer (or the `issues.yml` bot) will convert it into a `data/**/*.yaml` entry. Fields marked * are required.
+  - type: input
+    id: entry_name
+    attributes:
+      label: Entry name *
+      description: Human-readable display name (e.g. "Rust Secure Coding").
+      placeholder: My Awesome Skill
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind *
+      description: Top-level registry kind. Determines the `data/` folder.
+      options:
+        - plugin
+        - skill
+        - mcp-server
+        - design-md
+        - prompt
+        - agent
+    validations:
+      required: true
+  - type: input
+    id: category
+    attributes:
+      label: Category *
+      description: Must match a leaf id in data/taxonomy.json (e.g. skills/coding/rust).
+      placeholder: skills/coding/rust
+    validations:
+      required: true
+  - type: input
+    id: repo
+    attributes:
+      label: Repository URL *
+      description: Upstream https:// URL for the project.
+      placeholder: https://github.com/org/repo
+    validations:
+      required: true
+  - type: input
+    id: tagline
+    attributes:
+      label: Tagline *
+      description: One-line summary (under 120 characters).
+      placeholder: Short summary of what this entry does
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description *
+      description: Longer description (what it does, when to use it).
+      placeholder: Detailed description...
+    validations:
+      required: true
+  - type: checkboxes
+    id: harnesses
+    attributes:
+      label: Supported harnesses *
+      description: Check every harness this entry works with.
+      options:
+        - label: OpenCode (opencode)
+        - label: Claude Code (claude-code)
+        - label: Codex CLI (codex)
+        - label: Gemini CLI (gemini-cli)
+        - label: Cursor (cursor)
+        - label: Windsurf (windsurf)
+        - label: GitHub Copilot (copilot)
+        - label: Universal / Multi-Harness (universal)
+  - type: input
+    id: languages
+    attributes:
+      label: Languages
+      description: Comma-separated programming languages (optional).
+      placeholder: rust, python
+    validations:
+      required: false
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: SPDX identifier of the upstream license (e.g. MIT, Apache-2.0, CC0-1.0).
+      placeholder: MIT
+    validations:
+      required: false
