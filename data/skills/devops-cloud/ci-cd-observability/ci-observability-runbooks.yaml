@@ -1,0 +1,18 @@
+id: ci-observability-runbooks
+name: CI/CD & Observability Skill
+repo: https://github.com/open-telemetry/opentelemetry-collector
+tagline: GitHub Actions pipelines, OpenTelemetry, and incident runbooks.
+description: >-
+  Skill bundle for delivery and observability: GitHub Actions/GitLab CI pipelines, OpenTelemetry
+  instrumentation, Prometheus alerts, and incident runbooks.
+kind: skill
+category: skills/devops-cloud/ci-cd-observability
+harnesses:
+  - opencode
+  - universal
+tags:
+  - ci-cd
+  - opentelemetry
+  - runbooks
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by open-telemetry/opentelemetry-collector (Apache-2.0).

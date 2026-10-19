@@ -1,0 +1,28 @@
+id: db-security-auditor
+name: DB Security Auditor Agent
+repo: https://github.com/example/db-security-auditor
+tagline: Least-privilege database security auditor agent.
+description: >-
+  A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool
+  selection for injection and privilege-escalation review.
+kind: agent
+category: agents/security-auditors
+harnesses:
+  - opencode
+agent_preset:
+  mode: subagent
+  model: anthropic/claude-sonnet-4-5
+  prompt: Audit SQL queries and schema migrations for injection and privilege escalation.
+  skills:
+    - rust-secure-coding
+    - secure-code-audit
+  mcp_selections:
+    - server: postgres-prod
+      tools:
+        - query
+        - list-tables
+tags:
+  - security
+  - postgres
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).

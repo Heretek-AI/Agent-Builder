@@ -1,0 +1,23 @@
+id: flutter-cross-mobile
+name: Flutter Cross-Platform Mobile Skill
+repo: https://github.com/flutter/flutter
+tagline: Flutter widgets, state management, and store releases.
+description: >-
+  Skill bundle for cross-platform mobile: Flutter widget composition, Riverpod/Bloc state, platform
+  channels, and Play/App Store release flows.
+kind: skill
+category: skills/design/mobile-cross-platform
+harnesses:
+  - opencode
+  - universal
+languages:
+  - dart
+platforms:
+  - android
+  - ios
+tags:
+  - flutter
+  - dart
+  - mobile
+license: BSD-3-Clause
+source_attribution: Curated for Agent-Builder; inspired by flutter/flutter (BSD-3-Clause).

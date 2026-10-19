@@ -1,0 +1,19 @@
+id: architecture-review-prompt
+name: Architecture Review Prompt
+repo: https://github.com/f/prompts.chat
+tagline: Refactoring, architecture critique, and spec authoring prompts.
+description: >-
+  System prompt for software architecture review: refactoring plans, architecture critique, and
+  specification authoring workflows (prompts data CC0-1.0).
+kind: prompt
+category: prompts/coding-architecture
+harnesses:
+  - universal
+  - opencode
+  - claude-code
+tags:
+  - architecture
+  - review
+  - spec
+license: CC0-1.0
+source_attribution: Curated for Agent-Builder; inspired by f/prompts.chat prompts data (CC0-1.0).

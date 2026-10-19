@@ -1,0 +1,28 @@
+id: notion-knowledge-mcp
+name: Notion Knowledge MCP Server
+repo: https://github.com/makersu/notion-mcp-server
+tagline: Docs and knowledge-base search over MCP.
+description: >-
+  Notion MCP server: page search, page retrieval, and page creation tools for knowledge-base and
+  productivity agents.
+kind: mcp-server
+category: mcp-servers/knowledge-productivity
+harnesses:
+  - opencode
+  - claude-code
+mcp:
+  server_name: notion
+  transport: stdio
+  command: npx
+  args:
+    - '-y'
+    - '@notionhq/notion-mcp-server'
+  tools:
+    - search_pages
+    - get_page
+    - create_page
+tags:
+  - notion
+  - knowledge
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by makersu/notion-mcp-server (MIT).

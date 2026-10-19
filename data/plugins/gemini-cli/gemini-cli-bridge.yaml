@@ -1,0 +1,16 @@
+id: gemini-cli-bridge
+name: Gemini CLI Extension Bridge
+repo: https://github.com/google-gemini/gemini-cli
+tagline: Extensions and tool bridges for Gemini CLI agents.
+description: >-
+  Extension and tool-bridge patterns for google-gemini/gemini-cli: GEMINI.md context files,
+  settings.json tool wiring, and MCP server attachments.
+kind: plugin
+category: plugins/gemini-cli
+harnesses:
+  - gemini-cli
+tags:
+  - extensions
+  - mcp
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by google-gemini/gemini-cli.

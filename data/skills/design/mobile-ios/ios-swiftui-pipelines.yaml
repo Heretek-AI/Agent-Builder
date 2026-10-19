@@ -1,0 +1,22 @@
+id: ios-swiftui-pipelines
+name: iOS SwiftUI Pipelines Skill
+repo: https://github.com/Alamofire/Alamofire
+tagline: SwiftUI, networking layers, and Xcode/TestFlight workflows.
+description: >-
+  Skill bundle for iOS: SwiftUI navigation/state, Alamofire networking layers, Xcode build
+  pipelines, XCUITest, and TestFlight releases.
+kind: skill
+category: skills/design/mobile-ios
+harnesses:
+  - opencode
+  - universal
+languages:
+  - swift
+platforms:
+  - ios
+tags:
+  - swiftui
+  - xcode
+  - testflight
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by Alamofire/Alamofire (MIT).

@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://heretek-ai.github.io/Agent-Builder/data/schema.json",
+  "title": "Agent-Builder Catalog Entry",
+  "description": "JSON Schema (Draft-07) for all Agent-Builder registry catalog YAML entries.",
+  "type": "object",
+  "required": ["id", "name", "repo", "tagline", "description", "kind", "category", "harnesses"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Lowercase kebab-case globally unique entry identifier."
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "repo": { "type": "string", "format": "uri" },
+    "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "npm": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "homepage": { "type": "string", "format": "uri" },
+    "tagline": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "description": { "type": "string", "minLength": 1 },
+    "kind": {
+      "type": "string",
+      "enum": ["plugin", "skill", "mcp-server", "design-md", "prompt", "agent", "agent-preset"]
+    },
+    "category": { "type": "string", "minLength": 1 },
+    "harnesses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "platforms": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "server_name": { "type": "string", "minLength": 1 },
+        "transport": { "type": "string", "enum": ["stdio", "sse", "streamable-http", "websocket"] },
+        "command": { "type": "string", "minLength": 1 },
+        "args": { "type": "array", "items": { "type": "string" } },
+        "url": { "type": "string", "format": "uri" },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
+        "tools": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "resources": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "agent_preset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["subagent", "primary"] },
+        "model": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string", "minLength": 1 },
+        "skills": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "mcp_selections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "server": { "type": "string", "minLength": 1 },
+              "tools": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["server"]
+          }
+        },
+        "plugins": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "content_file": { "type": "string", "minLength": 1 },
+    "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "compat": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "min_version": { "type": "string", "minLength": 1 },
+    "installation": { "type": "string", "minLength": 1 },
+    "license": { "type": "string", "minLength": 1 },
+    "source_attribution": { "type": "string", "minLength": 1 }
+  }
+}

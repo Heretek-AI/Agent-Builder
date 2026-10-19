@@ -1,0 +1,2063 @@
+{
+  "version": "1.0.0",
+  "repository": "https://github.com/Heretek-AI/Agent-Builder",
+  "registry_url": "https://heretek-ai.github.io/Agent-Builder/registry.json",
+  "generated_at": "2026-10-19T06:10:32.673Z",
+  "stats": {
+    "total": 63,
+    "by_kind": {
+      "agent": 4,
+      "design-md": 3,
+      "mcp-server": 8,
+      "plugin": 12,
+      "prompt": 3,
+      "skill": 33
+    },
+    "by_category": {
+      "agents/coding-specialists": 1,
+      "agents/design-frontend": 1,
+      "agents/devops-data": 1,
+      "agents/security-auditors": 1,
+      "design-md/ai-dev-tools": 1,
+      "design-md/fintech-consumer": 1,
+      "design-md/saas-productivity": 1,
+      "mcp-servers/browser-web": 1,
+      "mcp-servers/cloud-devops": 1,
+      "mcp-servers/databases": 1,
+      "mcp-servers/design-ui": 1,
+      "mcp-servers/filesystem-shell": 1,
+      "mcp-servers/git-repos": 1,
+      "mcp-servers/knowledge-productivity": 1,
+      "mcp-servers/security-re": 1,
+      "plugins/claude-code": 3,
+      "plugins/codex": 2,
+      "plugins/cross-harness": 2,
+      "plugins/cursor-windsurf": 1,
+      "plugins/gemini-cli": 1,
+      "plugins/opencode": 3,
+      "prompts/coding-architecture": 1,
+      "prompts/product-design": 1,
+      "prompts/security-research": 1,
+      "skills/coding/c-cpp": 1,
+      "skills/coding/go": 1,
+      "skills/coding/jvm-dotnet": 1,
+      "skills/coding/lua": 1,
+      "skills/coding/python": 2,
+      "skills/coding/rust": 1,
+      "skills/coding/shell-cli": 1,
+      "skills/coding/sql-databases": 1,
+      "skills/coding/typescript-js": 1,
+      "skills/coding/zig-systems": 1,
+      "skills/cybersecurity/cloud-devsecops": 1,
+      "skills/cybersecurity/dfir-threat-intel": 1,
+      "skills/cybersecurity/malware-analysis": 1,
+      "skills/cybersecurity/reverse-engineering": 1,
+      "skills/cybersecurity/security-auditing": 1,
+      "skills/cybersecurity/web-network-pentesting": 1,
+      "skills/data-ai/agent-orchestration": 1,
+      "skills/data-ai/ml-scientific": 1,
+      "skills/data-ai/rag-memory": 1,
+      "skills/design/desktop-cross-platform": 1,
+      "skills/design/desktop-linux": 1,
+      "skills/design/desktop-macos": 1,
+      "skills/design/desktop-windows": 1,
+      "skills/design/mobile-android": 1,
+      "skills/design/mobile-cross-platform": 1,
+      "skills/design/mobile-ios": 1,
+      "skills/design/webui": 1,
+      "skills/devops-cloud/ci-cd-observability": 1,
+      "skills/devops-cloud/containers-k8s": 1,
+      "skills/devops-cloud/iac-terraform": 1,
+      "skills/testing-qa/browser-e2e": 1,
+      "skills/testing-qa/unit-property": 1
+    },
+    "by_harness": {
+      "opencode": 52,
+      "universal": 41,
+      "claude-code": 25,
+      "codex": 7,
+      "cursor": 1,
+      "windsurf": 1,
+      "gemini-cli": 1
+    }
+  },
+  "taxonomy": {
+    "version": "1.0.0",
+    "harnesses": [
+      {
+        "id": "opencode",
+        "name": "OpenCode",
+        "config_files": [
+          "opencode.json",
+          "opencode.jsonc",
+          ".opencode/agent/*.md"
+        ]
+      },
+      {
+        "id": "claude-code",
+        "name": "Claude Code",
+        "config_files": [
+          ".claude.json",
+          ".mcp.json",
+          ".claude/agents/*.md",
+          "CLAUDE.md"
+        ]
+      },
+      {
+        "id": "codex",
+        "name": "Codex CLI",
+        "config_files": [
+          "config.toml",
+          ".agents/skills/*/SKILL.md",
+          "AGENTS.md"
+        ]
+      },
+      {
+        "id": "gemini-cli",
+        "name": "Gemini CLI",
+        "config_files": [
+          ".gemini/settings.json",
+          "GEMINI.md"
+        ]
+      },
+      {
+        "id": "cursor",
+        "name": "Cursor",
+        "config_files": [
+          ".cursor/mcp.json",
+          ".cursor/rules/*.mdc"
+        ]
+      },
+      {
+        "id": "windsurf",
+        "name": "Windsurf",
+        "config_files": [
+          ".windsurf/skills/*",
+          ".windsurfrules"
+        ]
+      },
+      {
+        "id": "copilot",
+        "name": "GitHub Copilot",
+        "config_files": [
+          ".github/copilot-instructions.md"
+        ]
+      },
+      {
+        "id": "universal",
+        "name": "Universal / Multi-Harness",
+        "config_files": [
+          "AGENTS.md",
+          "SKILL.md",
+          "DESIGN.md"
+        ]
+      }
+    ],
+    "categories": [
+      {
+        "id": "plugins",
+        "title": "1. Plugins & Extensions (By Harness)",
+        "description": "Native harness plugins, lifecycle hooks, memory extensions, and statuslines.",
+        "children": [
+          {
+            "id": "plugins/opencode",
+            "title": "OpenCode Plugins",
+            "description": "OpenCode v1 & v2 plugins, custom tools, and session hooks."
+          },
+          {
+            "id": "plugins/claude-code",
+            "title": "Claude Code Plugins",
+            "description": "Claude Code slash-command bundles, hook scripts, and marketplace plugins."
+          },
+          {
+            "id": "plugins/codex",
+            "title": "Codex Plugins & Extensions",
+            "description": "Codex CLI wrappers, sandbox profiles, and orchestration extensions."
+          },
+          {
+            "id": "plugins/gemini-cli",
+            "title": "Gemini CLI Extensions",
+            "description": "Extensions and tool bridges for Gemini CLI."
+          },
+          {
+            "id": "plugins/cursor-windsurf",
+            "title": "Cursor & Windsurf Extensions",
+            "description": "IDE-integrated agent plugins and rule packs."
+          },
+          {
+            "id": "plugins/cross-harness",
+            "title": "Cross-Harness Bridges & Multiplexers",
+            "description": "Multi-agent routers, harness adapters, and cross-provider bridges."
+          }
+        ]
+      },
+      {
+        "id": "skills",
+        "title": "2. Agent Skills (By Subject & Domain)",
+        "description": "Installable SKILL.md playbooks and domain-specific instruction bundles.",
+        "children": [
+          {
+            "id": "skills/coding",
+            "title": "2.1 Coding & Programming Languages",
+            "children": [
+              {
+                "id": "skills/coding/c-cpp",
+                "title": "C & C++",
+                "description": "Modern C++20/23, CMake, embedded C, memory safety, and sanitizer workflows."
+              },
+              {
+                "id": "skills/coding/rust",
+                "title": "Rust",
+                "description": "Cargo workspaces, unsafe auditing, async Tokio, lifetime refactoring, and FFI."
+              },
+              {
+                "id": "skills/coding/lua",
+                "title": "Lua & Neovim / Game Scripting",
+                "description": "LuaJIT, Neovim plugin development, LÖVE2D, and embedded Lua scripting."
+              },
+              {
+                "id": "skills/coding/python",
+                "title": "Python",
+                "description": "Asyncio, Pydantic, packaging (uv/poetry), type-checking, and FastAPI services."
+              },
+              {
+                "id": "skills/coding/typescript-js",
+                "title": "TypeScript & JavaScript",
+                "description": "Node.js, Bun, Deno, strict TypeScript type-level programming, and ESM bundling."
+              },
+              {
+                "id": "skills/coding/go",
+                "title": "Go (Golang)",
+                "description": "Concurrent Go services, gRPC, profiling, and zero-allocation patterns."
+              },
+              {
+                "id": "skills/coding/zig-systems",
+                "title": "Zig & Low-Level Systems",
+                "description": "Zig build system, custom allocators, bare-metal, and OS kernel development."
+              },
+              {
+                "id": "skills/coding/jvm-dotnet",
+                "title": "Java, Kotlin & C# (.NET)",
+                "description": "JVM performance, Spring/Ktor, .NET Core, and enterprise backend patterns."
+              },
+              {
+                "id": "skills/coding/sql-databases",
+                "title": "SQL & Database Engineering",
+                "description": "PostgreSQL, ClickHouse, SQLite, query optimization, and schema migrations."
+              },
+              {
+                "id": "skills/coding/shell-cli",
+                "title": "Shell, Bash & CLI Tooling",
+                "description": "POSIX shell, Zsh, PowerShell, and TUI/CLI ergonomics."
+              }
+            ]
+          },
+          {
+            "id": "skills/design",
+            "title": "2.2 Design, UI/UX & Client Platforms",
+            "children": [
+              {
+                "id": "skills/design/webui",
+                "title": "WebUI & Frontend Frameworks",
+                "description": "React, Next.js, Vue, Svelte, Tailwind CSS, accessibility (WCAG), and motion design."
+              },
+              {
+                "id": "skills/design/desktop-windows",
+                "title": "Desktop Apps — Windows",
+                "description": "WinUI 3, WPF, Win32 COM automation, and Windows installer packaging."
+              },
+              {
+                "id": "skills/design/desktop-macos",
+                "title": "Desktop Apps — macOS",
+                "description": "AppKit, SwiftUI for macOS, AppleScript/JXA automation, and notarization."
+              },
+              {
+                "id": "skills/design/desktop-linux",
+                "title": "Desktop Apps — Linux",
+                "description": "GTK4, Qt/QML, Wayland/X11 compositors, Flatpak, and systemd desktop integration."
+              },
+              {
+                "id": "skills/design/desktop-cross-platform",
+                "title": "Desktop Apps — Cross-Platform",
+                "description": "Tauri, Electron, Flutter Desktop, and Dear ImGui."
+              },
+              {
+                "id": "skills/design/mobile-android",
+                "title": "Mobile — Android",
+                "description": "Jetpack Compose, Kotlin Android SDK, ADB automation, and Gradle build tuning."
+              },
+              {
+                "id": "skills/design/mobile-ios",
+                "title": "Mobile — iOS & iPadOS",
+                "description": "SwiftUI, UIKit, Xcode build pipelines, XCUITest, and TestFlight workflows."
+              },
+              {
+                "id": "skills/design/mobile-cross-platform",
+                "title": "Mobile — Cross-Platform",
+                "description": "React Native, Expo, and Flutter mobile patterns."
+              }
+            ]
+          },
+          {
+            "id": "skills/cybersecurity",
+            "title": "2.3 CyberSecurity & Assurance",
+            "children": [
+              {
+                "id": "skills/cybersecurity/reverse-engineering",
+                "title": "Reverse Engineering",
+                "description": "Ghidra, IDA Pro, Binary Ninja, radare2/rizin, firmware unpacking, and protocol decompilation."
+              },
+              {
+                "id": "skills/cybersecurity/malware-analysis",
+                "title": "Malware Analysis & Triage",
+                "description": "Static/dynamic binary triage, YARA rule authoring, deobfuscation, and sandbox detonation analysis."
+              },
+              {
+                "id": "skills/cybersecurity/security-auditing",
+                "title": "Security Auditing & Code Review",
+                "description": "SAST/DAST triage, threat modeling, smart contract auditing, and differential vulnerability discovery."
+              },
+              {
+                "id": "skills/cybersecurity/web-network-pentesting",
+                "title": "Web, API & Network Pentesting",
+                "description": "Authorized offensive testing, Burp Suite workflows, SSRF/IDOR auditing, and protocol fuzzing."
+              },
+              {
+                "id": "skills/cybersecurity/cloud-devsecops",
+                "title": "Cloud Security, Supply Chain & Hardening",
+                "description": "IAM least-privilege, container hardening, SBOM/cosign verification, and secret scanning."
+              },
+              {
+                "id": "skills/cybersecurity/dfir-threat-intel",
+                "title": "DFIR & Threat Intelligence",
+                "description": "Log forensics, incident response playbooks, OSINT, and detection engineering."
+              }
+            ]
+          },
+          {
+            "id": "skills/devops-cloud",
+            "title": "2.4 DevOps, Cloud & Infrastructure",
+            "children": [
+              {
+                "id": "skills/devops-cloud/containers-k8s",
+                "title": "Docker, Kubernetes & Service Mesh",
+                "description": "Container builds, Helm, Kubernetes operators, and cluster debugging."
+              },
+              {
+                "id": "skills/devops-cloud/iac-terraform",
+                "title": "Terraform, OpenTofu & Cloud IaC",
+                "description": "AWS, GCP, Azure, Cloudflare Workers, and declarative infrastructure modules."
+              },
+              {
+                "id": "skills/devops-cloud/ci-cd-observability",
+                "title": "CI/CD Pipelines & Observability",
+                "description": "GitHub Actions, GitLab CI, OpenTelemetry, Prometheus, and incident runbooks."
+              }
+            ]
+          },
+          {
+            "id": "skills/data-ai",
+            "title": "2.5 AI Engineering, RAG & Data Science",
+            "children": [
+              {
+                "id": "skills/data-ai/agent-orchestration",
+                "title": "Agent Architecture & Orchestration",
+                "description": "Subagent planning, context compaction, evaluation harnesses, and MCP authoring."
+              },
+              {
+                "id": "skills/data-ai/rag-memory",
+                "title": "RAG, Vector Search & Knowledge Graphs",
+                "description": "Hybrid retrieval, chunking, embeddings, and persistent agent memory."
+              },
+              {
+                "id": "skills/data-ai/ml-scientific",
+                "title": "ML Training, Fine-Tuning & Science",
+                "description": "LoRA/TRL fine-tuning, benchmark evaluation, bioinformatics, and geospatial analysis."
+              }
+            ]
+          },
+          {
+            "id": "skills/testing-qa",
+            "title": "2.6 Testing, QA & Verification",
+            "children": [
+              {
+                "id": "skills/testing-qa/browser-e2e",
+                "title": "Browser & E2E Automation",
+                "description": "Playwright, Cypress, Selenium, and visual regression verification."
+              },
+              {
+                "id": "skills/testing-qa/unit-property",
+                "title": "Unit, Integration & Property Testing",
+                "description": "Test generation, mutation testing, fuzzing, and deterministic fixtures."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mcp-servers",
+        "title": "3. MCP Tools & Servers",
+        "description": "Model Context Protocol servers with introspected tool names for fine-grained per-agent scoping.",
+        "children": [
+          {
+            "id": "mcp-servers/filesystem-shell",
+            "title": "Filesystem, Terminal & OS Automation",
+            "description": "Local file operations, sandboxed command execution, and desktop automation."
+          },
+          {
+            "id": "mcp-servers/git-repos",
+            "title": "Git, GitHub & Code Intelligence",
+            "description": "Repository management, PR workflows, AST search, and LSP bridges."
+          },
+          {
+            "id": "mcp-servers/databases",
+            "title": "Databases & Data Warehouses",
+            "description": "PostgreSQL, SQLite, ClickHouse, Supabase, Neon, and Redis MCP connectors."
+          },
+          {
+            "id": "mcp-servers/browser-web",
+            "title": "Browser Automation, Search & Scraping",
+            "description": "Playwright, Chrome CDP, Firecrawl, Crawlbase, and SerpApi MCP servers."
+          },
+          {
+            "id": "mcp-servers/security-re",
+            "title": "Security, Reverse Engineering & Analysis",
+            "description": "Ghidra MCP, binary analysis, vulnerability scanners, and log auditing servers."
+          },
+          {
+            "id": "mcp-servers/design-ui",
+            "title": "Design, Figma & UI Tooling",
+            "description": "Figma, Stitch, Storybook, and screenshot diffing MCP servers."
+          },
+          {
+            "id": "mcp-servers/cloud-devops",
+            "title": "Cloud, Containers & Observability",
+            "description": "Cloudflare, Kubernetes, Docker, Sentry, and Datadog MCP servers."
+          },
+          {
+            "id": "mcp-servers/knowledge-productivity",
+            "title": "Knowledge Bases, Docs & Comms",
+            "description": "Obsidian, Notion, NotebookLM, Slack, and Google Workspace MCP servers."
+          }
+        ]
+      },
+      {
+        "id": "design-md",
+        "title": "4. DESIGN.md Systems",
+        "description": "Drop-in DESIGN.md brand and UI system specs (inspired by Google Stitch & VoltAgent/awesome-design-md).",
+        "children": [
+          {
+            "id": "design-md/ai-dev-tools",
+            "title": "AI Platforms & Developer Tools",
+            "description": "Terminal-first, dark-mode, and high-contrast engineering design systems."
+          },
+          {
+            "id": "design-md/saas-productivity",
+            "title": "SaaS, Dashboards & Productivity",
+            "description": "Clean editorial workspaces, data-dense analytics, and collaborative UI systems."
+          },
+          {
+            "id": "design-md/fintech-consumer",
+            "title": "Fintech, Media & Consumer Brands",
+            "description": "High-trust financial interfaces, editorial media, and consumer web aesthetics."
+          }
+        ]
+      },
+      {
+        "id": "prompts",
+        "title": "5. System Prompts & Personas",
+        "description": "Curated system prompts, meta-prompts, and reasoning workflows.",
+        "children": [
+          {
+            "id": "prompts/coding-architecture",
+            "title": "Software Architecture & Code Review Prompts",
+            "description": "System prompts for refactoring, architecture critique, and spec authoring."
+          },
+          {
+            "id": "prompts/security-research",
+            "title": "Security & Adversarial Audit Prompts",
+            "description": "Red-team, threat-modeling, and multi-subagent code audit prompts."
+          },
+          {
+            "id": "prompts/product-design",
+            "title": "Product, UI/UX & Technical Writing Prompts",
+            "description": "Design critique, documentation, and specification interview prompts."
+          }
+        ]
+      },
+      {
+        "id": "agents",
+        "title": "6. Complete Agent Presets & Multi-Agent Teams",
+        "description": "Ready-to-run scoped agent configurations combining a prompt, allowed skills, and scoped MCP tools.",
+        "children": [
+          {
+            "id": "agents/coding-specialists",
+            "title": "Language & Stack Specialist Agents",
+            "description": "Pre-scoped Rust, C++, Python, and Full-Stack subagents."
+          },
+          {
+            "id": "agents/security-auditors",
+            "title": "Security, RE & Malware Triage Agents",
+            "description": "Least-privilege security auditing and reverse-engineering agents."
+          },
+          {
+            "id": "agents/design-frontend",
+            "title": "UI/UX & Cross-Platform Design Agents",
+            "description": "Frontend, desktop, and mobile UI builder agents paired with DESIGN.md specs."
+          },
+          {
+            "id": "agents/devops-data",
+            "title": "DevOps, Database & Research Agents",
+            "description": "Read-only database auditors, SRE responders, and deep-research teams."
+          }
+        ]
+      }
+    ]
+  },
+  "entries": [
+    {
+      "id": "fullstack-polyglot-agent",
+      "name": "Full-Stack Polyglot Agent",
+      "repo": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+      "tagline": "Pre-scoped Python/TS/Go coding specialist with GitHub MCP.",
+      "description": "Ready-to-run coding specialist agent combining Python, TypeScript, and Go skills with scoped GitHub MCP tools for full-stack feature work.",
+      "kind": "agent",
+      "category": "agents/coding-specialists",
+      "harnesses": [
+        "opencode"
+      ],
+      "agent_preset": {
+        "mode": "subagent",
+        "model": "anthropic/claude-sonnet-4-5",
+        "prompt": "Implement full-stack features across Python, TypeScript, and Go services with tested, reviewed changes.",
+        "skills": [
+          "python-fastapi-service",
+          "typescript-strict-patterns",
+          "go-concurrent-services"
+        ],
+        "mcp_selections": [
+          {
+            "server": "github",
+            "tools": [
+              "get_pull_request",
+              "search_repositories"
+            ]
+          }
+        ]
+      },
+      "tags": [
+        "fullstack",
+        "coding"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by Shubhamsaboo/awesome-llm-apps (Apache-2.0)."
+    },
+    {
+      "id": "frontend-design-agent",
+      "name": "Frontend Design Agent",
+      "repo": "https://github.com/VoltAgent/awesome-design-md",
+      "tagline": "UI builder agent pairing WebUI skills with Figma MCP.",
+      "description": "Ready-to-run design agent combining WebUI frontend skills and SaaS dashboard DESIGN.md specs with scoped Figma MCP tools.",
+      "kind": "agent",
+      "category": "agents/design-frontend",
+      "harnesses": [
+        "opencode"
+      ],
+      "agent_preset": {
+        "mode": "subagent",
+        "model": "anthropic/claude-sonnet-4-5",
+        "prompt": "Build accessible, responsive UI from the DESIGN.md spec, verifying against Figma context.",
+        "skills": [
+          "webui-frontend-patterns",
+          "playwright-e2e-patterns"
+        ],
+        "mcp_selections": [
+          {
+            "server": "figma",
+            "tools": [
+              "get_design_context",
+              "get_screenshot"
+            ]
+          }
+        ]
+      },
+      "tags": [
+        "frontend",
+        "design"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by VoltAgent/awesome-design-md (MIT)."
+    },
+    {
+      "id": "sre-database-agent",
+      "name": "SRE Database Responder Agent",
+      "repo": "https://github.com/open-telemetry/opentelemetry-collector",
+      "tagline": "Read-only K8s and Postgres responder with SQL audit skills.",
+      "description": "Ready-to-run DevOps/data agent combining CI observability runbooks and SQL audit skills with read-only Kubernetes and Postgres MCP tools.",
+      "kind": "agent",
+      "category": "agents/devops-data",
+      "harnesses": [
+        "opencode"
+      ],
+      "agent_preset": {
+        "mode": "subagent",
+        "model": "anthropic/claude-sonnet-4-5",
+        "prompt": "Respond to database and cluster incidents using read-only inspection; never mutate state.",
+        "skills": [
+          "sql-query-optimization",
+          "ci-observability-runbooks"
+        ],
+        "mcp_selections": [
+          {
+            "server": "k8s",
+            "tools": [
+              "list_pods",
+              "get_logs"
+            ]
+          },
+          {
+            "server": "postgres-prod",
+            "tools": [
+              "query",
+              "list-tables"
+            ]
+          }
+        ]
+      },
+      "tags": [
+        "sre",
+        "database",
+        "read-only"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by open-telemetry/opentelemetry-collector (Apache-2.0)."
+    },
+    {
+      "id": "db-security-auditor",
+      "name": "DB Security Auditor Agent",
+      "repo": "https://github.com/example/db-security-auditor",
+      "tagline": "Least-privilege database security auditor agent.",
+      "description": "A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool selection for injection and privilege-escalation review.",
+      "kind": "agent",
+      "category": "agents/security-auditors",
+      "harnesses": [
+        "opencode"
+      ],
+      "agent_preset": {
+        "mode": "subagent",
+        "model": "anthropic/claude-sonnet-4-5",
+        "prompt": "Audit SQL queries and schema migrations for injection and privilege escalation.",
+        "skills": [
+          "rust-secure-coding",
+          "secure-code-audit"
+        ],
+        "mcp_selections": [
+          {
+            "server": "postgres-prod",
+            "tools": [
+              "query",
+              "list-tables"
+            ]
+          }
+        ]
+      },
+      "tags": [
+        "security",
+        "postgres"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "terminal-dev-design",
+      "name": "Terminal Dev Design System",
+      "repo": "https://github.com/example/terminal-dev-design",
+      "tagline": "Terminal-first dark-mode DESIGN.md for dev tools.",
+      "description": "A drop-in DESIGN.md brand system for AI developer tools with terminal-first dark-mode palettes, high-contrast type, and dense engineering layouts.",
+      "kind": "design-md",
+      "category": "design-md/ai-dev-tools",
+      "harnesses": [
+        "universal"
+      ],
+      "tags": [
+        "dark-mode",
+        "design-system"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "fintech-editorial-design",
+      "name": "Fintech Editorial DESIGN.md",
+      "repo": "https://github.com/VoltAgent/awesome-design-md",
+      "path": "design-md/fintech",
+      "tagline": "High-trust financial interfaces and editorial media specs.",
+      "description": "DESIGN.md brand system for fintech and consumer brands: high-trust financial UI, editorial media layouts, and consumer web aesthetics from VoltAgent/awesome-design-md (MIT).",
+      "kind": "design-md",
+      "category": "design-md/fintech-consumer",
+      "harnesses": [
+        "universal"
+      ],
+      "tags": [
+        "fintech",
+        "editorial",
+        "design-system"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; upstream VoltAgent/awesome-design-md (MIT)."
+    },
+    {
+      "id": "saas-dashboard-design",
+      "name": "SaaS Dashboard DESIGN.md",
+      "repo": "https://github.com/VoltAgent/awesome-design-md",
+      "tagline": "Clean editorial dashboards and analytics workspace specs.",
+      "description": "DESIGN.md brand system for SaaS dashboards: data-dense analytics layouts, editorial workspaces, and collaborative UI tokens from VoltAgent/awesome-design-md (MIT).",
+      "kind": "design-md",
+      "category": "design-md/saas-productivity",
+      "harnesses": [
+        "universal"
+      ],
+      "tags": [
+        "saas",
+        "dashboard",
+        "design-system"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; upstream VoltAgent/awesome-design-md (MIT)."
+    },
+    {
+      "id": "firecrawl-scrape-mcp",
+      "name": "Firecrawl Scrape MCP Server",
+      "repo": "https://github.com/mendableai/firecrawl-mcp-server",
+      "tagline": "Search, scrape, and crawl the web from agents via MCP.",
+      "description": "Firecrawl MCP server: web search, page scraping, and site crawling tools for research and browser-automation agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/browser-web",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "firecrawl",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "firecrawl-mcp"
+        ],
+        "tools": [
+          "firecrawl_scrape",
+          "firecrawl_search",
+          "firecrawl_crawl"
+        ]
+      },
+      "tags": [
+        "scraping",
+        "search",
+        "browser"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by mendableai/firecrawl-mcp-server (MIT)."
+    },
+    {
+      "id": "k8s-observe-mcp",
+      "name": "Kubernetes Observability MCP Server",
+      "repo": "https://github.com/Flux159/mcp-server-kubernetes",
+      "tagline": "Cluster inspection: pods, deployments, and logs over MCP.",
+      "description": "Kubernetes MCP server: pod/deployment listing and log retrieval tools for SRE responder agents with read-only cluster scope.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/cloud-devops",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "k8s",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "mcp-server-kubernetes"
+        ],
+        "tools": [
+          "list_pods",
+          "list_deployments",
+          "get_logs"
+        ]
+      },
+      "tags": [
+        "kubernetes",
+        "observability"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by Flux159/mcp-server-kubernetes (MIT)."
+    },
+    {
+      "id": "postgres-mcp-connector",
+      "name": "Postgres MCP Connector",
+      "repo": "https://github.com/example/postgres-mcp-connector",
+      "tagline": "Read-only Postgres MCP server with audited tools.",
+      "description": "An MCP server connector for PostgreSQL exposing query, list-tables, and schema inspection tools for least-privilege database agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/databases",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "postgres-prod",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@example/postgres-mcp"
+        ],
+        "tools": [
+          "query",
+          "list-tables",
+          "describe-table"
+        ],
+        "resources": [
+          "schema"
+        ]
+      },
+      "tags": [
+        "postgres",
+        "sql"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "figma-design-mcp",
+      "name": "Figma Design MCP Server",
+      "repo": "https://github.com/Framelink/figma-mcp-server",
+      "tagline": "Design context, components, and screenshots from Figma.",
+      "description": "Figma MCP server: design-context extraction, component listing, and screenshot tooling pairing UI builder agents with live specs.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/design-ui",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "figma",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "figma-mcp-server"
+        ],
+        "tools": [
+          "get_design_context",
+          "get_screenshot",
+          "list_components"
+        ]
+      },
+      "tags": [
+        "figma",
+        "design"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by Framelink/figma-mcp-server (MIT)."
+    },
+    {
+      "id": "filesystem-shell-mcp",
+      "name": "Filesystem & Shell MCP Server",
+      "repo": "https://github.com/modelcontextprotocol/servers",
+      "path": "src/filesystem",
+      "tagline": "Sandboxed file operations and command execution over MCP.",
+      "description": "Official MCP filesystem server: sandboxed file read/write, directory listing, and controlled command execution for OS automation agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/filesystem-shell",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex"
+      ],
+      "mcp": {
+        "server_name": "filesystem",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/tmp"
+        ],
+        "tools": [
+          "read_file",
+          "write_file",
+          "list_directory",
+          "execute_command"
+        ]
+      },
+      "tags": [
+        "filesystem",
+        "shell"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by modelcontextprotocol/servers (MIT)."
+    },
+    {
+      "id": "github-code-intel-mcp",
+      "name": "GitHub Code Intelligence MCP Server",
+      "repo": "https://github.com/modelcontextprotocol/servers",
+      "path": "src/github",
+      "tagline": "Repo, PR, and issue workflows over MCP with real tool names.",
+      "description": "Official MCP GitHub server: repository management, PR review workflows, issue triage, and commit search for code-intelligence agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/git-repos",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "github",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-github"
+        ],
+        "tools": [
+          "get_pull_request",
+          "create_issue",
+          "search_repositories",
+          "list_commits"
+        ]
+      },
+      "tags": [
+        "github",
+        "git",
+        "pr"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by modelcontextprotocol/servers (MIT)."
+    },
+    {
+      "id": "notion-knowledge-mcp",
+      "name": "Notion Knowledge MCP Server",
+      "repo": "https://github.com/makersu/notion-mcp-server",
+      "tagline": "Docs and knowledge-base search over MCP.",
+      "description": "Notion MCP server: page search, page retrieval, and page creation tools for knowledge-base and productivity agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/knowledge-productivity",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "notion",
+        "transport": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@notionhq/notion-mcp-server"
+        ],
+        "tools": [
+          "search_pages",
+          "get_page",
+          "create_page"
+        ]
+      },
+      "tags": [
+        "notion",
+        "knowledge"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by makersu/notion-mcp-server (MIT)."
+    },
+    {
+      "id": "ghidra-re-mcp",
+      "name": "Ghidra RE MCP Server",
+      "repo": "https://github.com/LaurieWired/GhidraMCP",
+      "tagline": "Binary analysis via Ghidra: functions, strings, decompilation.",
+      "description": "GhidraMCP bridge: function listing, string extraction, and decompilation tools exposing reverse-engineering capability to agents.",
+      "kind": "mcp-server",
+      "category": "mcp-servers/security-re",
+      "harnesses": [
+        "opencode",
+        "claude-code"
+      ],
+      "mcp": {
+        "server_name": "ghidra",
+        "transport": "stdio",
+        "command": "python3",
+        "args": [
+          "-m",
+          "ghidramcp"
+        ],
+        "tools": [
+          "list_functions",
+          "decompile_function",
+          "list_strings"
+        ]
+      },
+      "tags": [
+        "ghidra",
+        "reverse-engineering"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by LaurieWired/GhidraMCP (MIT)."
+    },
+    {
+      "id": "claude-code-resources",
+      "name": "Awesome Claude Code Resources",
+      "repo": "https://github.com/hesreallyhim/awesome-claude-code",
+      "tagline": "Community catalog of Claude Code commands, agents, and hooks.",
+      "description": "The hesreallyhim/awesome-claude-code community catalog (CC0-1.0/MIT per resource) of slash-command bundles, subagent definitions, hook scripts, and marketplace plugins.",
+      "kind": "plugin",
+      "category": "plugins/claude-code",
+      "harnesses": [
+        "claude-code"
+      ],
+      "tags": [
+        "awesome-list",
+        "upstream"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated for Agent-Builder; upstream hesreallyhim/awesome-claude-code (CC0-1.0/MIT)."
+    },
+    {
+      "id": "claude-code-runtime",
+      "name": "Claude Code Runtime",
+      "repo": "https://github.com/anthropics/claude-code",
+      "tagline": "Official Claude Code CLI: slash commands, hooks, and MCP support.",
+      "description": "The official anthropics/claude-code runtime covering slash-command bundles, hook scripts, marketplace plugins, and .mcp.json server wiring for Claude Code agents.",
+      "kind": "plugin",
+      "category": "plugins/claude-code",
+      "harnesses": [
+        "claude-code"
+      ],
+      "tags": [
+        "runtime",
+        "slash-commands",
+        "hooks"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by anthropics/claude-code."
+    },
+    {
+      "id": "claude-slash-bundle",
+      "name": "Claude Code Slash Bundle",
+      "repo": "https://github.com/example/claude-slash-bundle",
+      "tagline": "Slash-command bundle and hook scripts for Claude Code.",
+      "description": "A Claude Code marketplace plugin bundling slash commands, hook scripts, and agent instructions for code review workflows.",
+      "kind": "plugin",
+      "category": "plugins/claude-code",
+      "harnesses": [
+        "claude-code"
+      ],
+      "tags": [
+        "slash-commands",
+        "hooks"
+      ],
+      "installation": "Install via Claude Code marketplace.",
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "codex-cli-runtime",
+      "name": "Codex CLI Runtime",
+      "repo": "https://github.com/openai/codex",
+      "tagline": "Official Codex CLI: sandbox profiles and skill wiring.",
+      "description": "The official openai/codex CLI runtime covering config.toml sandbox profiles, AGENTS.md skill wiring, and orchestration extensions for Codex agents.",
+      "kind": "plugin",
+      "category": "plugins/codex",
+      "harnesses": [
+        "codex"
+      ],
+      "tags": [
+        "runtime",
+        "sandbox"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by openai/codex."
+    },
+    {
+      "id": "codex-orchestrator-ext",
+      "name": "Codex Orchestrator Extension",
+      "repo": "https://github.com/openai/codex",
+      "path": "docs/config.md",
+      "tagline": "Multi-step orchestration profiles for Codex CLI sessions.",
+      "description": "Orchestration-oriented Codex CLI configuration patterns (approval policies, sandbox workspaces, mcp_servers blocks) for running scoped multi-step coding sessions.",
+      "kind": "plugin",
+      "category": "plugins/codex",
+      "harnesses": [
+        "codex"
+      ],
+      "tags": [
+        "orchestration",
+        "config"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by openai/codex docs."
+    },
+    {
+      "id": "harness-adapter-kit",
+      "name": "Harness Adapter Kit",
+      "repo": "https://github.com/sst/opencode",
+      "path": "packages/opencode/src/plugin",
+      "tagline": "Adapter patterns for running one agent across harnesses.",
+      "description": "Adapter patterns derived from the sst/opencode plugin surface for running a single agent recipe across OpenCode, Claude Code, and Codex via shared SKILL.md and MCP contracts.",
+      "kind": "plugin",
+      "category": "plugins/cross-harness",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "universal"
+      ],
+      "tags": [
+        "adapter",
+        "multi-harness"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by sst/opencode plugin docs (MIT)."
+    },
+    {
+      "id": "litellm-router-bridge",
+      "name": "LiteLLM Router Bridge",
+      "repo": "https://github.com/BerriAI/litellm",
+      "tagline": "Multi-provider LLM router bridging harnesses to 100+ models.",
+      "description": "BerriAI/litellm (Apache-2.0) as a cross-harness bridge: one OpenAI-compatible gateway routing agent harnesses to 100+ providers with fallbacks and spend tracking.",
+      "kind": "plugin",
+      "category": "plugins/cross-harness",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "universal"
+      ],
+      "tags": [
+        "router",
+        "gateway",
+        "multi-provider"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by BerriAI/litellm (Apache-2.0)."
+    },
+    {
+      "id": "cursor-rules-pack",
+      "name": "Cursor Rules Pack",
+      "repo": "https://github.com/PatrickJS/awesome-cursorrules",
+      "tagline": "Community rule packs and IDE agent plugins for Cursor.",
+      "description": "Community-curated .cursor/rules rule packs and IDE-integrated agent plugins from PatrickJS/awesome-cursorrules for Cursor and Windsurf editors.",
+      "kind": "plugin",
+      "category": "plugins/cursor-windsurf",
+      "harnesses": [
+        "cursor",
+        "windsurf"
+      ],
+      "tags": [
+        "rules",
+        "ide"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by PatrickJS/awesome-cursorrules."
+    },
+    {
+      "id": "gemini-cli-bridge",
+      "name": "Gemini CLI Extension Bridge",
+      "repo": "https://github.com/google-gemini/gemini-cli",
+      "tagline": "Extensions and tool bridges for Gemini CLI agents.",
+      "description": "Extension and tool-bridge patterns for google-gemini/gemini-cli: GEMINI.md context files, settings.json tool wiring, and MCP server attachments.",
+      "kind": "plugin",
+      "category": "plugins/gemini-cli",
+      "harnesses": [
+        "gemini-cli"
+      ],
+      "tags": [
+        "extensions",
+        "mcp"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by google-gemini/gemini-cli."
+    },
+    {
+      "id": "opencode-awesome-catalog",
+      "name": "Awesome OpenCode Catalog",
+      "repo": "https://github.com/Heretek-AI/awesome-opencode",
+      "tagline": "Upstream awesome list of OpenCode plugins, agents, and configs.",
+      "description": "The upstream Heretek-AI/awesome-opencode catalog (CC0-1.0) of OpenCode plugins, custom tools, session hooks, and agent presets from which this registry was ported.",
+      "kind": "plugin",
+      "category": "plugins/opencode",
+      "harnesses": [
+        "opencode"
+      ],
+      "tags": [
+        "awesome-list",
+        "upstream"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated for Agent-Builder; upstream Heretek-AI/awesome-opencode (CC0-1.0)."
+    },
+    {
+      "id": "opencode-native-toolchain",
+      "name": "OpenCode Native Toolchain",
+      "repo": "https://github.com/sst/opencode",
+      "tagline": "Official OpenCode runtime: custom tools, hooks, and plugin API.",
+      "description": "The official sst/opencode runtime documenting the plugin API, custom tool definitions, session lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.",
+      "kind": "plugin",
+      "category": "plugins/opencode",
+      "harnesses": [
+        "opencode"
+      ],
+      "tags": [
+        "runtime",
+        "hooks",
+        "tools"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by sst/opencode (MIT)."
+    },
+    {
+      "id": "opencode-session-hooks",
+      "name": "OpenCode Session Hooks Plugin",
+      "repo": "https://github.com/example/opencode-session-hooks",
+      "tagline": "Session lifecycle hooks and custom tools for OpenCode.",
+      "description": "An OpenCode plugin providing session start/finish hooks, custom tool registration, and statusline integration for OpenCode v1 and v2.",
+      "kind": "plugin",
+      "category": "plugins/opencode",
+      "harnesses": [
+        "opencode"
+      ],
+      "tags": [
+        "hooks",
+        "statusline"
+      ],
+      "compat": "opencode>=1.0.0",
+      "scope": "workspace",
+      "installation": "opencode plugin install opencode-session-hooks",
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "architecture-review-prompt",
+      "name": "Architecture Review Prompt",
+      "repo": "https://github.com/f/prompts.chat",
+      "tagline": "Refactoring, architecture critique, and spec authoring prompts.",
+      "description": "System prompt for software architecture review: refactoring plans, architecture critique, and specification authoring workflows (prompts data CC0-1.0).",
+      "kind": "prompt",
+      "category": "prompts/coding-architecture",
+      "harnesses": [
+        "universal",
+        "opencode",
+        "claude-code"
+      ],
+      "tags": [
+        "architecture",
+        "review",
+        "spec"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by f/prompts.chat prompts data (CC0-1.0)."
+    },
+    {
+      "id": "design-critique-prompt",
+      "name": "Design Critique Prompt",
+      "repo": "https://github.com/f/prompts.chat",
+      "path": "prompts/design",
+      "tagline": "Design critique, documentation, and spec-interview prompts.",
+      "description": "System prompt for product and UI critique: design review checklists, documentation drafting, and specification interview flows (prompts data CC0-1.0).",
+      "kind": "prompt",
+      "category": "prompts/product-design",
+      "harnesses": [
+        "universal"
+      ],
+      "tags": [
+        "design",
+        "critique",
+        "docs"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by f/prompts.chat prompts data (CC0-1.0)."
+    },
+    {
+      "id": "adversarial-audit-prompt",
+      "name": "Adversarial Audit Prompt",
+      "repo": "https://github.com/example/adversarial-audit-prompt",
+      "tagline": "Red-team multi-subagent code audit prompt.",
+      "description": "A system prompt for adversarial security audits with red-team instructions, threat-modeling steps, and multi-subagent review orchestration.",
+      "kind": "prompt",
+      "category": "prompts/security-research",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "tags": [
+        "red-team",
+        "audit"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0)."
+    },
+    {
+      "id": "modern-cpp-playbook",
+      "name": "Modern C++ Playbook",
+      "repo": "https://github.com/example/modern-cpp-playbook",
+      "tagline": "Modern C++20/23, CMake, and sanitizer workflows.",
+      "description": "A SKILL.md playbook covering modern C++20/23 idioms, CMake project layout, sanitizer runs, and memory-safety review checklists.",
+      "kind": "skill",
+      "category": "skills/coding/c-cpp",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "cpp",
+        "c"
+      ],
+      "tags": [
+        "cmake",
+        "sanitizers"
+      ],
+      "license": "CC0-1.0",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0)."
+    },
+    {
+      "id": "go-concurrent-services",
+      "name": "Go Concurrent Services Skill",
+      "repo": "https://github.com/golang/go",
+      "tagline": "Concurrent Go services, gRPC, profiling, and zero-alloc patterns.",
+      "description": "Skill bundle for Go: goroutine pipelines, gRPC service design, pprof profiling, and zero-allocation hot-path patterns.",
+      "kind": "skill",
+      "category": "skills/coding/go",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "go"
+      ],
+      "tags": [
+        "grpc",
+        "profiling",
+        "concurrency"
+      ],
+      "license": "BSD-3-Clause",
+      "source_attribution": "Curated for Agent-Builder; inspired by golang/go (BSD-3-Clause)."
+    },
+    {
+      "id": "jvm-spring-patterns",
+      "name": "JVM Spring Patterns Skill",
+      "repo": "https://github.com/spring-projects/spring-boot",
+      "tagline": "Spring Boot services, JVM tuning, and enterprise backend patterns.",
+      "description": "Skill bundle for JVM backends: Spring Boot service layering, GC/JVM performance tuning, and enterprise integration patterns.",
+      "kind": "skill",
+      "category": "skills/coding/jvm-dotnet",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "java",
+        "kotlin"
+      ],
+      "tags": [
+        "spring",
+        "jvm",
+        "backend"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by spring-projects/spring-boot (Apache-2.0)."
+    },
+    {
+      "id": "lua-neovim-scripting",
+      "name": "Lua and Neovim Scripting Skill",
+      "repo": "https://github.com/example/lua-neovim-scripting",
+      "tagline": "LuaJIT, Neovim plugins, and embedded Lua scripting.",
+      "description": "A skill covering LuaJIT idioms, Neovim plugin development with Lua, LOVE2D game scripting, and embedded Lua integration patterns.",
+      "kind": "skill",
+      "category": "skills/coding/lua",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "lua"
+      ],
+      "tags": [
+        "neovim",
+        "luajit"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "python-fastapi-service",
+      "name": "Python FastAPI Service Skill",
+      "repo": "https://github.com/tiangolo/fastapi",
+      "tagline": "Asyncio, Pydantic v2, and FastAPI service patterns.",
+      "description": "Skill bundle for Python services: asyncio structuring, Pydantic v2 validation, FastAPI dependency injection, and uv-based packaging with type-checking.",
+      "kind": "skill",
+      "category": "skills/coding/python",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "universal"
+      ],
+      "languages": [
+        "python"
+      ],
+      "tags": [
+        "fastapi",
+        "pydantic",
+        "asyncio"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by tiangolo/fastapi (MIT) and sickn33/agentic-awesome-skills (MIT)."
+    },
+    {
+      "id": "python-packaging-uv",
+      "name": "Python Packaging with uv Skill",
+      "repo": "https://github.com/astral-sh/uv",
+      "tagline": "Modern Python packaging, workspaces, and type-checking with uv.",
+      "description": "Skill bundle for modern Python packaging with astral-sh/uv: workspaces, lockfiles, ruff linting, and mypy/pyright type-checking workflows.",
+      "kind": "skill",
+      "category": "skills/coding/python",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "python"
+      ],
+      "tags": [
+        "uv",
+        "packaging",
+        "ruff"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by astral-sh/uv (MIT)."
+    },
+    {
+      "id": "rust-secure-coding",
+      "name": "Rust Secure Coding Skill",
+      "repo": "https://github.com/example/rust-secure-coding",
+      "tagline": "Cargo workspaces, unsafe auditing, and Tokio patterns.",
+      "description": "A skill bundle for Rust development covering Cargo workspaces, unsafe block auditing, async Tokio patterns, lifetime refactoring, and FFI boundaries.",
+      "kind": "skill",
+      "category": "skills/coding/rust",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "rust"
+      ],
+      "tags": [
+        "cargo",
+        "unsafe-audit",
+        "tokio"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "shell-cli-ergonomics",
+      "name": "Shell & CLI Ergonomics Skill",
+      "repo": "https://github.com/mvdan/sh",
+      "tagline": "POSIX shell, formatting, and TUI/CLI design patterns.",
+      "description": "Skill bundle for shell and CLI tooling: POSIX-safe scripting, shfmt formatting, flag parsing conventions, and TUI ergonomics.",
+      "kind": "skill",
+      "category": "skills/coding/shell-cli",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "shell",
+        "bash"
+      ],
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "tags": [
+        "posix",
+        "tui",
+        "scripting"
+      ],
+      "license": "BSD-3-Clause",
+      "source_attribution": "Curated for Agent-Builder; inspired by mvdan/sh (BSD-3-Clause)."
+    },
+    {
+      "id": "sql-query-optimization",
+      "name": "SQL Query Optimization Skill",
+      "repo": "https://github.com/postgres/postgres",
+      "tagline": "PostgreSQL tuning, EXPLAIN plans, and schema migrations.",
+      "description": "Skill bundle for SQL engineering: PostgreSQL EXPLAIN analysis, index design, query optimization, and zero-downtime schema migrations.",
+      "kind": "skill",
+      "category": "skills/coding/sql-databases",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "sql"
+      ],
+      "tags": [
+        "postgres",
+        "indexing",
+        "migrations"
+      ],
+      "license": "PostgreSQL",
+      "source_attribution": "Curated for Agent-Builder; inspired by postgres/postgres (PostgreSQL license)."
+    },
+    {
+      "id": "typescript-strict-patterns",
+      "name": "Strict TypeScript Patterns Skill",
+      "repo": "https://github.com/microsoft/TypeScript",
+      "tagline": "Strict type-level TypeScript, ESM bundling, and Bun/Node APIs.",
+      "description": "Skill bundle for TypeScript: strict-mode type-level programming, ESM module design, bundling, and Bun/Node/Deno runtime patterns.",
+      "kind": "skill",
+      "category": "skills/coding/typescript-js",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "typescript",
+        "javascript"
+      ],
+      "tags": [
+        "typescript",
+        "esm",
+        "bun"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by microsoft/TypeScript (Apache-2.0)."
+    },
+    {
+      "id": "zig-systems-playbook",
+      "name": "Zig Systems Playbook Skill",
+      "repo": "https://github.com/ziglang/zig",
+      "tagline": "Zig build system, custom allocators, and bare-metal patterns.",
+      "description": "Skill bundle for Zig and low-level systems: build.zig structuring, custom allocators, comptime generics, and bare-metal/OS kernel workflows.",
+      "kind": "skill",
+      "category": "skills/coding/zig-systems",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "zig"
+      ],
+      "tags": [
+        "allocators",
+        "bare-metal",
+        "kernel"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by ziglang/zig (MIT)."
+    },
+    {
+      "id": "cloud-supply-chain-hardening",
+      "name": "Cloud & Supply-Chain Hardening Skill",
+      "repo": "https://github.com/sigstore/cosign",
+      "tagline": "IAM least-privilege, cosign verification, and secret scanning.",
+      "description": "Skill bundle for cloud security: IAM least-privilege reviews, container hardening, SBOM/cosign signature verification, and secret scanning.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/cloud-devsecops",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "cosign",
+        "sbom",
+        "iam"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by sigstore/cosign (Apache-2.0)."
+    },
+    {
+      "id": "dfir-incident-playbooks",
+      "name": "DFIR & Incident Playbooks Skill",
+      "repo": "https://github.com/Velocidex/velociraptor",
+      "tagline": "Log forensics, IR playbooks, and detection engineering.",
+      "description": "Skill bundle for DFIR: Velociraptor artifact collection, log forensics timelines, incident response playbooks, and Sigma detection engineering.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/dfir-threat-intel",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "forensics",
+        "incident-response",
+        "detection"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by Velocidex/velociraptor (Apache-2.0)."
+    },
+    {
+      "id": "malware-triage-playbook",
+      "name": "Malware Triage Playbook",
+      "repo": "https://github.com/example/malware-triage-playbook",
+      "tagline": "Static/dynamic triage, YARA, and sandbox detonation.",
+      "description": "A malware-analysis skill covering static and dynamic binary triage, YARA rule authoring, deobfuscation steps, and sandbox detonation analysis notes.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/malware-analysis",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "yara",
+        "sandbox"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "ghidra-re-workflows",
+      "name": "Ghidra RE Workflows",
+      "repo": "https://github.com/example/ghidra-re-workflows",
+      "tagline": "Ghidra, rizin, and firmware unpacking workflows.",
+      "description": "A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and protocol decompilation checklists for authorized analysis.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/reverse-engineering",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "tags": [
+        "ghidra",
+        "firmware"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "secure-code-audit",
+      "name": "Secure Code Audit Skill",
+      "repo": "https://github.com/example/secure-code-audit",
+      "tagline": "SAST/DAST triage, threat modeling, and audit checklists.",
+      "description": "A security-auditing skill with SAST and DAST triage workflows, threat-modeling templates, and differential vulnerability discovery checklists.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/security-auditing",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "tags": [
+        "sast",
+        "threat-model"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "web-api-pentesting",
+      "name": "Web & API Pentesting Skill",
+      "repo": "https://github.com/OWASP/wstg",
+      "tagline": "Authorized web/API testing: SSRF, IDOR, and Burp workflows.",
+      "description": "Skill bundle for authorized offensive testing: OWASP WSTG methodology, Burp Suite workflows, SSRF/IDOR auditing, and protocol fuzzing.",
+      "kind": "skill",
+      "category": "skills/cybersecurity/web-network-pentesting",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "owasp",
+        "burp",
+        "pentest"
+      ],
+      "license": "CC-BY-SA-4.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by OWASP/wstg (CC-BY-SA-4.0). Defensive use only."
+    },
+    {
+      "id": "agent-orchestration-patterns",
+      "name": "Agent Orchestration Patterns Skill",
+      "repo": "https://github.com/VoltAgent/awesome-agent-skills",
+      "tagline": "Subagent planning, compaction, evals, and MCP authoring.",
+      "description": "Skill bundle for agent architecture: subagent planning, context compaction, evaluation harnesses, and MCP server authoring (MIT upstream catalog).",
+      "kind": "skill",
+      "category": "skills/data-ai/agent-orchestration",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
+        "universal"
+      ],
+      "tags": [
+        "orchestration",
+        "evals",
+        "mcp-authoring"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; upstream VoltAgent/awesome-agent-skills (MIT)."
+    },
+    {
+      "id": "ml-finetune-evals",
+      "name": "ML Fine-Tuning & Evals Skill",
+      "repo": "https://github.com/huggingface/transformers",
+      "tagline": "LoRA fine-tuning, benchmark evals, and scientific ML.",
+      "description": "Skill bundle for ML engineering: LoRA/TRL fine-tuning recipes, benchmark evaluation, and scientific computing patterns.",
+      "kind": "skill",
+      "category": "skills/data-ai/ml-scientific",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "python"
+      ],
+      "tags": [
+        "lora",
+        "evals",
+        "ml"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by huggingface/transformers (Apache-2.0)."
+    },
+    {
+      "id": "rag-vector-playbook",
+      "name": "RAG & Vector Search Playbook Skill",
+      "repo": "https://github.com/qdrant/qdrant",
+      "tagline": "Hybrid retrieval, chunking, embeddings, and agent memory.",
+      "description": "Skill bundle for retrieval: hybrid search, chunking strategies, embedding selection, Qdrant vector collections, and persistent agent memory.",
+      "kind": "skill",
+      "category": "skills/data-ai/rag-memory",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "python"
+      ],
+      "tags": [
+        "rag",
+        "vectors",
+        "memory"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by qdrant/qdrant (Apache-2.0) and Shubhamsaboo/awesome-llm-apps (Apache-2.0)."
+    },
+    {
+      "id": "tauri-cross-desktop",
+      "name": "Tauri Cross-Platform Desktop Skill",
+      "repo": "https://github.com/tauri-apps/tauri",
+      "tagline": "Tauri, IPC bridges, and cross-platform desktop builds.",
+      "description": "Skill bundle for cross-platform desktop: Tauri v2 app scaffolding, Rust/JS IPC bridges, bundling, and auto-update channels.",
+      "kind": "skill",
+      "category": "skills/design/desktop-cross-platform",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "rust",
+        "typescript"
+      ],
+      "platforms": [
+        "windows",
+        "macos",
+        "linux"
+      ],
+      "tags": [
+        "tauri",
+        "ipc",
+        "bundling"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by tauri-apps/tauri (MIT)."
+    },
+    {
+      "id": "linux-desktop-patterns",
+      "name": "Linux Desktop Patterns",
+      "repo": "https://github.com/example/linux-desktop-patterns",
+      "tagline": "GTK4, Qt/QML, Flatpak, and Wayland integration.",
+      "description": "A skill for Linux desktop development covering GTK4 and Qt/QML patterns, Wayland and X11 compositor notes, Flatpak packaging, and systemd desktop integration.",
+      "kind": "skill",
+      "category": "skills/design/desktop-linux",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "platforms": [
+        "linux"
+      ],
+      "tags": [
+        "gtk4",
+        "qt",
+        "flatpak"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "macos-swiftui-patterns",
+      "name": "macOS SwiftUI Patterns Skill",
+      "repo": "https://github.com/apple/swift",
+      "tagline": "AppKit, SwiftUI for macOS, and notarization pipelines.",
+      "description": "Skill bundle for macOS desktop: AppKit/SwiftUI composition, AppleScript/JXA automation, and hardened-runtime notarization.",
+      "kind": "skill",
+      "category": "skills/design/desktop-macos",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "swift"
+      ],
+      "platforms": [
+        "macos"
+      ],
+      "tags": [
+        "swiftui",
+        "appkit",
+        "notarization"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by apple/swift (Apache-2.0)."
+    },
+    {
+      "id": "winui-desktop-patterns",
+      "name": "Windows Desktop Patterns Skill",
+      "repo": "https://github.com/microsoft/WinUI-Gallery",
+      "tagline": "WinUI 3, WPF, and Windows packaging workflows.",
+      "description": "Skill bundle for Windows desktop: WinUI 3 controls, WPF MVVM, Win32 COM automation, and MSIX installer packaging.",
+      "kind": "skill",
+      "category": "skills/design/desktop-windows",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "platforms": [
+        "windows"
+      ],
+      "tags": [
+        "winui",
+        "wpf",
+        "msix"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by microsoft/WinUI-Gallery (MIT)."
+    },
+    {
+      "id": "android-compose-patterns",
+      "name": "Android Compose Patterns",
+      "repo": "https://github.com/example/android-compose-patterns",
+      "tagline": "Jetpack Compose, ADB automation, and Gradle tuning.",
+      "description": "A mobile Android skill covering Jetpack Compose patterns, Kotlin Android SDK usage, ADB automation scripts, and Gradle build performance tuning.",
+      "kind": "skill",
+      "category": "skills/design/mobile-android",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "platforms": [
+        "android"
+      ],
+      "tags": [
+        "compose",
+        "gradle"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, Apache-2.0)."
+    },
+    {
+      "id": "flutter-cross-mobile",
+      "name": "Flutter Cross-Platform Mobile Skill",
+      "repo": "https://github.com/flutter/flutter",
+      "tagline": "Flutter widgets, state management, and store releases.",
+      "description": "Skill bundle for cross-platform mobile: Flutter widget composition, Riverpod/Bloc state, platform channels, and Play/App Store release flows.",
+      "kind": "skill",
+      "category": "skills/design/mobile-cross-platform",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "dart"
+      ],
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "tags": [
+        "flutter",
+        "dart",
+        "mobile"
+      ],
+      "license": "BSD-3-Clause",
+      "source_attribution": "Curated for Agent-Builder; inspired by flutter/flutter (BSD-3-Clause)."
+    },
+    {
+      "id": "ios-swiftui-pipelines",
+      "name": "iOS SwiftUI Pipelines Skill",
+      "repo": "https://github.com/Alamofire/Alamofire",
+      "tagline": "SwiftUI, networking layers, and Xcode/TestFlight workflows.",
+      "description": "Skill bundle for iOS: SwiftUI navigation/state, Alamofire networking layers, Xcode build pipelines, XCUITest, and TestFlight releases.",
+      "kind": "skill",
+      "category": "skills/design/mobile-ios",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "swift"
+      ],
+      "platforms": [
+        "ios"
+      ],
+      "tags": [
+        "swiftui",
+        "xcode",
+        "testflight"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by Alamofire/Alamofire (MIT)."
+    },
+    {
+      "id": "webui-frontend-patterns",
+      "name": "WebUI Frontend Patterns",
+      "repo": "https://github.com/example/webui-frontend-patterns",
+      "tagline": "React, Tailwind, and accessible motion design patterns.",
+      "description": "A frontend skill bundle with React and Next.js patterns, Tailwind CSS systems, WCAG accessibility checklists, and motion design guidelines.",
+      "kind": "skill",
+      "category": "skills/design/webui",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "typescript",
+        "javascript"
+      ],
+      "tags": [
+        "react",
+        "tailwind",
+        "a11y"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+    },
+    {
+      "id": "ci-observability-runbooks",
+      "name": "CI/CD & Observability Skill",
+      "repo": "https://github.com/open-telemetry/opentelemetry-collector",
+      "tagline": "GitHub Actions pipelines, OpenTelemetry, and incident runbooks.",
+      "description": "Skill bundle for delivery and observability: GitHub Actions/GitLab CI pipelines, OpenTelemetry instrumentation, Prometheus alerts, and incident runbooks.",
+      "kind": "skill",
+      "category": "skills/devops-cloud/ci-cd-observability",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "ci-cd",
+        "opentelemetry",
+        "runbooks"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by open-telemetry/opentelemetry-collector (Apache-2.0)."
+    },
+    {
+      "id": "k8s-operator-debugging",
+      "name": "Kubernetes Debugging Skill",
+      "repo": "https://github.com/kubernetes/kubernetes",
+      "tagline": "Cluster debugging, Helm releases, and operator patterns.",
+      "description": "Skill bundle for Kubernetes: kubectl triage, Helm release management, operator patterns, and service-mesh debugging.",
+      "kind": "skill",
+      "category": "skills/devops-cloud/containers-k8s",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "platforms": [
+        "linux"
+      ],
+      "tags": [
+        "kubernetes",
+        "helm",
+        "operators"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by kubernetes/kubernetes (Apache-2.0)."
+    },
+    {
+      "id": "terraform-iac-modules",
+      "name": "Terraform IaC Modules Skill",
+      "repo": "https://github.com/hashicorp/terraform",
+      "tagline": "Terraform/OpenTofu modules for AWS, GCP, and Azure.",
+      "description": "Skill bundle for IaC: Terraform/OpenTofu module authoring, remote state, plan review, and AWS/GCP/Azure/Cloudflare patterns.",
+      "kind": "skill",
+      "category": "skills/devops-cloud/iac-terraform",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "tags": [
+        "terraform",
+        "opentofu",
+        "iac"
+      ],
+      "license": "BUSL-1.1",
+      "source_attribution": "Curated for Agent-Builder; inspired by hashicorp/terraform module patterns."
+    },
+    {
+      "id": "playwright-e2e-patterns",
+      "name": "Playwright E2E Patterns Skill",
+      "repo": "https://github.com/microsoft/playwright",
+      "tagline": "Browser automation, fixtures, and visual regression checks.",
+      "description": "Skill bundle for E2E automation: Playwright fixtures, page-object models, trace viewers, and visual regression verification.",
+      "kind": "skill",
+      "category": "skills/testing-qa/browser-e2e",
+      "harnesses": [
+        "opencode",
+        "claude-code",
+        "universal"
+      ],
+      "languages": [
+        "typescript"
+      ],
+      "tags": [
+        "playwright",
+        "e2e",
+        "regression"
+      ],
+      "license": "Apache-2.0",
+      "source_attribution": "Curated for Agent-Builder; inspired by microsoft/playwright (Apache-2.0)."
+    },
+    {
+      "id": "property-fuzz-patterns",
+      "name": "Property & Fuzz Testing Skill",
+      "repo": "https://github.com/AltSysrq/proptest",
+      "tagline": "Property tests, mutation testing, and deterministic fixtures.",
+      "description": "Skill bundle for verification: property-based test generation, mutation testing, fuzzing harnesses, and deterministic fixtures.",
+      "kind": "skill",
+      "category": "skills/testing-qa/unit-property",
+      "harnesses": [
+        "opencode",
+        "universal"
+      ],
+      "languages": [
+        "rust"
+      ],
+      "tags": [
+        "property-testing",
+        "fuzzing",
+        "mutation"
+      ],
+      "license": "MIT",
+      "source_attribution": "Curated for Agent-Builder; inspired by AltSysrq/proptest (MIT)."
+    }
+  ]
+}

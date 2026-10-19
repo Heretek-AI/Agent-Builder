@@ -1,0 +1,18 @@
+id: adversarial-audit-prompt
+name: Adversarial Audit Prompt
+repo: https://github.com/example/adversarial-audit-prompt
+tagline: Red-team multi-subagent code audit prompt.
+description: >-
+  A system prompt for adversarial security audits with red-team instructions, threat-modeling steps,
+  and multi-subagent review orchestration.
+kind: prompt
+category: prompts/security-research
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+tags:
+  - red-team
+  - audit
+license: CC0-1.0
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0).

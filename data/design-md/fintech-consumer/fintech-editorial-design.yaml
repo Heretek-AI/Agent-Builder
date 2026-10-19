@@ -1,0 +1,18 @@
+id: fintech-editorial-design
+name: Fintech Editorial DESIGN.md
+repo: https://github.com/VoltAgent/awesome-design-md
+path: design-md/fintech
+tagline: High-trust financial interfaces and editorial media specs.
+description: >-
+  DESIGN.md brand system for fintech and consumer brands: high-trust financial UI, editorial media
+  layouts, and consumer web aesthetics from VoltAgent/awesome-design-md (MIT).
+kind: design-md
+category: design-md/fintech-consumer
+harnesses:
+  - universal
+tags:
+  - fintech
+  - editorial
+  - design-system
+license: MIT
+source_attribution: Curated for Agent-Builder; upstream VoltAgent/awesome-design-md (MIT).

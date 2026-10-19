@@ -1,0 +1,24 @@
+id: python-fastapi-service
+name: Python FastAPI Service Skill
+repo: https://github.com/tiangolo/fastapi
+tagline: Asyncio, Pydantic v2, and FastAPI service patterns.
+description: >-
+  Skill bundle for Python services: asyncio structuring, Pydantic v2 validation, FastAPI dependency
+  injection, and uv-based packaging with type-checking.
+kind: skill
+category: skills/coding/python
+harnesses:
+  - opencode
+  - claude-code
+  - codex
+  - universal
+languages:
+  - python
+tags:
+  - fastapi
+  - pydantic
+  - asyncio
+license: MIT
+source_attribution: >-
+  Curated for Agent-Builder; inspired by tiangolo/fastapi (MIT) and sickn33/agentic-awesome-skills
+  (MIT).

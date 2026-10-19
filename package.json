@@ -1,0 +1,52 @@
+{
+  "name": "@heretek-ai/agent-builder",
+  "version": "0.1.0",
+  "description": "Curated multi-harness AI Agent Registry, Awesome List, WebUI Builder, and MCP Server for OpenCode, Claude Code, and Codex.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Heretek-AI/Agent-Builder.git"
+  },
+  "homepage": "https://heretek-ai.github.io/Agent-Builder/",
+  "bin": {
+    "agent-builder": "./bin/agent-builder.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "site/",
+    "dist/registry.json",
+    "data/schema.json",
+    "data/taxonomy.json",
+    "ATTRIBUTION.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.20.0"
+  },
+  "scripts": {
+    "spike": "node scripts/spike-verify.js",
+    "validate": "node scripts/validate.js",
+    "export": "node scripts/export-json.js --pretty --output dist/registry.json",
+    "generate": "node scripts/generate-readme.js",
+    "fmt": "node scripts/fmt.js",
+    "new": "node scripts/new-entry.js",
+    "seed": "node scripts/import/seed-all.js",
+    "site": "node scripts/build-site.js",
+    "check-pr": "node scripts/check-pr.js --base origin/main",
+    "health": "node scripts/health-check.js --dry-run",
+    "scout": "node scripts/scout.js run --dry-run",
+    "serve": "node bin/agent-builder.js serve",
+    "mcp": "node bin/agent-builder.js mcp",
+    "test": "node scripts/run-tests.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

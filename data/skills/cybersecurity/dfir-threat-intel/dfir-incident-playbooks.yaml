@@ -1,0 +1,18 @@
+id: dfir-incident-playbooks
+name: DFIR & Incident Playbooks Skill
+repo: https://github.com/Velocidex/velociraptor
+tagline: Log forensics, IR playbooks, and detection engineering.
+description: >-
+  Skill bundle for DFIR: Velociraptor artifact collection, log forensics timelines, incident
+  response playbooks, and Sigma detection engineering.
+kind: skill
+category: skills/cybersecurity/dfir-threat-intel
+harnesses:
+  - opencode
+  - universal
+tags:
+  - forensics
+  - incident-response
+  - detection
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by Velocidex/velociraptor (Apache-2.0).

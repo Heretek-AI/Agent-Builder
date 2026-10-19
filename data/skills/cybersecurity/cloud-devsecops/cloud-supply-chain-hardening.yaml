@@ -1,0 +1,18 @@
+id: cloud-supply-chain-hardening
+name: Cloud & Supply-Chain Hardening Skill
+repo: https://github.com/sigstore/cosign
+tagline: IAM least-privilege, cosign verification, and secret scanning.
+description: >-
+  Skill bundle for cloud security: IAM least-privilege reviews, container hardening, SBOM/cosign
+  signature verification, and secret scanning.
+kind: skill
+category: skills/cybersecurity/cloud-devsecops
+harnesses:
+  - opencode
+  - universal
+tags:
+  - cosign
+  - sbom
+  - iam
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by sigstore/cosign (Apache-2.0).

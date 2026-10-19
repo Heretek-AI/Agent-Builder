@@ -1,0 +1,31 @@
+id: github-code-intel-mcp
+name: GitHub Code Intelligence MCP Server
+repo: https://github.com/modelcontextprotocol/servers
+path: src/github
+tagline: Repo, PR, and issue workflows over MCP with real tool names.
+description: >-
+  Official MCP GitHub server: repository management, PR review workflows, issue triage, and commit
+  search for code-intelligence agents.
+kind: mcp-server
+category: mcp-servers/git-repos
+harnesses:
+  - opencode
+  - claude-code
+mcp:
+  server_name: github
+  transport: stdio
+  command: npx
+  args:
+    - '-y'
+    - '@modelcontextprotocol/server-github'
+  tools:
+    - get_pull_request
+    - create_issue
+    - search_repositories
+    - list_commits
+tags:
+  - github
+  - git
+  - pr
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by modelcontextprotocol/servers (MIT).

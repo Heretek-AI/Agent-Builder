@@ -1,0 +1,20 @@
+id: harness-adapter-kit
+name: Harness Adapter Kit
+repo: https://github.com/sst/opencode
+path: packages/opencode/src/plugin
+tagline: Adapter patterns for running one agent across harnesses.
+description: >-
+  Adapter patterns derived from the sst/opencode plugin surface for running a single agent recipe
+  across OpenCode, Claude Code, and Codex via shared SKILL.md and MCP contracts.
+kind: plugin
+category: plugins/cross-harness
+harnesses:
+  - opencode
+  - claude-code
+  - codex
+  - universal
+tags:
+  - adapter
+  - multi-harness
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by sst/opencode plugin docs (MIT).

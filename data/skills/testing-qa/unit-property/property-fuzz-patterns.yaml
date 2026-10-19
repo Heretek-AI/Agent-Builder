@@ -1,0 +1,20 @@
+id: property-fuzz-patterns
+name: Property & Fuzz Testing Skill
+repo: https://github.com/AltSysrq/proptest
+tagline: Property tests, mutation testing, and deterministic fixtures.
+description: >-
+  Skill bundle for verification: property-based test generation, mutation testing, fuzzing
+  harnesses, and deterministic fixtures.
+kind: skill
+category: skills/testing-qa/unit-property
+harnesses:
+  - opencode
+  - universal
+languages:
+  - rust
+tags:
+  - property-testing
+  - fuzzing
+  - mutation
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by AltSysrq/proptest (MIT).

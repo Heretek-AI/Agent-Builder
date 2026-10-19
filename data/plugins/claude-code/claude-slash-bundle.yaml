@@ -1,0 +1,17 @@
+id: claude-slash-bundle
+name: Claude Code Slash Bundle
+repo: https://github.com/example/claude-slash-bundle
+tagline: Slash-command bundle and hook scripts for Claude Code.
+description: >-
+  A Claude Code marketplace plugin bundling slash commands, hook scripts, and agent instructions for
+  code review workflows.
+kind: plugin
+category: plugins/claude-code
+harnesses:
+  - claude-code
+tags:
+  - slash-commands
+  - hooks
+installation: Install via Claude Code marketplace.
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).

@@ -1,0 +1,16 @@
+id: opencode-awesome-catalog
+name: Awesome OpenCode Catalog
+repo: https://github.com/Heretek-AI/awesome-opencode
+tagline: Upstream awesome list of OpenCode plugins, agents, and configs.
+description: >-
+  The upstream Heretek-AI/awesome-opencode catalog (CC0-1.0) of OpenCode plugins, custom tools,
+  session hooks, and agent presets from which this registry was ported.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - awesome-list
+  - upstream
+license: CC0-1.0
+source_attribution: Curated for Agent-Builder; upstream Heretek-AI/awesome-opencode (CC0-1.0).

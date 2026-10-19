@@ -1,0 +1,20 @@
+id: litellm-router-bridge
+name: LiteLLM Router Bridge
+repo: https://github.com/BerriAI/litellm
+tagline: Multi-provider LLM router bridging harnesses to 100+ models.
+description: >-
+  BerriAI/litellm (Apache-2.0) as a cross-harness bridge: one OpenAI-compatible gateway routing
+  agent harnesses to 100+ providers with fallbacks and spend tracking.
+kind: plugin
+category: plugins/cross-harness
+harnesses:
+  - opencode
+  - claude-code
+  - codex
+  - universal
+tags:
+  - router
+  - gateway
+  - multi-provider
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by BerriAI/litellm (Apache-2.0).

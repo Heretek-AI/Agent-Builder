@@ -1,0 +1,20 @@
+id: ml-finetune-evals
+name: ML Fine-Tuning & Evals Skill
+repo: https://github.com/huggingface/transformers
+tagline: LoRA fine-tuning, benchmark evals, and scientific ML.
+description: >-
+  Skill bundle for ML engineering: LoRA/TRL fine-tuning recipes, benchmark evaluation, and
+  scientific computing patterns.
+kind: skill
+category: skills/data-ai/ml-scientific
+harnesses:
+  - opencode
+  - universal
+languages:
+  - python
+tags:
+  - lora
+  - evals
+  - ml
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by huggingface/transformers (Apache-2.0).

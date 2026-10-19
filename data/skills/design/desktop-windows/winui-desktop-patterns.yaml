@@ -1,0 +1,20 @@
+id: winui-desktop-patterns
+name: Windows Desktop Patterns Skill
+repo: https://github.com/microsoft/WinUI-Gallery
+tagline: WinUI 3, WPF, and Windows packaging workflows.
+description: >-
+  Skill bundle for Windows desktop: WinUI 3 controls, WPF MVVM, Win32 COM automation, and MSIX
+  installer packaging.
+kind: skill
+category: skills/design/desktop-windows
+harnesses:
+  - opencode
+  - universal
+platforms:
+  - windows
+tags:
+  - winui
+  - wpf
+  - msix
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by microsoft/WinUI-Gallery (MIT).

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Builder — Heretek-AI/Agent-Builder</title>
+  <meta name="description" content="Interactive workbench: explore the multi-harness agent registry, scope skills and MCP tools with deny-first hygiene, and export ready-to-run agent bundles.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">&#9881;</span>
+      <div>
+        <h1>Agent Builder</h1>
+        <p class="subtitle"><a href="https://github.com/Heretek-AI/Agent-Builder">Heretek-AI/Agent-Builder</a> registry workbench</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="registryStatus" class="status-pill" role="status">loading registry&hellip;</span>
+      <button id="themeToggle" type="button" title="Toggle dark / light theme">Theme</button>
+      <button id="helperBtn" type="button" title="Open the helper agent drawer">Helper Agent</button>
+      <button id="publishBtn" type="button" class="primary" title="Publish or share this agent">Publish</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 1. Registry explorer -->
+    <section id="view-explorer" class="card" aria-labelledby="explorerHeading">
+      <h2 id="explorerHeading">1. Registry Explorer</h2>
+      <div class="filters">
+        <label>Search
+          <input id="searchInput" type="search" placeholder="name, tagline, tag, id&hellip;" autocomplete="off">
+        </label>
+        <label>Harness
+          <select id="harnessFilter"><option value="">All harnesses</option></select>
+        </label>
+        <label>Language
+          <select id="languageFilter"><option value="">All languages</option></select>
+        </label>
+        <label>Platform
+          <select id="platformFilter"><option value="">All platforms</option></select>
+        </label>
+      </div>
+      <div class="explorer-grid">
+        <nav id="categoryTree" class="category-tree" aria-label="Category tree"></nav>
+        <div>
+          <p id="resultCount" class="muted" role="status"></p>
+          <div id="cards" class="cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Harness selector + config upload -->
+    <section id="view-harness" class="card" aria-labelledby="harnessHeading">
+      <h2 id="harnessHeading">2. Agent Recipe, Harness &amp; Config Upload</h2>
+      <div class="two-col">
+        <div>
+          <label>Agent slug
+            <input id="agentSlug" type="text" value="my-agent" spellcheck="false">
+          </label>
+          <label>Description
+            <input id="agentDescription" type="text" value="My scoped agent" spellcheck="false">
+          </label>
+          <label>System prompt
+            <textarea id="agentPrompt" rows="5" placeholder="You are a&hellip;"></textarea>
+          </label>
+          <div class="row">
+            <label>Mode
+              <select id="agentMode">
+                <option value="subagent">subagent</option>
+                <option value="primary">primary</option>
+              </select>
+            </label>
+            <label>Model (optional)
+              <input id="agentModel" type="text" placeholder="anthropic/claude-sonnet-4-5" spellcheck="false">
+            </label>
+          </div>
+        </div>
+        <div>
+          <fieldset>
+            <legend>Target harness</legend>
+            <label class="radio"><input type="radio" name="harness" value="opencode-v2" checked> OpenCode v2 JSON</label>
+            <label class="radio"><input type="radio" name="harness" value="opencode-v1"> OpenCode v1 JSON</label>
+            <label class="radio"><input type="radio" name="harness" value="opencode-md"> OpenCode Agent Markdown</label>
+            <label class="radio"><input type="radio" name="harness" value="claude"> Claude Code</label>
+            <label class="radio"><input type="radio" name="harness" value="codex"> Codex CLI</label>
+          </fieldset>
+          <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-label="Upload an existing config file">
+            <p>Drag &amp; drop <code>opencode.json</code>, <code>claude.json</code>, <code>.mcp.json</code> or an agent <code>.md</code> here, or</p>
+            <input id="fileInput" type="file" accept=".json,.jsonc,.md,.markdown,.mcp.json,application/json">
+          </div>
+          <p id="uploadStatus" class="muted" role="status"></p>
+        </div>
+      </div>
+      <h3>Selected for this agent (<span id="selectedCount">0</span>)</h3>
+      <ul id="selectedList" class="selected-list"></ul>
+    </section>
+
+    <!-- 3. Scoping matrix + permission simulator -->
+    <section id="view-scope" class="card" aria-labelledby="scopeHeading">
+      <h2 id="scopeHeading">3. Skill &amp; MCP Tool Scoping Matrix</h2>
+      <p class="muted">Deny-first hygiene: <code>deny "*"</code> ships first, then explicit allows. Uncheck a tool to add an explicit deny (wins over the allow).</p>
+      <div id="scopeMatrix"></div>
+      <h3>Permission Simulator</h3>
+      <div class="row sim-row">
+        <label>Action
+          <input id="simAction" type="text" value="skill" spellcheck="false">
+        </label>
+        <label>Resource
+          <input id="simResource" type="text" value="*" spellcheck="false">
+        </label>
+        <button id="simButton" type="button">Evaluate</button>
+        <span id="simResult" class="sim-result" role="status"></span>
+      </div>
+    </section>
+
+    <!-- 5. Live preview & export -->
+    <section id="view-preview" class="card" aria-labelledby="previewHeading">
+      <h2 id="previewHeading">4. Live Config Preview &amp; Export</h2>
+      <div class="tabs" role="tablist" aria-label="Export formats">
+        <button class="preview-tab active" type="button" data-tab="v2" role="tab">opencode.json (v2)</button>
+        <button class="preview-tab" type="button" data-tab="v1" role="tab">opencode.json (v1)</button>
+        <button class="preview-tab" type="button" data-tab="opencodeMd" role="tab">.opencode/agent/&lt;slug&gt;.md</button>
+        <button class="preview-tab" type="button" data-tab="claude" role="tab">Claude (.md + .mcp.json)</button>
+        <button class="preview-tab" type="button" data-tab="codex" role="tab">Codex config.toml</button>
+        <button class="preview-tab" type="button" data-tab="install" role="tab">Install command</button>
+      </div>
+      <pre class="preview"><code id="previewContent"></code></pre>
+      <div class="row">
+        <button id="downloadFile" type="button">Download File</button>
+        <button id="downloadBundle" type="button">Download Workspace Bundle</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer muted">
+    <p>Static zero-build WebUI. Registry: <code>./registry.json</code> with fallback to <code>https://heretek-ai.github.io/Agent-Builder/registry.json</code>. API keys stay in <code>localStorage</code> only &mdash; never exported or shared in URLs.</p>
+  </footer>
+
+  <!-- 4. Helper agent drawer -->
+  <aside id="helperDrawer" class="drawer" aria-labelledby="helperHeading" hidden>
+    <div class="drawer-head">
+      <h2 id="helperHeading">Helper Agent</h2>
+      <button id="helperClose" type="button" title="Close drawer">Close</button>
+    </div>
+    <p class="muted">Describe the agent you want (e.g. &ldquo;Build me a Linux Rust reverse-engineering subagent with Ghidra MCP read-only tools&rdquo;). The helper sees the registry summary + current recipe and returns structured tool actions.</p>
+    <label>Base URL (OpenAI-compatible)
+      <input id="helperBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false">
+    </label>
+    <div class="row">
+      <label>Model
+        <input id="helperModel" type="text" placeholder="gpt-4o-mini" spellcheck="false">
+      </label>
+      <label>API key (localStorage only)
+        <input id="helperKey" type="password" placeholder="sk-..." autocomplete="off">
+      </label>
+    </div>
+    <label class="radio"><input id="helperProxyToggle" type="checkbox"> Route via local CLI proxy <code>/api/llm/chat</code> (<code>npx @heretek-ai/agent-builder serve</code>)</label>
+    <label class="radio"><input id="helperMcpToggle" type="checkbox"> Use local MCP connector <code>/api/mcp/call</code></label>
+    <label>Request
+      <textarea id="helperPrompt" rows="4" placeholder="Build me a&hellip;"></textarea>
+    </label>
+    <button id="helperSend" type="button" class="primary">Ask Helper</button>
+    <div id="helperOutput" class="helper-output" role="status"></div>
+  </aside>
+
+  <!-- 6. Publish modal -->
+  <div id="publishModal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="publishHeading">
+      <h2 id="publishHeading">Publish Agent</h2>
+      <label>Shareable permalink
+        <input id="permalink" type="text" readonly spellcheck="false">
+      </label>
+      <div class="row">
+        <button id="copyPermalink" type="button">Copy Link</button>
+        <a id="publishIssueLink" class="button" href="https://github.com/Heretek-AI/Agent-Builder/issues/new?template=publish-agent.yml" target="_blank" rel="noopener">Submit to GitHub Registry</a>
+        <button id="publishClose" type="button">Close</button>
+      </div>
+      <h3>Scoped recipe (YAML preview)</h3>
+      <pre class="preview small"><code id="recipeYamlPreview"></code></pre>
+    </div>
+  </div>
+
+  <script src="./core/compiler.js"></script>
+  <script src="./core/importer.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

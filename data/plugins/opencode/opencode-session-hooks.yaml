@@ -1,0 +1,19 @@
+id: opencode-session-hooks
+name: OpenCode Session Hooks Plugin
+repo: https://github.com/example/opencode-session-hooks
+tagline: Session lifecycle hooks and custom tools for OpenCode.
+description: >-
+  An OpenCode plugin providing session start/finish hooks, custom tool registration, and statusline
+  integration for OpenCode v1 and v2.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - hooks
+  - statusline
+compat: opencode>=1.0.0
+scope: workspace
+installation: opencode plugin install opencode-session-hooks
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).

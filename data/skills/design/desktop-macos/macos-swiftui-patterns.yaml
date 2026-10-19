@@ -1,0 +1,22 @@
+id: macos-swiftui-patterns
+name: macOS SwiftUI Patterns Skill
+repo: https://github.com/apple/swift
+tagline: AppKit, SwiftUI for macOS, and notarization pipelines.
+description: >-
+  Skill bundle for macOS desktop: AppKit/SwiftUI composition, AppleScript/JXA automation, and
+  hardened-runtime notarization.
+kind: skill
+category: skills/design/desktop-macos
+harnesses:
+  - opencode
+  - universal
+languages:
+  - swift
+platforms:
+  - macos
+tags:
+  - swiftui
+  - appkit
+  - notarization
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by apple/swift (Apache-2.0).

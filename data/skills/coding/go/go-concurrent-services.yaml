@@ -1,0 +1,21 @@
+id: go-concurrent-services
+name: Go Concurrent Services Skill
+repo: https://github.com/golang/go
+tagline: Concurrent Go services, gRPC, profiling, and zero-alloc patterns.
+description: >-
+  Skill bundle for Go: goroutine pipelines, gRPC service design, pprof profiling, and
+  zero-allocation hot-path patterns.
+kind: skill
+category: skills/coding/go
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+languages:
+  - go
+tags:
+  - grpc
+  - profiling
+  - concurrency
+license: BSD-3-Clause
+source_attribution: Curated for Agent-Builder; inspired by golang/go (BSD-3-Clause).

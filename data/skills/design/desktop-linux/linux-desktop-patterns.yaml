@@ -1,0 +1,20 @@
+id: linux-desktop-patterns
+name: Linux Desktop Patterns
+repo: https://github.com/example/linux-desktop-patterns
+tagline: GTK4, Qt/QML, Flatpak, and Wayland integration.
+description: >-
+  A skill for Linux desktop development covering GTK4 and Qt/QML patterns, Wayland and X11
+  compositor notes, Flatpak packaging, and systemd desktop integration.
+kind: skill
+category: skills/design/desktop-linux
+harnesses:
+  - opencode
+  - universal
+platforms:
+  - linux
+tags:
+  - gtk4
+  - qt
+  - flatpak
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
