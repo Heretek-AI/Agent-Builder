@@ -157,3 +157,37 @@
   - Command: `node -e "const fs=require('fs'), yaml=require('js-yaml'); ..."` -> stdout `WORKFLOW_YAML_OK`, exit `0`.
   - Command: `npm run validate` -> `VALIDATED 63 ENTRIES OK`, exit `0`.
   - Command: `npm test` -> `pass 33, fail 0`, exit `0`.
+
+## Milestone 12 — Full Test Suite, Spec Audit & Final Verification (2026-10-19)
+
+- Wrote `test/catalog.test.js` (`node:test` describe/it + `node:assert/strict`, 10 tests / 6 suites): `data/taxonomy.json` (version `1.0.0`, 8 harness ids in canonical order, 6 top-level category ids, 68 total ids all matching `/^[a-z0-9][a-z0-9/-]*$/` with no spaces/uppercase, every entry `category` + `harness` resolves against the taxonomy), `data/schema.json` (Draft-07 `$schema`, exact 8-field `required`, `additionalProperties: false`), validator via `loadCatalog` (63 entries, zero errors, global id uniqueness, no duplicate `(repo, path, kind, id)` tuples, all 4 pipeline scripts present on disk), `dist/registry.json` (exists, `version`/`taxonomy`/`entries`/`stats` present, 63 entries sorted by `category` then `id`, `stats.total`/`by_kind`/`by_category`/`by_harness` recomputed and deep-equal), `README.md` (header, Awesome/registry/WebUI/NPM markers, TOC, all 68 titles + ids, `[opencode]`/`[claude-code]` badges, deny-first `deny`+`allow` overview), `_site/` (`index.html` >1KB, `registry.json` entry-count matches `dist/`, `.nojekyll` present).
+- Created the two missing Section 5 layout files: `LICENSE` (MIT, copyright 2026 Heretek-AI) and `CONTRIBUTING.md` (scaffold → fmt/validate/export/generate/site/test workflow, schema field table with kebab-case id + taxonomy-membership rules, two-layer category/facet model, deny-first hygiene + normalization rules, attribution policy, pre-PR checklist). No test or schema rule was weakened.
+- Full pipeline evidence (all exit `0`, Node `v26.10.0`):
+  - `npm run spike` -> `SPIKE_VERIFY_OK`.
+  - `npm run fmt` -> `FMT_OK: checked 63 files, formatted 0` (idempotent).
+  - `npm run validate` -> `VALIDATED 63 ENTRIES OK`.
+  - `npm run export` -> `EXPORTED 63 ENTRIES -> dist/registry.json`.
+  - `npm run generate` -> `GENERATED README.md with 63 entries` (README byte-identical to committed copy — generator deterministic).
+  - `npm run site` -> `SITE_BUILT _site/ with 63 registry entries` (`index.html`, `styles.css`, `app.js`, `core/compiler.js`, `core/importer.js`, `registry.json` 63 entries, `health.json`, `content/`, `.nojekyll` all present).
+  - `npm run health` -> `HEALTH_OK entries=63 kinds=6 dry_run=yes`.
+  - `npm run scout` -> 5 `CANDIDATE` lines + `SCOUT_DRY_RUN_OK candidates=5 declined=1`.
+  - `npm test` -> `pass 43, fail 0` (25 compiler + 8 mcp + 10 catalog), `suites 20`.
+  - `node --test test/catalog.test.js` standalone -> `pass 10, fail 0`.
+  - `node bin/agent-builder.js --help` -> usage for `serve`/`compile`/`install`/`mcp`, exit `0`.
+  - Workflow YAML re-check -> `WORKFLOW_YAML_OK`, exit `0` (9 workflows + 2 issue templates parse).
+- Section 8 Definition of Done audit:
+
+| # | DoD item | Verdict | Evidence |
+| :--- | :--- | :--- | :--- |
+| 1 | `data/taxonomy.json` full multi-level taxonomy | PASS | version `1.0.0`, 8 harnesses, 6 top-level categories, 68 ids; catalog test suite `data/taxonomy.json` 3/3 pass |
+| 2 | `data/schema.json` + `scripts/validate.js` validate 60+ entries, zero errors | PASS | `VALIDATED 63 ENTRIES OK`; schema Draft-07 + exact required + `additionalProperties: false` asserted |
+| 3 | `npm run export` compiles `dist/registry.json` + `dist/content/` | PASS | `EXPORTED 63 ENTRIES`; stats recomputation asserted; `dist/content/` exists (empty — no seed entry sets `content_file`, exporter skips with no warnings) |
+| 4 | `npm run generate` renders Awesome List `README.md` | PASS | `GENERATED README.md with 63 entries`; header/badges/TOC/68 titles+harness badges/deny-first all asserted; output deterministic (no diff) |
+| 5 | `src/core/compiler.js` + `src/core/importer.js` multi-harness import/compile | PASS | `npm test` compiler suite 25/25 (deny-first, shutoff, normalization, wildcard/per-tool/deny, resources, v1+v2+claude+md round-trips, UMD) |
+| 6 | `npm run site` produces GitHub-Pages-ready `_site/` | PASS | `SITE_BUILT`; `index.html`, `app.js`, `styles.css`, `core/*.js`, `registry.json` (63), `health.json`, `content/`, `.nojekyll` verified; relative `./registry.json` fetch preserved (M7 audit) |
+| 7 | `bin/agent-builder.js` serve/compile/install/mcp | PASS | `--help` lists all 4 subcommands exit `0`; M8 compile/install/serve-smoke + M9 MCP 8/8 tests still passing |
+| 8 | 9 workflows + issue templates + maintainer scripts pass validation | PASS | `WORKFLOW_YAML_OK`; `npm run health` + `npm run scout` dry-runs exit `0`; M10/M11 evidence retained in this log |
+| 9 | `ATTRIBUTION.md` credits upstream repos + licenses | PASS | 7 repos ledgered (CC0-1.0, MIT, Apache-2.0, MIT/CC0-1.0, CC0-1.0/MIT); new `LICENSE` (MIT) + `CONTRIBUTING.md` complete the Section 5 layout |
+| 10 | `npm test` runs all 3 test files, exit `0` | PASS | `pass 43, fail 0` across `catalog` (10) + `compiler` (25) + `mcp` (8) |
+- Working-tree note for the coordinator: after the pipeline `git status --short` shows `M dist/registry.json` (single-line `generated_at` timestamp refresh only — verified via `git diff`) plus untracked `CONTRIBUTING.md`, `LICENSE`, `test/catalog.test.js`. `README.md` has no diff (generator deterministic). `_site/` is git-ignored by design. Nothing was committed per instructions — stage `CONTRIBUTING.md LICENSE dist/registry.json docs/NOTES.md test/catalog.test.js` (+ any other pending M11 files) with explicit `git add` and the tree will be clean.
+- No blockers. 0 failed attempts (M12).
