@@ -4,9 +4,16 @@ name: Convert Entry Issues to PRs
   issues:
     types:
       - opened
+      - edited
+      - reopened
+      - labeled
 
 permissions:
   contents: read
+
+concurrency:
+  group: issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
 jobs:
   convert:
@@ -33,3 +40,32 @@ jobs:
           node -e "const fs=require('fs'); fs.writeFileSync('issue.json', JSON.stringify({ number: process.env.ISSUE_NUMBER, title: process.env.ISSUE_TITLE, body: process.env.ISSUE_BODY }));"
       - name: Convert issue to catalog entry
         run: node scripts/submit-entry.js --issue issue.json --dry-run
+  scout-accept:
+    if: github.event.action == 'edited' && contains(github.event.issue.labels.*.name, 'scout')
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      # Issue text is untrusted: it is only read by scripts/scout.js as data
+      # via the API. ISSUE_NUMBER/SENDER pass as env then argv; nothing from
+      # the issue body is interpolated into shell commands.
+      - name: Open PRs for ticked candidates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          SENDER: ${{ github.event.sender.login }}
+        run: node scripts/scout.js accept --issue "$ISSUE_NUMBER" --sender "$SENDER"
