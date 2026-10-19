@@ -26,3 +26,14 @@
   - Command: `npm run validate` -> stdout `VALIDATED 15 ENTRIES OK`, exit `0`.
   - Command: `node -e "const { validateEntryObject } = require('./scripts/utils/catalog'); const res = validateEntryObject({ id: 'Bad_ID' }); if (res.valid) process.exit(1); console.log('NEGATIVE_CHECK_OK');"` -> stdout `NEGATIVE_CHECK_OK`, exit `0`.
 - No blockers. 0 failed attempts.
+
+## Milestone 3 — Registry Compiler & Content Bundler (2026-10-19)
+
+- Wrote `scripts/export-json.js` (CommonJS `require`): parses `--pretty` (2-space indent) and `--output <filepath>` (default `dist/registry.json`, `--help` supported, unknown/missing args fail closed with exit `1`); fail-closed on any `loadCatalog` error (prints `ERROR:` lines, exit `1`); reads raw `data/taxonomy.json` for output; sorts entries deterministically by `category` then `id`; computes `stats: { total, by_kind, by_category, by_harness }`; emits `{ version: "1.0.0", repository: "https://github.com/Heretek-AI/Agent-Builder", registry_url: "https://heretek-ai.github.io/Agent-Builder/registry.json", generated_at: <ISO>, stats, taxonomy, entries }`; content bundler copies each entry's `content_file` (resolved relative to repo root) to `dist/content/<id>.md` (`fs.mkdirSync` recursive for both dirs), warns `WARNING: content_file ... not found; skipping.` without failing when missing; writes JSON with trailing newline; prints `EXPORTED <N> ENTRIES -> <relpath>`.
+- Ran `npm run export` (`node scripts/export-json.js --pretty --output dist/registry.json`) to generate `dist/registry.json` + `dist/content/` (empty: none of the 15 seed entries set `content_file`, so all copies skipped with no warnings).
+- Evidence:
+  - Command: `npm run export && node -e "const r = require('./dist/registry.json'); if (!r.entries || r.entries.length < 12 || !r.taxonomy) process.exit(1); console.log('EXPORT_OK:', r.entries.length);"` -> stdout `EXPORTED 15 ENTRIES -> dist/registry.json` + `EXPORT_OK: 15`, exit `0`.
+  - Detail check: `version 1.0.0`, `repository`/`registry_url` exact, `generated_at` ISO-parseable, `stats.total === entries.length (15)`, `by_kind {"agent":1,"design-md":1,"mcp-server":1,"plugin":2,"prompt":1,"skill":9}`, entries sorted by `category,id`, file pretty-printed (starts `{\n  "version"`), exit `0`.
+  - Command: `node scripts/export-json.js --output /tmp/opencode/registry-test.json` -> stdout `EXPORTED 15 ENTRIES` + `CUSTOM_OK: 15`, exit `0` (custom `--output` outside repo works; temp file left in `/tmp/opencode/`, not in repo).
+  - `ls dist/ dist/content/` -> `dist/registry.json` (30844 bytes) + empty `dist/content/`.
+- No blockers. 0 failed attempts.
