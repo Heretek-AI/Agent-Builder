@@ -123,6 +123,46 @@ describe('check-pr scope gate (AB-1.3-check-pr-scope-bypass)', () => {
       );
     });
   });
+
+  it('rejects option-like --base values fail-closed (no git option injection)', () => {
+    // Sonar jssecurity:S8705: a `base` starting with `-` would be parsed by
+    // git as an option, not a revision. Child argv arrays only (no shell).
+    for (const evil of ['--output=/tmp/evil-check-pr', '--upload-pack=id', '-evilref']) {
+      assert.throws(
+        () => {
+          execFileSync(
+            process.execPath,
+            [path.join(ROOT, 'scripts', 'check-pr.js'), '--base', evil],
+            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+          );
+        },
+        `expected fail-closed rejection for base=${evil}`
+      );
+    }
+    // Same via the --base=<value> spelling.
+    assert.throws(() => {
+      execFileSync(
+        process.execPath,
+        [path.join(ROOT, 'scripts', 'check-pr.js'), '--base=--output=/tmp/evil-check-pr'],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+      );
+    });
+  });
+
+  it('rejects traversal / whitespace / metachar --base values fail-closed', () => {
+    for (const evil of ['..', 'a..b', 'a b', 'a;b', 'a|b', 'a$b', 'a`b', '$(id)']) {
+      assert.throws(
+        () => {
+          execFileSync(
+            process.execPath,
+            [path.join(ROOT, 'scripts', 'check-pr.js'), '--base', evil],
+            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+          );
+        },
+        `expected fail-closed rejection for base=${evil}`
+      );
+    }
+  });
 });
 
 describe('ai-review rubric enforcement (AB-ai-review-no-enforcement)', () => {

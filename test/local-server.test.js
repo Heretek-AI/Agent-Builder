@@ -520,3 +520,37 @@ describe('content_file validation (schema + read containment)', () => {
     assert.equal(mcpServer.isSafeContentFileRef('docs/a/SKILL.md'), true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// CORS loopback-only echo hardening (Sonar jssecurity:S8348)
+// ---------------------------------------------------------------------------
+
+describe('CORS loopback-only echo (fail-closed)', () => {
+  async function getStatusWithOrigin(origin) {
+    const res = await fetch(baseUrl() + '/api/status', { headers: { Origin: origin } });
+    assert.equal(res.status, 200);
+    return res.headers.get('access-control-allow-origin');
+  }
+
+  it('echoes a normalized loopback origin for the same-machine WebUI', async () => {
+    const echoed = await getStatusWithOrigin(`http://localhost:${TEST_PORT}`);
+    assert.equal(echoed, `http://localhost:${TEST_PORT}`);
+    const echoedIp = await getStatusWithOrigin(`http://127.0.0.1:${TEST_PORT}`);
+    assert.equal(echoedIp, `http://127.0.0.1:${TEST_PORT}`);
+  });
+
+  it('sends no ACAO header for an evil non-loopback origin', async () => {
+    const aca = await getStatusWithOrigin('https://evil.com');
+    assert.equal(aca, null);
+  });
+
+  it('sends no ACAO header for a loopback-lookalike subdomain (127.0.0.1.evil.com)', async () => {
+    const aca = await getStatusWithOrigin('http://127.0.0.1.evil.com');
+    assert.equal(aca, null);
+  });
+
+  it('sends no ACAO header for non-http(s) or trailing-junk origins', async () => {
+    assert.equal(await getStatusWithOrigin('ftp://127.0.0.1'), null);
+    assert.equal(await getStatusWithOrigin(`http://localhost:${TEST_PORT}/evil-path`), null);
+  });
+});

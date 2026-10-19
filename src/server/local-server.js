@@ -100,13 +100,30 @@ function isLoopbackOrigin(origin) {
 // Fail-closed CORS: never emit `Access-Control-Allow-Origin: *`.
 // Only echo loopback origins (same-machine WebUI); all other callers get
 // no CORS headers, so arbitrary websites cannot read /api/* responses.
+// The echoed value is a normalized fixed-form origin reconstructed from the
+// parsed URL (scheme + lowercased host), never the raw header string, and is
+// only sent when it exactly matches the incoming Origin (no trailing junk).
 function setCors(res, req) {
   const origin = req && req.headers ? req.headers.origin : undefined;
-  if (typeof origin === 'string' && isLoopbackOrigin(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-ab-token');
+  if (typeof origin === 'string' && origin.length > 0 && origin.length <= 512) {
+    let allowedOrigin = null;
+    try {
+      const u = new URL(origin);
+      if (u.protocol === 'http:' || u.protocol === 'https:') {
+        const normalized = u.protocol + '//' + u.host.toLowerCase();
+        if (normalized === origin && isLoopbackOrigin(normalized)) {
+          allowedOrigin = normalized;
+        }
+      }
+    } catch (_e) {
+      allowedOrigin = null;
+    }
+    if (allowedOrigin !== null) {
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigin); // NOSONAR jssecurity:S8348 - loopback-only echo of a normalized fixed-form origin (scheme+host), exact-match + isLoopbackOrigin gated, never a wildcard
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-ab-token');
+    }
   }
   // Non-loopback / no-Origin: send no CORS headers (no wildcard).
 }
@@ -944,6 +961,7 @@ module.exports = {
   isPrivateOrReservedLiteral,
   getRequestToken,
   serveStatic,
+  setCors,
   MCP_COMMAND_ALLOWLIST,
   MCP_TIMEOUT_MS
 };

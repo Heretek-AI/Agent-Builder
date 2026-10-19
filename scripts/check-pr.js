@@ -46,20 +46,48 @@ function parseArgs(argv) {
   return args;
 }
 
+// Fail-closed git ref validator (Sonar jssecurity:S8705): `base` comes from
+// CLI argv and reaches `git diff <range>` as an operand. Argv arrays already
+// avoid shell injection, but a value starting with `-` (e.g. `--output=`,
+// `--upload-pack=`) would be parsed by git as an option, not a revision.
+// Reject leading `-`, `..` sequences, whitespace, and any character outside
+// the safe ref class before git ever sees the value.
+const GIT_REF_PATTERN = /^[A-Za-z0-9._/-]+$/;
+const SAFE_GIT_PATH = '/usr/local/bin:/usr/bin:/bin';
+
+function assertSafeGitRef(ref) {
+  const s = typeof ref === 'string' ? ref : '';
+  const ok =
+    s.length >= 1 &&
+    s.length <= 256 &&
+    !s.startsWith('-') &&
+    !s.includes('..') &&
+    !/\s/.test(s) &&
+    GIT_REF_PATTERN.test(s);
+  if (!ok) {
+    console.error(`ERROR: unsafe git ref ${JSON.stringify(s.slice(0, 64))} (must match refs/heads style, no leading -, no .., no whitespace)`);
+    process.exit(1);
+  }
+}
+
 function getChangedFiles(base) {
+  assertSafeGitRef(base);
   // Never interpolate untrusted refs into a shell string: argv array only.
   // Exclude deletions (--diff-filter=ACMRTUXB omits D) so a deleted
   // data/**/*.yaml file does not fail per-file validation; the remaining
   // catalog is still validated. Belt-and-suspenders existsSync filtering
   // in main() covers renames/deletions the diff filter might miss.
+  // Sonar javascript:S4036: resolve `git` with an explicit fixed safe PATH
+  // (literal unwriteable dirs only), never the inherited PATH alone.
   const range = `${base}...HEAD`;
+  const gitOpts = { encoding: 'utf8', env: { ...process.env, PATH: SAFE_GIT_PATH } };
   try {
-    const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', range], { encoding: 'utf8' });
+    const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', range], gitOpts);
     return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
   } catch (_e) {
     // Fall back to a plain base ref diff (e.g. when HEAD has no upstream range).
     try {
-      const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', base], { encoding: 'utf8' });
+      const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', base], gitOpts);
       return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
     } catch (err) {
       console.error(`ERROR: unable to diff against '${base}': ${err.message}`);
@@ -174,6 +202,7 @@ if (require.main === module) {
 
 module.exports = {
   parseArgs,
+  assertSafeGitRef,
   getChangedFiles,
   classifyChangedFiles,
   runValidatorCanary,
