@@ -2,7 +2,9 @@ id: lua-neovim-scripting
 name: Lua and Neovim Scripting Skill
 repo: https://github.com/example/lua-neovim-scripting
 tagline: LuaJIT, Neovim plugins, and embedded Lua scripting.
-description: A skill covering LuaJIT idioms, Neovim plugin development with Lua, LOVE2D game scripting, and embedded Lua integration patterns.
+description: >-
+  A skill covering LuaJIT idioms, Neovim plugin development with Lua, LOVE2D game scripting, and
+  embedded Lua integration patterns.
 kind: skill
 category: skills/coding/lua
 harnesses:

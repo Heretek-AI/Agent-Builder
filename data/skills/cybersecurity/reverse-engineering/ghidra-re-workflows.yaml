@@ -2,7 +2,9 @@ id: ghidra-re-workflows
 name: Ghidra RE Workflows
 repo: https://github.com/example/ghidra-re-workflows
 tagline: Ghidra, rizin, and firmware unpacking workflows.
-description: A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and protocol decompilation checklists for authorized analysis.
+description: >-
+  A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and
+  protocol decompilation checklists for authorized analysis.
 kind: skill
 category: skills/cybersecurity/reverse-engineering
 harnesses:

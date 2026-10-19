@@ -2,7 +2,9 @@ id: terminal-dev-design
 name: Terminal Dev Design System
 repo: https://github.com/example/terminal-dev-design
 tagline: Terminal-first dark-mode DESIGN.md for dev tools.
-description: A drop-in DESIGN.md brand system for AI developer tools with terminal-first dark-mode palettes, high-contrast type, and dense engineering layouts.
+description: >-
+  A drop-in DESIGN.md brand system for AI developer tools with terminal-first dark-mode palettes,
+  high-contrast type, and dense engineering layouts.
 kind: design-md
 category: design-md/ai-dev-tools
 harnesses:

@@ -2,7 +2,9 @@ id: postgres-mcp-connector
 name: Postgres MCP Connector
 repo: https://github.com/example/postgres-mcp-connector
 tagline: Read-only Postgres MCP server with audited tools.
-description: An MCP server connector for PostgreSQL exposing query, list-tables, and schema inspection tools for least-privilege database agents.
+description: >-
+  An MCP server connector for PostgreSQL exposing query, list-tables, and schema inspection tools
+  for least-privilege database agents.
 kind: mcp-server
 category: mcp-servers/databases
 harnesses:
@@ -13,8 +15,8 @@ mcp:
   transport: stdio
   command: npx
   args:
-    - -y
-    - "@example/postgres-mcp"
+    - '-y'
+    - '@example/postgres-mcp'
   tools:
     - query
     - list-tables

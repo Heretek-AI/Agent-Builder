@@ -2,7 +2,9 @@ id: webui-frontend-patterns
 name: WebUI Frontend Patterns
 repo: https://github.com/example/webui-frontend-patterns
 tagline: React, Tailwind, and accessible motion design patterns.
-description: A frontend skill bundle with React and Next.js patterns, Tailwind CSS systems, WCAG accessibility checklists, and motion design guidelines.
+description: >-
+  A frontend skill bundle with React and Next.js patterns, Tailwind CSS systems, WCAG accessibility
+  checklists, and motion design guidelines.
 kind: skill
 category: skills/design/webui
 harnesses:

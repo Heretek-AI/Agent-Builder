@@ -2,7 +2,9 @@ id: modern-cpp-playbook
 name: Modern C++ Playbook
 repo: https://github.com/example/modern-cpp-playbook
 tagline: Modern C++20/23, CMake, and sanitizer workflows.
-description: A SKILL.md playbook covering modern C++20/23 idioms, CMake project layout, sanitizer runs, and memory-safety review checklists.
+description: >-
+  A SKILL.md playbook covering modern C++20/23 idioms, CMake project layout, sanitizer runs, and
+  memory-safety review checklists.
 kind: skill
 category: skills/coding/c-cpp
 harnesses:

@@ -2,7 +2,9 @@ id: opencode-session-hooks
 name: OpenCode Session Hooks Plugin
 repo: https://github.com/example/opencode-session-hooks
 tagline: Session lifecycle hooks and custom tools for OpenCode.
-description: An OpenCode plugin providing session start/finish hooks, custom tool registration, and statusline integration for OpenCode v1 and v2.
+description: >-
+  An OpenCode plugin providing session start/finish hooks, custom tool registration, and statusline
+  integration for OpenCode v1 and v2.
 kind: plugin
 category: plugins/opencode
 harnesses:

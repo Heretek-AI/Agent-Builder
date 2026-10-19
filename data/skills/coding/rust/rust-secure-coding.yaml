@@ -2,7 +2,9 @@ id: rust-secure-coding
 name: Rust Secure Coding Skill
 repo: https://github.com/example/rust-secure-coding
 tagline: Cargo workspaces, unsafe auditing, and Tokio patterns.
-description: A skill bundle for Rust development covering Cargo workspaces, unsafe block auditing, async Tokio patterns, lifetime refactoring, and FFI boundaries.
+description: >-
+  A skill bundle for Rust development covering Cargo workspaces, unsafe block auditing, async Tokio
+  patterns, lifetime refactoring, and FFI boundaries.
 kind: skill
 category: skills/coding/rust
 harnesses:

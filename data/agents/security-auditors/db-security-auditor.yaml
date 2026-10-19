@@ -2,7 +2,9 @@ id: db-security-auditor
 name: DB Security Auditor Agent
 repo: https://github.com/example/db-security-auditor
 tagline: Least-privilege database security auditor agent.
-description: A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool selection for injection and privilege-escalation review.
+description: >-
+  A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool
+  selection for injection and privilege-escalation review.
 kind: agent
 category: agents/security-auditors
 harnesses:
