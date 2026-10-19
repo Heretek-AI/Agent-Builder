@@ -26,7 +26,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Validate registry
         run: npm run validate
-      - name: Run tests
-        run: npm test
       - name: Build site
         run: npm run site
+      - name: Run tests
+        run: npm test

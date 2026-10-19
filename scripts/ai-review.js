@@ -75,6 +75,12 @@ function cmdSelftest(rootDir) {
     process.exit(1);
   }
   try {
+    execFileSync(process.execPath, [path.join(rootDir, 'scripts', 'build-site.js')], { stdio: 'inherit' });
+  } catch (_e) {
+    console.error('ERROR: selftest site step failed');
+    process.exit(1);
+  }
+  try {
     execFileSync(process.execPath, [path.join(rootDir, 'scripts', 'run-tests.js')], { stdio: 'inherit' });
   } catch (_e) {
     console.error('ERROR: selftest test step failed');
