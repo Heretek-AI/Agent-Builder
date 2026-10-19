@@ -159,9 +159,9 @@ button:disabled { opacity: 0.55; cursor: default; }
 }
 .category-tree button.active { color: var(--accent); font-weight: 700; }
 
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.7rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.7rem; min-height: 200px; }
 .entry-card { border: 1px solid var(--line); border-radius: 8px; padding: 0.7rem; background: var(--bg); }
-.entry-card h4 { margin: 0 0 0.25rem; font-size: 0.95rem; }
+.entry-card h3 { margin: 0 0 0.25rem; font-size: 0.95rem; }
 .entry-card .tagline { font-size: 0.85rem; margin: 0 0 0.4rem; }
 .badges { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 0.45rem; }
 .badge {
@@ -185,6 +185,8 @@ button:disabled { opacity: 0.55; cursor: default; }
   margin-top: 0.8rem;
 }
 .dropzone.dragover { border-color: var(--accent); }
+/* Keep the native file control at least 24px tall (WCAG target-size). */
+#fileInput { min-height: 24px; }
 
 .selected-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .selected-list li {
@@ -197,7 +199,7 @@ button:disabled { opacity: 0.55; cursor: default; }
 .selected-list button { border: none; background: none; padding: 0.1rem 0.4rem; }
 
 .scope-server { border: 1px solid var(--line); border-radius: 8px; padding: 0.7rem; margin-bottom: 0.7rem; background: var(--bg); }
-.scope-server h4 { margin: 0 0 0.4rem; }
+.scope-server h3 { margin: 0 0 0.4rem; }
 .tool-grid { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
 .tool-grid label { display: inline-flex; gap: 0.3rem; align-items: center; font-size: 0.85rem; margin: 0; }
 .tool-grid code { font-size: 0.8rem; }
@@ -250,6 +252,10 @@ button:disabled { opacity: 0.55; cursor: default; }
   z-index: 50;
   padding: 1rem;
 }
+/* The UA stylesheet hides [hidden] via display:none, but the display:flex
+   above overrides it — without this guard the publish modal overlay would
+   stay visible and swallow all mouse clicks even when hidden. */
+.modal-backdrop[hidden] { display: none; }
 .modal {
   background: var(--card);
   border-radius: var(--radius);
