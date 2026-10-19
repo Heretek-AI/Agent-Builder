@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "repository": "https://github.com/Heretek-AI/Agent-Builder",
   "registry_url": "https://heretek-ai.github.io/Agent-Builder/registry.json",
-  "generated_at": "2026-10-19T07:46:37.546Z",
+  "generated_at": "2026-10-19T13:47:24.015Z",
   "stats": {
     "total": 63,
     "by_kind": {
@@ -575,8 +575,8 @@
           {
             "server": "figma",
             "tools": [
-              "get_design_context",
-              "get_screenshot"
+              "get_figma_file",
+              "render_images"
             ]
           }
         ]
@@ -611,15 +611,15 @@
           {
             "server": "k8s",
             "tools": [
-              "list_pods",
-              "get_logs"
+              "kubectl_get",
+              "kubectl_logs"
             ]
           },
           {
             "server": "postgres-prod",
             "tools": [
-              "query",
-              "list-tables"
+              "execute_query",
+              "list_tables"
             ]
           }
         ]
@@ -635,7 +635,7 @@
     {
       "id": "db-security-auditor",
       "name": "DB Security Auditor Agent",
-      "repo": "https://github.com/example/db-security-auditor",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Least-privilege database security auditor agent.",
       "description": "A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool selection for injection and privilege-escalation review.",
       "kind": "agent",
@@ -655,8 +655,8 @@
           {
             "server": "postgres-prod",
             "tools": [
-              "query",
-              "list-tables"
+              "execute_query",
+              "list_tables"
             ]
           }
         ]
@@ -666,12 +666,13 @@
         "postgres"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "terminal-dev-design",
       "name": "Terminal Dev Design System",
-      "repo": "https://github.com/example/terminal-dev-design",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Terminal-first dark-mode DESIGN.md for dev tools.",
       "description": "A drop-in DESIGN.md brand system for AI developer tools with terminal-first dark-mode palettes, high-contrast type, and dense engineering layouts.",
       "kind": "design-md",
@@ -684,7 +685,8 @@
         "design-system"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "fintech-editorial-design",
@@ -780,9 +782,9 @@
           "mcp-server-kubernetes"
         ],
         "tools": [
-          "list_pods",
-          "list_deployments",
-          "get_logs"
+          "kubectl_get",
+          "kubectl_describe",
+          "kubectl_logs"
         ]
       },
       "tags": [
@@ -795,7 +797,7 @@
     {
       "id": "postgres-mcp-connector",
       "name": "Postgres MCP Connector",
-      "repo": "https://github.com/example/postgres-mcp-connector",
+      "repo": "https://github.com/kristofer84/mcp-postgres",
       "tagline": "Read-only Postgres MCP server with audited tools.",
       "description": "An MCP server connector for PostgreSQL exposing query, list-tables, and schema inspection tools for least-privilege database agents.",
       "kind": "mcp-server",
@@ -810,12 +812,12 @@
         "command": "npx",
         "args": [
           "-y",
-          "@example/postgres-mcp"
+          "mcp-postgres"
         ],
         "tools": [
-          "query",
-          "list-tables",
-          "describe-table"
+          "execute_query",
+          "list_tables",
+          "describe_table"
         ],
         "resources": [
           "schema"
@@ -826,12 +828,13 @@
         "sql"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Curated for Agent-Builder; inspired by kristofer84/mcp-postgres (MIT).",
+      "synthetic": false
     },
     {
       "id": "figma-design-mcp",
       "name": "Figma Design MCP Server",
-      "repo": "https://github.com/Framelink/figma-mcp-server",
+      "repo": "https://github.com/planetabhi/figma-mcp-server",
       "tagline": "Design context, components, and screenshots from Figma.",
       "description": "Figma MCP server: design-context extraction, component listing, and screenshot tooling pairing UI builder agents with live specs.",
       "kind": "mcp-server",
@@ -849,8 +852,8 @@
           "figma-mcp-server"
         ],
         "tools": [
-          "get_design_context",
-          "get_screenshot",
+          "get_figma_file",
+          "render_images",
           "list_components"
         ]
       },
@@ -859,7 +862,7 @@
         "design"
       ],
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by Framelink/figma-mcp-server (MIT)."
+      "source_attribution": "Curated for Agent-Builder; inspired by planetabhi/figma-mcp-server (npm license MIT; repo declares Other — see REMEDIATION_LOG Stage 2)."
     },
     {
       "id": "filesystem-shell-mcp",
@@ -887,8 +890,7 @@
         "tools": [
           "read_file",
           "write_file",
-          "list_directory",
-          "execute_command"
+          "list_directory"
         ]
       },
       "tags": [
@@ -937,7 +939,7 @@
     {
       "id": "notion-knowledge-mcp",
       "name": "Notion Knowledge MCP Server",
-      "repo": "https://github.com/makersu/notion-mcp-server",
+      "repo": "https://github.com/makenotion/notion-mcp-server",
       "tagline": "Docs and knowledge-base search over MCP.",
       "description": "Notion MCP server: page search, page retrieval, and page creation tools for knowledge-base and productivity agents.",
       "kind": "mcp-server",
@@ -955,9 +957,9 @@
           "@notionhq/notion-mcp-server"
         ],
         "tools": [
-          "search_pages",
-          "get_page",
-          "create_page"
+          "API-post-search",
+          "API-retrieve-a-page",
+          "API-post-page"
         ]
       },
       "tags": [
@@ -965,7 +967,7 @@
         "knowledge"
       ],
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by makersu/notion-mcp-server (MIT)."
+      "source_attribution": "Curated for Agent-Builder; inspired by makenotion/notion-mcp-server (MIT)."
     },
     {
       "id": "ghidra-re-mcp",
@@ -1040,7 +1042,7 @@
     {
       "id": "claude-slash-bundle",
       "name": "Claude Code Slash Bundle",
-      "repo": "https://github.com/example/claude-slash-bundle",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Slash-command bundle and hook scripts for Claude Code.",
       "description": "A Claude Code marketplace plugin bundling slash commands, hook scripts, and agent instructions for code review workflows.",
       "kind": "plugin",
@@ -1054,7 +1056,8 @@
       ],
       "installation": "Install via Claude Code marketplace.",
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "codex-cli-runtime",
@@ -1096,10 +1099,10 @@
     {
       "id": "harness-adapter-kit",
       "name": "Harness Adapter Kit",
-      "repo": "https://github.com/sst/opencode",
+      "repo": "https://github.com/anomalyco/opencode",
       "path": "packages/opencode/src/plugin",
       "tagline": "Adapter patterns for running one agent across harnesses.",
-      "description": "Adapter patterns derived from the sst/opencode plugin surface for running a single agent recipe across OpenCode, Claude Code, and Codex via shared SKILL.md and MCP contracts.",
+      "description": "Adapter patterns derived from the anomalyco/opencode plugin surface for running a single agent recipe across OpenCode, Claude Code, and Codex via shared SKILL.md and MCP contracts.",
       "kind": "plugin",
       "category": "plugins/cross-harness",
       "harnesses": [
@@ -1113,7 +1116,7 @@
         "multi-harness"
       ],
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by sst/opencode plugin docs (MIT)."
+      "source_attribution": "Curated for Agent-Builder; inspired by anomalyco/opencode plugin docs (MIT)."
     },
     {
       "id": "litellm-router-bridge",
@@ -1195,9 +1198,9 @@
     {
       "id": "opencode-native-toolchain",
       "name": "OpenCode Native Toolchain",
-      "repo": "https://github.com/sst/opencode",
+      "repo": "https://github.com/anomalyco/opencode",
       "tagline": "Official OpenCode runtime: custom tools, hooks, and plugin API.",
-      "description": "The official sst/opencode runtime documenting the plugin API, custom tool definitions, session lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.",
+      "description": "The official anomalyco/opencode runtime documenting the plugin API, custom tool definitions, session lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.",
       "kind": "plugin",
       "category": "plugins/opencode",
       "harnesses": [
@@ -1209,12 +1212,12 @@
         "tools"
       ],
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by sst/opencode (MIT)."
+      "source_attribution": "Curated for Agent-Builder; inspired by anomalyco/opencode (MIT)."
     },
     {
       "id": "opencode-session-hooks",
       "name": "OpenCode Session Hooks Plugin",
-      "repo": "https://github.com/example/opencode-session-hooks",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Session lifecycle hooks and custom tools for OpenCode.",
       "description": "An OpenCode plugin providing session start/finish hooks, custom tool registration, and statusline integration for OpenCode v1 and v2.",
       "kind": "plugin",
@@ -1230,7 +1233,8 @@
       "scope": "workspace",
       "installation": "opencode plugin install opencode-session-hooks",
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "architecture-review-prompt",
@@ -1276,7 +1280,7 @@
     {
       "id": "adversarial-audit-prompt",
       "name": "Adversarial Audit Prompt",
-      "repo": "https://github.com/example/adversarial-audit-prompt",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Red-team multi-subagent code audit prompt.",
       "description": "A system prompt for adversarial security audits with red-team instructions, threat-modeling steps, and multi-subagent review orchestration.",
       "kind": "prompt",
@@ -1291,12 +1295,13 @@
         "audit"
       ],
       "license": "CC0-1.0",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, CC0-1.0).",
+      "synthetic": true
     },
     {
       "id": "modern-cpp-playbook",
       "name": "Modern C++ Playbook",
-      "repo": "https://github.com/example/modern-cpp-playbook",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Modern C++20/23, CMake, and sanitizer workflows.",
       "description": "A SKILL.md playbook covering modern C++20/23 idioms, CMake project layout, sanitizer runs, and memory-safety review checklists.",
       "kind": "skill",
@@ -1315,7 +1320,8 @@
         "sanitizers"
       ],
       "license": "CC0-1.0",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, CC0-1.0).",
+      "synthetic": true
     },
     {
       "id": "go-concurrent-services",
@@ -1368,7 +1374,7 @@
     {
       "id": "lua-neovim-scripting",
       "name": "Lua and Neovim Scripting Skill",
-      "repo": "https://github.com/example/lua-neovim-scripting",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "LuaJIT, Neovim plugins, and embedded Lua scripting.",
       "description": "A skill covering LuaJIT idioms, Neovim plugin development with Lua, LOVE2D game scripting, and embedded Lua integration patterns.",
       "kind": "skill",
@@ -1385,7 +1391,8 @@
         "luajit"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "python-fastapi-service",
@@ -1438,7 +1445,7 @@
     {
       "id": "rust-secure-coding",
       "name": "Rust Secure Coding Skill",
-      "repo": "https://github.com/example/rust-secure-coding",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Cargo workspaces, unsafe auditing, and Tokio patterns.",
       "description": "A skill bundle for Rust development covering Cargo workspaces, unsafe block auditing, async Tokio patterns, lifetime refactoring, and FFI boundaries.",
       "kind": "skill",
@@ -1457,7 +1464,8 @@
         "tokio"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "shell-cli-ergonomics",
@@ -1601,7 +1609,7 @@
     {
       "id": "malware-triage-playbook",
       "name": "Malware Triage Playbook",
-      "repo": "https://github.com/example/malware-triage-playbook",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Static/dynamic triage, YARA, and sandbox detonation.",
       "description": "A malware-analysis skill covering static and dynamic binary triage, YARA rule authoring, deobfuscation steps, and sandbox detonation analysis notes.",
       "kind": "skill",
@@ -1615,12 +1623,13 @@
         "sandbox"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "ghidra-re-workflows",
       "name": "Ghidra RE Workflows",
-      "repo": "https://github.com/example/ghidra-re-workflows",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Ghidra, rizin, and firmware unpacking workflows.",
       "description": "A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and protocol decompilation checklists for authorized analysis.",
       "kind": "skill",
@@ -1635,12 +1644,13 @@
         "firmware"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "secure-code-audit",
       "name": "Secure Code Audit Skill",
-      "repo": "https://github.com/example/secure-code-audit",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "SAST/DAST triage, threat modeling, and audit checklists.",
       "description": "A security-auditing skill with SAST and DAST triage workflows, threat-modeling templates, and differential vulnerability discovery checklists.",
       "kind": "skill",
@@ -1655,7 +1665,8 @@
         "threat-model"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "web-api-pentesting",
@@ -1777,7 +1788,7 @@
     {
       "id": "linux-desktop-patterns",
       "name": "Linux Desktop Patterns",
-      "repo": "https://github.com/example/linux-desktop-patterns",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "GTK4, Qt/QML, Flatpak, and Wayland integration.",
       "description": "A skill for Linux desktop development covering GTK4 and Qt/QML patterns, Wayland and X11 compositor notes, Flatpak packaging, and systemd desktop integration.",
       "kind": "skill",
@@ -1795,7 +1806,8 @@
         "flatpak"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "macos-swiftui-patterns",
@@ -1849,7 +1861,7 @@
     {
       "id": "android-compose-patterns",
       "name": "Android Compose Patterns",
-      "repo": "https://github.com/example/android-compose-patterns",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "Jetpack Compose, ADB automation, and Gradle tuning.",
       "description": "A mobile Android skill covering Jetpack Compose patterns, Kotlin Android SDK usage, ADB automation scripts, and Gradle build performance tuning.",
       "kind": "skill",
@@ -1869,7 +1881,8 @@
         "gradle"
       ],
       "license": "Apache-2.0",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, Apache-2.0)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, Apache-2.0).",
+      "synthetic": true
     },
     {
       "id": "flutter-cross-mobile",
@@ -1927,7 +1940,7 @@
     {
       "id": "webui-frontend-patterns",
       "name": "WebUI Frontend Patterns",
-      "repo": "https://github.com/example/webui-frontend-patterns",
+      "repo": "https://github.com/Heretek-AI/Agent-Builder",
       "tagline": "React, Tailwind, and accessible motion design patterns.",
       "description": "A frontend skill bundle with React and Next.js patterns, Tailwind CSS systems, WCAG accessibility checklists, and motion design guidelines.",
       "kind": "skill",
@@ -1947,7 +1960,8 @@
         "a11y"
       ],
       "license": "MIT",
-      "source_attribution": "Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT)."
+      "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
+      "synthetic": true
     },
     {
       "id": "ci-observability-runbooks",

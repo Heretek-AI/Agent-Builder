@@ -62,6 +62,7 @@ function fail(msg) {
 function parseServeArgs(argv) {
   let port = 4173;
   let host = '127.0.0.1';
+  let allowLoopbackLlm = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--port' || a.startsWith('--port=')) {
@@ -79,11 +80,13 @@ function parseServeArgs(argv) {
         fail('serve: --host requires a value');
       }
       host = val;
+    } else if (a === '--allow-loopback-llm') {
+      allowLoopbackLlm = true;
     } else {
       fail('serve: unknown argument ' + JSON.stringify(a) + ' (see --help)');
     }
   }
-  return { port, host };
+  return { port, host, allowLoopbackLlm };
 }
 
 function loadRegistryEntries() {
@@ -291,9 +294,9 @@ function main() {
     process.exit(0);
   }
   if (cmd === 'serve') {
-    const { port, host } = parseServeArgs(rest);
+    const { port, host, allowLoopbackLlm } = parseServeArgs(rest);
     const { startLocalServer } = require('../src/server/local-server');
-    startLocalServer({ port, host }).then((server) => {
+    startLocalServer({ port, host, allowLoopbackLlm }).then((server) => {
       const addr = server.address();
       const where = addr && typeof addr === 'object' ? `http://${addr.address}:${addr.port}` : `http://${host}:${port}`;
       console.log(`AGENT_BUILDER_SERVE ${where}`);

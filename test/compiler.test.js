@@ -51,10 +51,10 @@ const FIXTURE_MARKDOWN = [
   '    "sql-query-audit": allow',
   '  "github_*": deny',
   '  "figma_*": deny',
-  '  "postgres_prod_*": deny',
-  '  "postgres_prod_query": allow',
-  '  "postgres_prod_list_tables": allow',
-  '  "postgres_prod_drop_table": deny',
+  '  "postgres-prod_*": deny',
+  '  "postgres-prod_query": allow',
+  '  "postgres-prod_list-tables": allow',
+  '  "postgres-prod_drop-table": deny',
   '---',
   '',
   'Audit SQL queries and schema migrations for injection and privilege escalation.',
@@ -62,24 +62,27 @@ const FIXTURE_MARKDOWN = [
 ].join('\n');
 
 describe('normalizeMcpId', () => {
-  it('maps postgres-prod + read-query to postgres_prod_read_query', () => {
-    assert.equal(normalizeMcpId('postgres-prod'), 'postgres_prod');
-    assert.equal(normalizeMcpId('read-query'), 'read_query');
+  it('preserves hyphens like upstream OpenCode/Claude Code (postgres-prod stays hyphenated)', () => {
+    assert.equal(normalizeMcpId('postgres-prod'), 'postgres-prod');
+    assert.equal(normalizeMcpId('read-query'), 'read-query');
     assert.equal(
       normalizeMcpId('postgres-prod') + '_' + normalizeMcpId('read-query'),
-      'postgres_prod_read_query'
+      'postgres-prod_read-query'
     );
   });
 
-  it('trims, collapses runs, and strips edge underscores', () => {
-    assert.equal(normalizeMcpId('  read-query '), 'read_query');
-    assert.equal(normalizeMcpId('list--tables'), 'list_tables');
-    assert.equal(normalizeMcpId('--weird__name--'), 'weird_name');
+  it('trims, collapses foreign runs, and strips edge underscores', () => {
+    assert.equal(normalizeMcpId('  read-query '), 'read-query');
+    // Hyphen/underscore runs are preserved (upstream behavior); only runs of
+    // other separators collapse to one `_`, and only `_` edges are trimmed.
+    assert.equal(normalizeMcpId('list--tables'), 'list--tables');
+    assert.equal(normalizeMcpId('--weird__name--'), '--weird__name--');
     assert.equal(normalizeMcpId('a.b/c:d'), 'a_b_c_d');
-    assert.equal(normalizeMcpId('---'), '');
+    assert.equal(normalizeMcpId('__a__b__'), 'a__b');
+    assert.equal(normalizeMcpId('---'), '---');
   });
 
-  it('compiled actions never contain raw hyphens', () => {
+  it('compiled actions preserve hyphens to match real runtime tool names (fail-closed deny)', () => {
     const out = compileAgentRecipe(
       {
         slug: 'x',
@@ -91,10 +94,11 @@ describe('normalizeMcpId', () => {
       []
     );
     const actions = out.opencodeV2.agents.x.permissions.map((r) => r.action);
-    assert.ok(actions.includes('postgres_prod_read_query'));
-    assert.ok(actions.includes('postgres_prod_list_tables'));
+    assert.ok(actions.includes('postgres-prod_*'));
+    assert.ok(actions.includes('postgres-prod_read-query'));
+    assert.ok(actions.includes('postgres-prod_list-tables'));
     for (const a of actions) {
-      assert.ok(!a.includes('-'), `action ${a} must be normalized`);
+      assert.ok(!/[./:\s]/.test(a), `action ${a} must contain no path/space characters`);
     }
   });
 });
@@ -125,10 +129,10 @@ describe('deny-first skill scoping', () => {
       'skill',
       'github_*',
       'figma_*',
-      'postgres_prod_*'
+      'postgres-prod_*'
     ]);
-    assert.equal(perm['postgres_prod_query'], 'allow');
-    assert.equal(perm['postgres_prod_drop_table'], 'deny');
+    assert.equal(perm['postgres-prod_query'], 'allow');
+    assert.equal(perm['postgres-prod_drop-table'], 'deny');
   });
 
   it('shuts off skills completely when skills is []', () => {
@@ -160,8 +164,8 @@ describe('wildcard vs per-tool vs explicit deny', () => {
       []
     );
     const perms = out.opencodeV2.agents.w.permissions;
-    assert.equal(evaluateV2Permission(perms, 'srv_a_anything', '*'), 'allow');
-    assert.equal(evaluateV2Permission(perms, 'srv_a_drop', '*'), 'deny');
+    assert.equal(evaluateV2Permission(perms, 'srv-a_anything', '*'), 'allow');
+    assert.equal(evaluateV2Permission(perms, 'srv-a_drop', '*'), 'deny');
   });
 
   it('per-tool allow opens only the listed tools', () => {
@@ -176,8 +180,8 @@ describe('wildcard vs per-tool vs explicit deny', () => {
       []
     );
     const perms = out.opencodeV2.agents.p.permissions;
-    assert.equal(evaluateV2Permission(perms, 'srv_b_read', '*'), 'allow');
-    assert.equal(evaluateV2Permission(perms, 'srv_b_write', '*'), 'deny');
+    assert.equal(evaluateV2Permission(perms, 'srv-b_read', '*'), 'allow');
+    assert.equal(evaluateV2Permission(perms, 'srv-b_write', '*'), 'deny');
   });
 });
 
@@ -235,10 +239,10 @@ describe('spike fixture exact markdown', () => {
       { action: 'skill', resource: 'sql-query-audit', effect: 'allow' },
       { action: 'github_*', resource: '*', effect: 'deny' },
       { action: 'figma_*', resource: '*', effect: 'deny' },
-      { action: 'postgres_prod_*', resource: '*', effect: 'deny' },
-      { action: 'postgres_prod_query', resource: '*', effect: 'allow' },
-      { action: 'postgres_prod_list_tables', resource: '*', effect: 'allow' },
-      { action: 'postgres_prod_drop_table', resource: '*', effect: 'deny' },
+      { action: 'postgres-prod_*', resource: '*', effect: 'deny' },
+      { action: 'postgres-prod_query', resource: '*', effect: 'allow' },
+      { action: 'postgres-prod_list-tables', resource: '*', effect: 'allow' },
+      { action: 'postgres-prod_drop-table', resource: '*', effect: 'deny' },
       { action: 'opencode_list_mcp_resources', resource: '*', effect: 'deny' },
       { action: 'opencode_read_mcp_resource', resource: '*', effect: 'deny' }
     ]);
@@ -281,12 +285,15 @@ describe('recipe flexibility', () => {
     assert.deepEqual(out.claudeCodeMcp.mcpServers['postgres-prod'], {
       command: 'npx',
       args: ['-y', '@example/postgres-mcp'],
-      transport: 'stdio'
+      env: {}
     });
+    assert.ok(!('transport' in out.claudeCodeMcp.mcpServers['postgres-prod']), 'must not emit non-spec transport key');
     assert.ok(out.claudeCodeAgentMd.includes('name: full'));
-    assert.ok(out.claudeCodeAgentMd.includes('mcp__postgres_prod__query'));
+    assert.ok(out.claudeCodeAgentMd.includes('mcp__postgres-prod__query'));
     assert.ok(out.claudeCodeAgentMd.includes('.claude/skills/s1/SKILL.md'));
     assert.ok(out.codexConfigToml.includes('[mcp_servers.postgres-prod]'));
+    assert.ok(out.codexConfigToml.includes('command = "npx"'), 'codex TOML must carry a command transport');
+    assert.ok(out.codexConfigToml.includes('args = ["-y", "@example/postgres-mcp"]'));
     assert.ok(out.codexConfigToml.includes('enabled_tools = ["query"]'));
     assert.ok(out.codexConfigToml.includes('disabled_tools = ["drop-table"]'));
     assert.ok(out.installScriptSh.startsWith('#!/bin/sh'));
@@ -308,6 +315,84 @@ describe('recipe flexibility', () => {
       () => evaluateV2Permission([{ action: 'a', resource: 'b', effect: 'maybe' }], 'a', 'b'),
       /invalid effect/
     );
+  });
+
+  it('codex TOML never emits a bare tools-only block (AB-2.5 fail-closed)', () => {
+    const regWithEnv = [
+      {
+        id: 'pg',
+        kind: 'mcp-server',
+        mcp: {
+          server_name: 'postgres-prod',
+          command: 'npx',
+          args: ['-y', 'mcp-postgres'],
+          env: { PG_URL: 'postgresql://localhost/db' },
+          tools: ['execute_query']
+        }
+      }
+    ];
+    const out = compileAgentRecipe(
+      {
+        slug: 'codex-probe',
+        description: 'd',
+        prompt: 'p',
+        skills: [],
+        mcpSelections: [{ server: 'postgres-prod', tools: ['execute_query'] }]
+      },
+      regWithEnv
+    );
+    const lines = out.codexConfigToml.split('\n');
+    assert.ok(lines.includes('[mcp_servers.postgres-prod]'));
+    assert.ok(lines.includes('command = "npx"'));
+    assert.ok(lines.includes('args = ["-y", "mcp-postgres"]'));
+    assert.ok(lines.includes('env = { "PG_URL" = "postgresql://localhost/db" }'));
+    assert.ok(lines.includes('enabled_tools = ["execute_query"]'));
+    // Placeholder path (unknown server) must still carry command/args.
+    const bare = compileAgentRecipe(
+      { slug: 'bare', description: 'd', prompt: 'p', skills: [], mcpSelections: [{ server: 'mystery-srv', tools: ['*'] }] },
+      []
+    );
+    assert.ok(bare.codexConfigToml.includes('command = "npx"'));
+    assert.ok(bare.codexConfigToml.includes('args = ["-y", "mystery-srv"]'));
+  });
+
+  it('maps remote url entries to type/url without a transport key', () => {
+    const out = compileAgentRecipe(
+      {
+        slug: 'remote',
+        description: 'd',
+        prompt: 'p',
+        skills: [],
+        mcpSelections: [{ server: 'web-api', tools: ['*'] }]
+      },
+      [{ id: 'w', kind: 'mcp-server', mcp: { server_name: 'web-api', url: 'https://mcp.example.com/sse', transport: 'sse' } }]
+    );
+    assert.deepEqual(out.claudeCodeMcp.mcpServers['web-api'], {
+      url: 'https://mcp.example.com/sse',
+      type: 'sse'
+    });
+    assert.ok(out.codexConfigToml.includes('url = "https://mcp.example.com/sse"'));
+    assert.ok(!out.codexConfigToml.includes('command = '));
+  });
+
+  it('hyphenated server ids round-trip through deny rules (AB-7.4 fail-open guard)', () => {
+    const out = compileAgentRecipe(
+      {
+        slug: 'hyphen',
+        description: 'd',
+        prompt: 'p',
+        skills: [],
+        mcpSelections: [{ server: 'postgres-prod', tools: ['execute_query'], deniedTools: ['drop-table'] }]
+      },
+      []
+    );
+    const perms = out.opencodeV2.agents.hyphen.permissions;
+    // Real runtime action names (hyphens preserved) hit the explicit rules…
+    assert.equal(evaluateV2Permission(perms, 'postgres-prod_execute_query', '*'), 'allow');
+    assert.equal(evaluateV2Permission(perms, 'postgres-prod_drop-table', '*'), 'deny');
+    assert.equal(evaluateV2Permission(perms, 'postgres-prod_anything-else', '*'), 'deny');
+    // …while the old underscore-normalized forms they replaced no longer exist.
+    assert.ok(!perms.some((r) => r.action.includes('postgres_prod')));
   });
 });
 
@@ -332,8 +417,8 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
       '      "permissions": [',
       '        { "action": "skill", "resource": "*", "effect": "deny" },',
       '        { "action": "skill", "resource": "a-skill", "effect": "allow" },',
-      '        { "action": "postgres_prod_*", "resource": "*", "effect": "deny" },',
-      '        { "action": "postgres_prod_query", "resource": "*", "effect": "allow" }',
+      '        { "action": "postgres-prod_*", "resource": "*", "effect": "deny" },',
+      '        { "action": "postgres-prod_query", "resource": "*", "effect": "allow" }',
       '      ]',
       '    }',
       '  }',
@@ -345,7 +430,7 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     assert.equal(recipes[0].description, 'demo agent // kept');
     assert.deepEqual(recipes[0].skills, ['a-skill']);
     assert.deepEqual(recipes[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query'], deniedTools: [], allowResources: false }
+      { server: 'postgres-prod', tools: ['query'], deniedTools: [], allowResources: false }
     ]);
   });
 
@@ -359,7 +444,7 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     assert.equal(recipes[0].model, 'anthropic/claude-sonnet-4-5');
     assert.deepEqual(recipes[0].skills, ['rust-secure-coding', 'sql-query-audit']);
     assert.deepEqual(recipes[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query', 'list_tables'], deniedTools: ['drop_table'], allowResources: false }
+      { server: 'postgres-prod', tools: ['query', 'list-tables'], deniedTools: ['drop-table'], allowResources: false }
     ]);
     const recompiled = compileAgentRecipe(recipes[0], REGISTRY);
     assert.deepEqual(recompiled.opencodeV2, original.opencodeV2);
@@ -380,7 +465,7 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     assert.equal(recipes[0].slug, 'db-security-auditor');
     assert.deepEqual(recipes[0].skills, ['rust-secure-coding', 'sql-query-audit']);
     assert.deepEqual(recipes[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query', 'list_tables'], deniedTools: ['drop_table'], allowResources: false }
+      { server: 'postgres-prod', tools: ['query', 'list-tables'], deniedTools: ['drop-table'], allowResources: false }
     ]);
     const recompiled = compileAgentRecipe(recipes[0], REGISTRY);
     assert.deepEqual(recompiled.opencodeV1, original.opencodeV1);
@@ -411,7 +496,7 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     assert.equal(recipes[0].prompt, FIXTURE_RECIPE.prompt);
     assert.deepEqual(recipes[0].skills, ['rust-secure-coding', 'sql-query-audit']);
     assert.deepEqual(recipes[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query', 'list_tables'], deniedTools: ['drop_table'], allowResources: false }
+      { server: 'postgres-prod', tools: ['query', 'list-tables'], deniedTools: ['drop-table'], allowResources: false }
     ]);
     const recompiled = compileAgentRecipe(recipes[0], REGISTRY);
     assert.strictEqual(recompiled.opencodeMarkdown, FIXTURE_MARKDOWN);
@@ -430,7 +515,7 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     );
     const recipes = parseUploadedConfig('opencode.json', JSON.stringify(out.opencodeV2));
     assert.deepEqual(recipes[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query'], deniedTools: [], allowResources: true }
+      { server: 'postgres-prod', tools: ['query'], deniedTools: [], allowResources: true }
     ]);
   });
 
@@ -458,7 +543,7 @@ describe('UMD browser compatibility (no module system)', () => {
   it('exposes Compiler on the global scope via script tag', () => {
     const sandbox = loadInSandbox('src/core/compiler.js');
     assert.equal(typeof sandbox.Compiler, 'object');
-    assert.equal(sandbox.Compiler.normalizeMcpId('a-b'), 'a_b');
+    assert.equal(sandbox.Compiler.normalizeMcpId('a-b'), 'a-b');
     assert.equal(sandbox.Compiler.evaluateV2Permission([], 'x', 'y'), 'allow');
     const out = sandbox.Compiler.compileAgentRecipe(FIXTURE_RECIPE, []);
     assert.ok(out.opencodeMarkdown.includes('db-security-auditor') || out.slug === 'db-security-auditor');
@@ -476,7 +561,7 @@ describe('UMD browser compatibility (no module system)', () => {
     assert.equal(plain[0].slug, 'db-security-auditor');
     assert.deepEqual(plain[0].skills, ['rust-secure-coding', 'sql-query-audit']);
     assert.deepEqual(plain[0].mcpSelections, [
-      { server: 'postgres_prod', tools: ['query', 'list_tables'], deniedTools: ['drop_table'], allowResources: false }
+      { server: 'postgres-prod', tools: ['query', 'list-tables'], deniedTools: ['drop-table'], allowResources: false }
     ]);
   });
 });

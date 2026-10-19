@@ -1,6 +1,6 @@
 id: secure-code-audit
 name: Secure Code Audit Skill
-repo: https://github.com/example/secure-code-audit
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: SAST/DAST triage, threat modeling, and audit checklists.
 description: >-
   A security-auditing skill with SAST and DAST triage workflows, threat-modeling templates, and
@@ -15,4 +15,5 @@ tags:
   - sast
   - threat-model
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

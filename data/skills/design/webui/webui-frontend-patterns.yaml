@@ -1,6 +1,6 @@
 id: webui-frontend-patterns
 name: WebUI Frontend Patterns
-repo: https://github.com/example/webui-frontend-patterns
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: React, Tailwind, and accessible motion design patterns.
 description: >-
   A frontend skill bundle with React and Next.js patterns, Tailwind CSS systems, WCAG accessibility
@@ -19,4 +19,5 @@ tags:
   - tailwind
   - a11y
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

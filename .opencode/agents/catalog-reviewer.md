@@ -6,10 +6,10 @@ permission:
     "*": deny
     "code-review": allow
     "security-audit": allow
-  "read_*": allow
-  "glob_*": allow
-  "grep_*": allow
   "*": deny
+  "read": allow
+  "glob": allow
+  "grep": allow
 ---
 
 # Catalog Reviewer
@@ -27,7 +27,7 @@ For every entry under review, verify:
 1. **Category placement** — `entry.category` is a leaf id in `data/taxonomy.json` and matches the entry's subject (e.g. a Rust skill lives under `skills/coding/rust`, not `skills/coding/python`).
 2. **Kind/folder match** — `kind` matches the `data/` folder: `plugin` -> `data/plugins/`, `skill` -> `data/skills/`, `mcp-server` -> `data/mcp-servers/`, `design-md` -> `data/design-md/`, `prompt` -> `data/prompts/`, `agent` -> `data/agents/`.
 3. **Harnesses compatibility** — every claimed harness (`opencode`, `claude-code`, `codex`, `gemini-cli`, `cursor`, `windsurf`, `copilot`, `universal`) is plausible for the entry type.
-4. **MCP tool names** — `mcp.tools` lists the server's exact exported tool names; compiled permission ids use `<normServer>_<normTool>` normalization where all non-alphanumeric characters map to `_` (e.g. server `postgres-prod` + tool `list-tables` -> `postgres_prod_list_tables`).
+4. **MCP tool names** — `mcp.tools` lists the server's exact exported tool names; compiled permission ids use `<normServer>_<normTool>` normalization where hyphens and underscores are preserved and every other run of non-alphanumeric characters maps to `_` (e.g. server `postgres-prod` + tool `list-tables` -> `postgres-prod_list-tables`).
 5. **Deny-first scoping** — agent presets compile to `deny "*"` first, then explicit `allow` rules (`src/core/compiler.js` order: skill deny, skill allows, per-server denies, per-tool allows, explicit tool denies, resource rules).
 6. **License/attribution** — `license` is the correct upstream SPDX identifier and `source_attribution` credits the upstream repository.
 
