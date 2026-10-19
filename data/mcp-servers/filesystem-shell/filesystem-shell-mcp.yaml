@@ -21,8 +21,6 @@ mcp:
     - '@modelcontextprotocol/server-filesystem'
     - /tmp
   tools:
-    # Verified 2026-10-19 against @modelcontextprotocol/server-filesystem@2.0.0
-    # tools/list (14 tools): execute_command is not exported by the real server.
     - read_file
     - write_file
     - list_directory

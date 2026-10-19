@@ -3,8 +3,8 @@ name: OpenCode Native Toolchain
 repo: https://github.com/anomalyco/opencode
 tagline: 'Official OpenCode runtime: custom tools, hooks, and plugin API.'
 description: >-
-  The official anomalyco/opencode runtime documenting the plugin API, custom tool definitions, session
-  lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.
+  The official anomalyco/opencode runtime documenting the plugin API, custom tool definitions,
+  session lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.
 kind: plugin
 category: plugins/opencode
 harnesses:

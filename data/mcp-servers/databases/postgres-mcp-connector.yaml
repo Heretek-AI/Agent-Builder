@@ -18,8 +18,6 @@ mcp:
     - '-y'
     - mcp-postgres
   tools:
-    # Tool names per the published mcp-postgres@1.4.2 README (Available Tools):
-    # execute_query, list_tables, describe_table (get_schema/get_table_sample omitted).
     - execute_query
     - list_tables
     - describe_table

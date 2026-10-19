@@ -18,8 +18,6 @@ mcp:
     - '-y'
     - '@notionhq/notion-mcp-server'
   tools:
-    # Verified 2026-10-19 against @notionhq/notion-mcp-server@2.5.2 tools/list
-    # (24 API-* tools): search, retrieve, and create page mappings below.
     - API-post-search
     - API-retrieve-a-page
     - API-post-page
