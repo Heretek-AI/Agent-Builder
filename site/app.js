@@ -667,6 +667,52 @@
       '"prompt": "<refined system prompt>", "slug": "<slug>"} using only entry ids from the summary.';
   }
 
+  // Same-origin per-boot token bridge (getRequestToken contract: x-ab-token
+  // header or ?token= query param). The local server injects
+  // <meta name="ab-token" content="..."> into same-origin index.html (or
+  // window.__AB_TOKEN__ / ?token= launch URL). All same-origin /api/*
+  // callers (/api/llm/chat, /api/mcp/introspect, /api/install) must send it.
+  function getAbToken() {
+    try {
+      var m = document.querySelector('meta[name="ab-token"]');
+      if (m && m.getAttribute('content')) {
+        return m.getAttribute('content');
+      }
+    } catch (_e) { /* no DOM meta: fall through */ }
+    try {
+      if (typeof window !== 'undefined' && window.__AB_TOKEN__) {
+        return String(window.__AB_TOKEN__);
+      }
+    } catch (_e) { /* ignore */ }
+    try {
+      var mm = location.search.match(/[?&]token=([^&]+)/);
+      if (mm) {
+        return decodeURIComponent(mm[1]);
+      }
+    } catch (_e) { /* ignore */ }
+    return '';
+  }
+
+  function withAbToken(headers) {
+    var t = getAbToken();
+    if (t) {
+      headers['x-ab-token'] = t;
+    }
+    return headers;
+  }
+
+  function withAbTokenUrl(url) {
+    var t = getAbToken();
+    if (!t) {
+      return url;
+    }
+    // Header is primary; ?token= is the fallback getRequestToken also accepts.
+    if (url.indexOf('/api/') !== -1 && url.indexOf('token=') === -1) {
+      return url + (url.indexOf('?') === -1 ? '?token=' : '&token=') + encodeURIComponent(t);
+    }
+    return url;
+  }
+
   function askHelper() {
     var out = $('helperOutput');
     var request = ($('helperPrompt').value || '').trim();
@@ -681,9 +727,9 @@
 
     if (useMcp) {
       out.textContent = 'Calling local MCP connector /api/mcp/call …';
-      fetch('/api/mcp/call', {
+      fetch(withAbTokenUrl('/api/mcp/call'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withAbToken({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           tool: 'build_agent',
           args: { request: request, recipe: recipe, registrySummary: registrySummary() },
@@ -719,8 +765,8 @@
     }
 
     out.textContent = 'Thinking …';
-    var url = useProxy ? '/api/llm/chat' : baseUrl.replace(/\/$/, '') + '/chat/completions';
-    var headers = { 'Content-Type': 'application/json' };
+    var url = useProxy ? withAbTokenUrl('/api/llm/chat') : baseUrl.replace(/\/$/, '') + '/chat/completions';
+    var headers = withAbToken({ 'Content-Type': 'application/json' });
     if (!useProxy && apiKey) { headers.Authorization = 'Bearer ' + apiKey; }
     fetch(url, {
       method: 'POST',

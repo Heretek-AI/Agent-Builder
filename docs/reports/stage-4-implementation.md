@@ -43,8 +43,8 @@ node scripts/ai-review.js selftest → VALIDATED 63 / SITE_BUILT 63 / SELFTEST_O
 Acceptance proofs: pasted `--recipe <base64url>` → `DRY_RUN install …`
 exit 0 (ASCII + live test); `SOURCE_DATE_EPOCH=1234567890` ×2 →
 identical sha256; wall-clock ×2 → identical except `generated_at`;
-bogus epoch → exit 1; `evaluateV2Permission([{action:'a?c'}],'abc')`
-→ deny (allow-form in issue framing); `ls` confirms
+bogus epoch → exit 1; `evaluateV2Permission([{action:'a?c', resource:'*', effect:'deny'}],'abc')`
+→ deny (`?` single-char wildcard matches `abc`); `ls` confirms
 `scripts/generate-rigs.py` / `scripts/verify-rigs.sh` do not exist
 (real equivalents above used instead).
 

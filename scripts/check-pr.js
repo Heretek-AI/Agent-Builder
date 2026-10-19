@@ -48,14 +48,18 @@ function parseArgs(argv) {
 
 function getChangedFiles(base) {
   // Never interpolate untrusted refs into a shell string: argv array only.
+  // Exclude deletions (--diff-filter=ACMRTUXB omits D) so a deleted
+  // data/**/*.yaml file does not fail per-file validation; the remaining
+  // catalog is still validated. Belt-and-suspenders existsSync filtering
+  // in main() covers renames/deletions the diff filter might miss.
   const range = `${base}...HEAD`;
   try {
-    const out = execFileSync('git', ['diff', '--name-only', range], { encoding: 'utf8' });
+    const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', range], { encoding: 'utf8' });
     return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
   } catch (_e) {
     // Fall back to a plain base ref diff (e.g. when HEAD has no upstream range).
     try {
-      const out = execFileSync('git', ['diff', '--name-only', base], { encoding: 'utf8' });
+      const out = execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMRTUXB', base], { encoding: 'utf8' });
       return out.split('\n').map((s) => s.trim()).filter((s) => s !== '');
     } catch (err) {
       console.error(`ERROR: unable to diff against '${base}': ${err.message}`);
@@ -126,12 +130,23 @@ function main() {
     return;
   }
   if (yamlChanged.length > 0) {
-    const absFiles = yamlChanged.map((f) => path.join(rootDir, f));
-    const { entries, errors } = loadCatalog(rootDir, absFiles);
-    if (errors.length > 0) {
-      fail(errors, `${errors.length} error(s) in ${yamlChanged.length} changed file(s)`);
+    // Exclude deleted paths (no longer on disk) so a deletion passes when
+    // the remaining catalog is valid; validate all remaining files.
+    const existingYaml = yamlChanged.filter((f) => fs.existsSync(path.join(rootDir, f)));
+    if (existingYaml.length === 0) {
+      const full = loadCatalog(rootDir);
+      if (full.errors.length > 0) {
+        fail(full.errors, `full catalog invalid after deletion (${full.errors.length} error(s))`);
+      }
+      console.log(`CHECK_PR_OK: deleted ${yamlChanged.length} data file(s); remaining catalog valid (${full.entries.length} entries)`);
+    } else {
+      const absFiles = existingYaml.map((f) => path.join(rootDir, f));
+      const { entries, errors } = loadCatalog(rootDir, absFiles);
+      if (errors.length > 0) {
+        fail(errors, `${errors.length} error(s) in ${existingYaml.length} changed file(s)`);
+      }
+      console.log(`CHECK_PR_OK: ${entries.length} changed entr${entries.length === 1 ? 'y' : 'ies'} valid`);
     }
-    console.log(`CHECK_PR_OK: ${entries.length} changed entr${entries.length === 1 ? 'y' : 'ies'} valid`);
   }
   if (scriptsChanged.length > 0) {
     // Validator/gate code itself changed: validate the whole catalog (not just

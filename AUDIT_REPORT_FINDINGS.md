@@ -402,8 +402,8 @@ plus containment in export/build/read.
 - **Priority:** P3
 - **Claim:** 2.1
 - **Location:** `src/core/compiler.js:38-44`
-- **Proof:** `evaluateV2Permission([{action:'a?c'}],'abc')`
-- **Raw output:** ? literal; compiler never emits ?
+- **Proof:** `evaluateV2Permission([{action:'a?c', resource:'*', effect:'deny'}],'abc')`
+- **Raw output:** `deny` (`?` matches exactly one character, so `a?c` matches `abc` and the last matching rule wins)
 - **Why it matters:** simulator-only.
 - **Remediation:** ?→. or document.
 - **Verify the fix:** evaluates effect.

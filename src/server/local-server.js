@@ -22,6 +22,7 @@
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const dns = require('dns');
 const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
@@ -30,7 +31,7 @@ const MCP_TIMEOUT_MS = 5000;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
 // Fail-closed allowlist for /api/mcp/introspect (AB-5.6-introspect-rce).
-// Compared via path.basename(command.trim()); never spawn anything else.
+// Compared by exact bare name only; never spawn a path.
 const MCP_COMMAND_ALLOWLIST = new Set(['npx', 'node', 'python3']);
 
 function loadVersion() {
@@ -186,19 +187,36 @@ function isPrivateOrReservedLiteral(host) {
   if (h.startsWith('[') && h.endsWith(']')) {
     h = h.slice(1, -1);
   }
+  // Fail-closed: block localhost names (allowed only via
+  // --allow-loopback-llm when isLoopbackLiteral also agrees).
+  if (h === 'localhost' || h.endsWith('.localhost')) {
+    return true;
+  }
   if (h === '::1' || h === '::' || h === '0.0.0.0') {
     return true;
   }
   if (h.includes(':')) {
-    // Any other IPv6 literal: treat link-local/unique-local/loopback as
-    // blocked. Fail-closed: block fe80::/10, fc00::/7, ::1.
-    if (h === '::1' || h.startsWith('fe80:') || h.startsWith('fec0:')) {
-      return true;
+    // IPv4-mapped IPv6 ::ffff:<hex>:<hex> (WHATWG URL normalizes
+    // [::ffff:127.0.0.1] to [::ffff:7f00:1]): classify by embedded IPv4.
+    const mapped = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (mapped) {
+      const hi = parseInt(mapped[1], 16);
+      const lo = parseInt(mapped[2], 16);
+      h = [(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff].join('.');
+      // Fall through to the IPv4 checks below with the embedded address.
+    } else if (h.startsWith('::ffff:')) {
+      return true; // Fail closed on unrecognized ::ffff: forms.
+    } else {
+      // Any other IPv6 literal: treat link-local/unique-local/loopback as
+      // blocked. Fail-closed: block fe80::/10, fc00::/7, ::1.
+      if (h === '::1' || h.startsWith('fe80:') || h.startsWith('fec0:')) {
+        return true;
+      }
+      if (h.startsWith('fc') || h.startsWith('fd')) {
+        return true;
+      }
+      return false;
     }
-    if (h.startsWith('fc') || h.startsWith('fd')) {
-      return true;
-    }
-    return false;
   }
   if (!isIPv4Literal(h)) {
     return false;
@@ -212,6 +230,9 @@ function isPrivateOrReservedLiteral(host) {
   }
   if (o[0] === 192 && o[1] === 168) {
     return true; // 192.168/16
+  }
+  if (o[0] === 100 && o[1] >= 64 && o[1] <= 127) {
+    return true; // 100.64/10 shared address space
   }
   if (o[0] === 169 && o[1] === 254) {
     return true; // 169.254/16
@@ -249,86 +270,163 @@ function assertBaseUrlPermitted(target, options) {
   }
 }
 
+function isIpLiteralHost(host) {
+  let h = String(host).toLowerCase();
+  if (h.startsWith('[') && h.endsWith(']')) {
+    h = h.slice(1, -1);
+  }
+  if (h.includes(':')) {
+    return true; // IPv6 literal (including ::ffff: mapped forms).
+  }
+  if (isIPv4Literal(h)) {
+    return true;
+  }
+  return false;
+}
+
+function stripBrackets(host) {
+  const h = String(host);
+  if (h.startsWith('[') && h.endsWith(']')) {
+    return h.slice(1, -1);
+  }
+  return h;
+}
+
+function lookupHost(hostname) {
+  return new Promise((resolve, reject) => {
+    // No shell: hostname comes from the parsed URL object via argv-free lookup.
+    dns.lookup(hostname, (err, address) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(address);
+      }
+    });
+  });
+}
+
 function proxyLlmChat(body, options) {
   return new Promise((resolve, reject) => {
-    let baseUrl = body.baseUrl;
-    const model = body.model;
-    const messages = body.messages;
-    if (typeof baseUrl !== 'string' || baseUrl.trim().length === 0) {
-      reject(new Error('field "baseUrl" must be a non-empty string'));
-      return;
-    }
-    if (typeof model !== 'string' || model.trim().length === 0) {
-      reject(new Error('field "model" must be a non-empty string'));
-      return;
-    }
-    if (!Array.isArray(messages) || messages.length === 0) {
-      reject(new Error('field "messages" must be a non-empty array'));
-      return;
-    }
-    if (!/^https?:\/\//i.test(baseUrl.trim())) {
-      reject(new Error('field "baseUrl" must be an http(s) URL'));
-      return;
-    }
-    baseUrl = baseUrl.trim();
-    let target;
-    try {
-      target = new URL(resolveChatUrl(baseUrl));
-    } catch (e) {
-      reject(new Error('field "baseUrl" is not a valid URL: ' + e.message));
-      return;
-    }
-    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
-      reject(new Error('field "baseUrl" must use http or https'));
-      return;
-    }
-    try {
-      assertBaseUrlPermitted(target, options);
-    } catch (e) {
-      reject(e);
-      return;
-    }
-    const payload = JSON.stringify({
-      model: model.trim(),
-      messages,
-      temperature: body.temperature !== undefined ? body.temperature : undefined,
-      max_tokens: body.max_tokens !== undefined ? body.max_tokens : undefined,
-      stream: false
-    });
-    const lib = target.protocol === 'https:' ? https : http;
-    const headers = {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload)
-    };
-    if (typeof body.apiKey === 'string' && body.apiKey.length > 0) {
-      headers.Authorization = 'Bearer ' + body.apiKey;
-    }
-    const upstream = lib.request({
-      hostname: target.hostname,
-      port: target.port || (target.protocol === 'https:' ? 443 : 80),
-      path: target.pathname + (target.search || ''),
-      method: 'POST',
-      headers,
-      timeout: 60000
-    }, (upRes) => {
-      const chunks = [];
-      upRes.on('data', (c) => chunks.push(c));
-      upRes.on('end', () => {
-        const text = Buffer.concat(chunks).toString('utf8');
-        let parsed;
+    (async () => {
+      let baseUrl = body.baseUrl;
+      const model = body.model;
+      const messages = body.messages;
+      if (typeof baseUrl !== 'string' || baseUrl.trim().length === 0) {
+        throw new Error('field "baseUrl" must be a non-empty string');
+      }
+      if (typeof model !== 'string' || model.trim().length === 0) {
+        throw new Error('field "model" must be a non-empty string');
+      }
+      if (!Array.isArray(messages) || messages.length === 0) {
+        throw new Error('field "messages" must be a non-empty array');
+      }
+      if (!/^https?:\/\//i.test(baseUrl.trim())) {
+        throw new Error('field "baseUrl" must be an http(s) URL');
+      }
+      baseUrl = baseUrl.trim();
+      let target;
+      try {
+        target = new URL(resolveChatUrl(baseUrl));
+      } catch (e) {
+        throw new Error('field "baseUrl" is not a valid URL: ' + e.message);
+      }
+      if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+        throw new Error('field "baseUrl" must use http or https');
+      }
+      try {
+        assertBaseUrlPermitted(target, options);
+      } catch (e) {
+        throw e;
+      }
+      // Fail-closed: never send a bearer API key over cleartext HTTP to a
+      // non-loopback target (passive network observer would capture it).
+      // Credentialed loopback HTTP (isLoopbackLiteral) stays permitted.
+      const hasApiKey = typeof body.apiKey === 'string' && body.apiKey.length > 0;
+      if (hasApiKey && target.protocol === 'http:' && !isLoopbackLiteral(target.hostname)) {
+        throw new Error('baseUrl target not permitted (API key requires HTTPS)');
+      }
+      // Fail-closed DNS vetting: hostnames that are not IP literals are
+      // resolved with dns.lookup and the resolved address is re-checked with
+      // the same literal gate; the connection then uses the vetted address
+      // (original host preserved via Host header / SNI).
+      const opts = options || {};
+      const allowLoopback = opts.allowLoopbackLlm === true;
+      let connectHostname = stripBrackets(target.hostname);
+      let servername;
+      let hostHeader;
+      if (!isIpLiteralHost(target.hostname)) {
+        let address;
         try {
-          parsed = JSON.parse(text);
+          address = await lookupHost(target.hostname);
         } catch (_e) {
-          parsed = { raw: text };
+          throw new Error('baseUrl target not permitted (DNS lookup failed)');
         }
-        resolve({ status: upRes.statusCode || 502, body: parsed });
+        if (isPrivateOrReservedLiteral(address)) {
+          if (!(allowLoopback && isLoopbackLiteral(address))) {
+            throw new Error('baseUrl target not permitted');
+          }
+        }
+        connectHostname = stripBrackets(address);
+        // Preserve virtual-host routing and TLS SNI for the original name.
+        hostHeader = target.host;
+        if (target.protocol === 'https:') {
+          servername = target.hostname;
+        }
+      }
+      const payload = JSON.stringify({
+        model: model.trim(),
+        messages,
+        temperature: body.temperature !== undefined ? body.temperature : undefined,
+        max_tokens: body.max_tokens !== undefined ? body.max_tokens : undefined,
+        stream: false
       });
-    });
-    upstream.on('timeout', () => {
-      upstream.destroy(new Error('upstream LLM request timed out'));
-    });
-    upstream.on('error', reject);
-    upstream.end(payload);
+      const lib = target.protocol === 'https:' ? https : http;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      };
+      if (hostHeader) {
+        headers.Host = hostHeader;
+      }
+      if (hasApiKey) {
+        headers.Authorization = 'Bearer ' + body.apiKey;
+      }
+      const requestOptions = {
+        hostname: connectHostname,
+        port: target.port || (target.protocol === 'https:' ? 443 : 80),
+        path: target.pathname + (target.search || ''),
+        method: 'POST',
+        headers,
+        timeout: 60000
+      };
+      if (servername) {
+        requestOptions.servername = servername;
+      }
+      await new Promise((res, rej) => {
+        const upstream = lib.request(requestOptions, (upRes) => {
+          const chunks = [];
+          upRes.on('data', (c) => chunks.push(c));
+          upRes.on('end', () => {
+            const text = Buffer.concat(chunks).toString('utf8');
+            let parsed;
+            try {
+              parsed = JSON.parse(text);
+            } catch (_e) {
+              parsed = { raw: text };
+            }
+            resolve({ status: upRes.statusCode || 502, body: parsed });
+            res();
+          });
+        });
+        upstream.on('timeout', () => {
+          upstream.destroy(new Error('upstream LLM request timed out'));
+        });
+        upstream.on('error', (err) => {
+          rej(err);
+        });
+        upstream.end(payload);
+      });
+    })().catch(reject);
   });
 }
 
@@ -354,9 +452,25 @@ function introspectMcpServer(body) {
     let env = process.env;
     if (body.env !== undefined) {
       const extra = {};
+      // Fail-closed: loader / interpreter-search keys must never come from
+      // the caller (they would let an allowlisted binary load attacker code).
+      const BLOCKED_ENV_KEYS = new Set([
+        'NODE_OPTIONS',
+        'NODE_PATH',
+        'PYTHONPATH',
+        'PYTHONSTARTUP',
+        'PYTHONHOME',
+        'LD_PRELOAD',
+        'LD_LIBRARY_PATH',
+        'PATH'
+      ]);
       for (const key of Object.keys(body.env)) {
         if (typeof body.env[key] !== 'string') {
           reject(new Error('field "env" values must be strings'));
+          return;
+        }
+        if (BLOCKED_ENV_KEYS.has(key)) {
+          reject(new Error('introspect env not allowed: ' + key));
           return;
         }
         extra[key] = body.env[key];
@@ -365,13 +479,21 @@ function introspectMcpServer(body) {
     }
     let child;
     try {
-      // Fail-closed allowlist (AB-5.6-introspect-rce): only npx/node/python3.
+      // Fail-closed allowlist (AB-5.6-introspect-rce): exact bare-name match
+      // only (npx/node/python3). Never basename-compare or spawn a path: an
+      // attacker path such as /tmp/x/node must not resolve via PATH.
       // Array argv only; never a shell string (no interpolation, no shell flag).
       const trimmed = command.trim();
-      const base = path.basename(trimmed);
-      if (!MCP_COMMAND_ALLOWLIST.has(base) && !MCP_COMMAND_ALLOWLIST.has(trimmed)) {
+      if (!MCP_COMMAND_ALLOWLIST.has(trimmed)) {
         throw new Error('command not allowlisted');
       }
+      // Fail-closed: reject interpreter-evaluation flags that turn an
+      // allowlisted binary into arbitrary code execution.
+      const EVAL_FLAGS = new Set(['-e', '--eval', '-p', '--print', '-c', '-r', '--require', '--import', '--loader']);
+      if (args.some((a) => EVAL_FLAGS.has(a) || /^--(eval|print|require|import|loader)=/.test(a))) {
+        throw new Error('introspect args not allowed (eval/loader flag)');
+      }
+      // Spawn the validated bare name so PATH resolves it, not an attacker path.
       child = spawn(trimmed, args.slice(), { env, stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (e) {
       reject(new Error('failed to spawn MCP server: ' + e.message));
@@ -574,7 +696,33 @@ function getRequestToken(req) {
   return '';
 }
 
-function serveStatic(reqUrl, staticRoot, res, req) {
+function escapeHtmlAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// Same-origin token bridge: inject the per-boot token as a meta tag when
+// serving index.html so the WebUI can send it back via x-ab-token (or
+// ?token=). getRequestToken contract unchanged. The token is only exposed
+// to same-origin GETs of the served UI, never via CORS wildcard.
+function injectAbToken(html, token) {
+  const tag = '<meta name="ab-token" content="' + escapeHtmlAttr(token) + '">';
+  if (String(html).includes('name="ab-token"')) {
+    return String(html);
+  }
+  if (String(html).includes('</head>')) {
+    return String(html).replace('</head>', '  ' + tag + '\n</head>');
+  }
+  if (String(html).includes('<head>')) {
+    return String(html).replace('<head>', '<head>\n  ' + tag);
+  }
+  return tag + '\n' + String(html);
+}
+
+function serveStatic(reqUrl, staticRoot, res, req, bootToken) {
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(reqUrl, 'http://localhost').pathname);
@@ -612,7 +760,35 @@ function serveStatic(reqUrl, staticRoot, res, req) {
       sendJson(res, 404, { error: 'not found: ' + pathname }, req);
       return;
     }
+    // Same-origin WebUI token bridge: inject bootToken into index.html so
+    // same-origin callers of /api/llm/chat, /api/mcp/introspect, /api/install
+    // can send it back as x-ab-token (fallback ?token=).
+    if (pathname === '/index.html' && typeof bootToken === 'string' && bootToken.length > 0) {
+      let html;
+      try {
+        html = fs.readFileSync(dest, 'utf8');
+      } catch (_e) {
+        sendJson(res, 500, { error: 'unable to read index.html' }, req);
+        return;
+      }
+      const injected = injectAbToken(html, bootToken);
+      setCors(res, req);
+      const headers = { 'Content-Type': contentTypeFor(dest) };
+      if ((req.method || 'GET').toUpperCase() === 'HEAD') {
+        res.writeHead(200, headers);
+        res.end();
+        return;
+      }
+      res.writeHead(200, headers);
+      res.end(injected);
+      return;
+    }
     setCors(res, req);
+    if ((req.method || 'GET').toUpperCase() === 'HEAD') {
+      res.writeHead(200, { 'Content-Type': contentTypeFor(dest) });
+      res.end();
+      return;
+    }
     res.writeHead(200, { 'Content-Type': contentTypeFor(dest) });
     fs.createReadStream(dest).pipe(res);
   });
@@ -731,7 +907,7 @@ function startLocalServer(options) {
         return;
       }
       if (method === 'GET' || method === 'HEAD') {
-        serveStatic(req.url, staticRoot, res, req);
+        serveStatic(req.url, staticRoot, res, req, bootToken);
         return;
       }
       sendJson(res, 405, { error: 'method not allowed: ' + method + ' ' + pathname }, req);
@@ -764,7 +940,10 @@ module.exports = {
   assertHttpTargetDir,
   isSafeRelPath,
   isLoopbackOrigin,
+  isLoopbackLiteral,
+  isPrivateOrReservedLiteral,
   getRequestToken,
+  serveStatic,
   MCP_COMMAND_ALLOWLIST,
   MCP_TIMEOUT_MS
 };

@@ -241,7 +241,9 @@ describe('introspect allowlist and no-shell spawn', () => {
     assert.ok(!LOCAL_SERVER_SRC.includes('shell:true') && !LOCAL_SERVER_SRC.includes('shell: true'), 'spawn options must never contain shell:true');
     assert.ok(LOCAL_SERVER_SRC.includes('command not allowlisted'), 'allowlist error must remain');
     assert.ok(LOCAL_SERVER_SRC.includes('MCP_COMMAND_ALLOWLIST'), 'allowlist set must remain');
-    assert.ok(LOCAL_SERVER_SRC.includes('path.basename'), 'allowlist must compare via path.basename');
+    // Exact bare-name match only: attacker paths must not pass via basename.
+    assert.ok(!LOCAL_SERVER_SRC.includes('path.basename'), 'allowlist must use exact bare-name match, not path.basename');
+    assert.ok(LOCAL_SERVER_SRC.includes('MCP_COMMAND_ALLOWLIST.has(trimmed)'), 'allowlist must compare the exact trimmed command');
   });
 
   it('introspectMcpServer unit rejects non-allowlisted binaries fail-closed', async () => {
@@ -281,6 +283,127 @@ describe('introspect allowlist and no-shell spawn', () => {
   it('POST /api/mcp/introspect without token yields 401', async () => {
     const out = await postJson('/api/mcp/introspect', { command: 'npx', args: ['--version'] }, false);
     assert.equal(out.status, 401);
+  });
+
+  it('introspectMcpServer rejects attacker paths even with allowlisted basename (exact-match)', async () => {
+    await assert.rejects(
+      () => introspectMcpServer({ command: '/tmp/x/node', args: ['--version'] }),
+      /command not allowlisted/
+    );
+    await assert.rejects(
+      () => introspectMcpServer({ command: '/usr/local/bin/npx', args: ['--version'] }),
+      /command not allowlisted/
+    );
+    await assert.rejects(
+      () => introspectMcpServer({ command: 'npx --version', args: [] }),
+      /command not allowlisted/
+    );
+  });
+
+  it('introspectMcpServer rejects interpreter eval/loader flags fail-closed', async () => {
+    for (const badArgs of [['-e', 'process.exit(0)'], ['--eval', 'x'], ['-p', 'x'], ['--print', 'x'], ['-c', 'x'], ['-r', 'evil'], ['--require', 'evil'], ['--import', 'evil'], ['--loader', 'evil'], ['--eval=x']]) {
+      await assert.rejects(
+        () => introspectMcpServer({ command: 'node', args: badArgs }),
+        /eval|loader|not allowed/i,
+        `expected eval/loader rejection for ${JSON.stringify(badArgs)}`
+      );
+    }
+  });
+
+  it('introspectMcpServer rejects loader env keys fail-closed', async () => {
+    for (const key of ['NODE_OPTIONS', 'PYTHONPATH', 'PYTHONSTARTUP', 'LD_PRELOAD', 'PATH']) {
+      await assert.rejects(
+        () => introspectMcpServer({ command: 'node', args: ['--version'], env: { [key]: 'evil' } }),
+        /env not allowed/i,
+        `expected env rejection for ${key}`
+      );
+    }
+  });
+
+  it('POST /api/mcp/introspect rejects eval flags and loader env with 400', async () => {
+    const evalOut = await postJson('/api/mcp/introspect', { command: 'node', args: ['-e', 'id'] });
+    assert.equal(evalOut.status, 400);
+    assert.match(String(evalOut.json && evalOut.json.error || ''), /eval|loader|not allowed/i);
+    const envOut = await postJson('/api/mcp/introspect', { command: 'node', args: ['--version'], env: { NODE_OPTIONS: '--inspect' } });
+    assert.equal(envOut.status, 400);
+    assert.match(String(envOut.json && envOut.json.error || ''), /env not allowed/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SSRF localhost + mapped + apiKey-over-HTTP (follow-up hardening)
+// ---------------------------------------------------------------------------
+
+describe('SSRF localhost/mapped/apiKey hardening', () => {
+  it('assertBaseUrlPermitted denies localhost and .localhost without flag', () => {
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://localhost:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://foo.localhost:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+  });
+
+  it('assertBaseUrlPermitted denies [::ffff:127.0.0.1] and 100.64/10 without flag', () => {
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://[::ffff:127.0.0.1]:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://[::ffff:7f00:1]:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://100.64.0.1:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+    assert.throws(
+      () => assertBaseUrlPermitted(new URL('http://100.127.0.1:9/v1/chat/completions'), {}),
+      /baseUrl target not permitted/
+    );
+    assert.doesNotThrow(() => assertBaseUrlPermitted(new URL('http://100.128.0.1:9/v1/chat/completions'), {}));
+  });
+
+  it('POST /api/llm/chat: localhost and [::ffff:127.0.0.1] yield 400 without flag', async () => {
+    const localhostOut = await postJson('/api/llm/chat', {
+      baseUrl: 'http://localhost:9',
+      model: 'test-model',
+      messages: [{ role: 'user', content: 'hi' }]
+    });
+    assert.equal(localhostOut.status, 400);
+    assert.match(String(localhostOut.json && localhostOut.json.error || ''), /baseUrl target not permitted/);
+
+    const mappedOut = await postJson('/api/llm/chat', {
+      baseUrl: 'http://[::ffff:127.0.0.1]:9',
+      model: 'test-model',
+      messages: [{ role: 'user', content: 'hi' }]
+    });
+    assert.equal(mappedOut.status, 400);
+    assert.match(String(mappedOut.json && mappedOut.json.error || ''), /baseUrl target not permitted/);
+  });
+
+  it('proxyLlmChat unit: rejects non-empty apiKey over plain HTTP to non-loopback', async () => {
+    await assert.rejects(
+      () => proxyLlmChat({ baseUrl: 'http://example.com/v1', model: 'm', messages: [{ role: 'user', content: 'hi' }], apiKey: 'dummy-api-key' }),
+      /API key requires HTTPS/
+    );
+    await assert.rejects(
+      () => proxyLlmChat({ baseUrl: 'http://100.128.0.1:9', model: 'm', messages: [{ role: 'user', content: 'hi' }], apiKey: 'dummy-api-key' }),
+      /API key requires HTTPS/
+    );
+  });
+
+  it('POST /api/llm/chat: apiKey over HTTP to non-loopback yields 400 API key requires HTTPS', async () => {
+    const out = await postJson('/api/llm/chat', {
+      baseUrl: 'http://100.128.0.1:9',
+      model: 'test-model',
+      messages: [{ role: 'user', content: 'hi' }],
+      apiKey: 'dummy-api-key'
+    });
+    assert.equal(out.status, 400);
+    assert.match(String(out.json && out.json.error || ''), /API key requires HTTPS/);
   });
 });
 
@@ -328,6 +451,18 @@ describe('CORS wildcard removal and per-boot token', () => {
     assert.equal(res.status, 400);
     const body = await res.json();
     assert.match(String(body.error || ''), /command not allowlisted/);
+  });
+
+  it('GET / injects same-origin ab-token meta for WebUI callers', async () => {
+    const res = await fetch(baseUrl() + '/');
+    assert.equal(res.status, 200);
+    const text = await res.text();
+    assert.match(text, /<meta name="ab-token" content="/);
+    assert.ok(text.includes(token), 'injected meta must carry the per-boot token');
+    // WebUI callers must read the token (meta / window / ?token=) for /api/*.
+    const appSrc = fs.readFileSync(path.join(ROOT, 'site', 'app.js'), 'utf8');
+    assert.ok(appSrc.includes('meta[name="ab-token"]'), 'WebUI must read ab-token meta');
+    assert.ok(appSrc.includes('x-ab-token'), 'WebUI must send x-ab-token header');
   });
 });
 
