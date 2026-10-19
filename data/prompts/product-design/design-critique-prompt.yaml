@@ -1,0 +1,18 @@
+id: design-critique-prompt
+name: Design Critique Prompt
+repo: https://github.com/f/prompts.chat
+path: prompts/design
+tagline: Design critique, documentation, and spec-interview prompts.
+description: >-
+  System prompt for product and UI critique: design review checklists, documentation drafting, and
+  specification interview flows (prompts data CC0-1.0).
+kind: prompt
+category: prompts/product-design
+harnesses:
+  - universal
+tags:
+  - design
+  - critique
+  - docs
+license: CC0-1.0
+source_attribution: Curated for Agent-Builder; inspired by f/prompts.chat prompts data (CC0-1.0).

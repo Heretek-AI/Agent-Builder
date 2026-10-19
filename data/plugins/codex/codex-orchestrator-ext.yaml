@@ -1,0 +1,17 @@
+id: codex-orchestrator-ext
+name: Codex Orchestrator Extension
+repo: https://github.com/openai/codex
+path: docs/config.md
+tagline: Multi-step orchestration profiles for Codex CLI sessions.
+description: >-
+  Orchestration-oriented Codex CLI configuration patterns (approval policies, sandbox workspaces,
+  mcp_servers blocks) for running scoped multi-step coding sessions.
+kind: plugin
+category: plugins/codex
+harnesses:
+  - codex
+tags:
+  - orchestration
+  - config
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by openai/codex docs.

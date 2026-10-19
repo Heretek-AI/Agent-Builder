@@ -1,0 +1,22 @@
+id: rag-vector-playbook
+name: RAG & Vector Search Playbook Skill
+repo: https://github.com/qdrant/qdrant
+tagline: Hybrid retrieval, chunking, embeddings, and agent memory.
+description: >-
+  Skill bundle for retrieval: hybrid search, chunking strategies, embedding selection, Qdrant vector
+  collections, and persistent agent memory.
+kind: skill
+category: skills/data-ai/rag-memory
+harnesses:
+  - opencode
+  - universal
+languages:
+  - python
+tags:
+  - rag
+  - vectors
+  - memory
+license: Apache-2.0
+source_attribution: >-
+  Curated for Agent-Builder; inspired by qdrant/qdrant (Apache-2.0) and
+  Shubhamsaboo/awesome-llm-apps (Apache-2.0).

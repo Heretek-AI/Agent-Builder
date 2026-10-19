@@ -1,0 +1,33 @@
+id: sre-database-agent
+name: SRE Database Responder Agent
+repo: https://github.com/open-telemetry/opentelemetry-collector
+tagline: Read-only K8s and Postgres responder with SQL audit skills.
+description: >-
+  Ready-to-run DevOps/data agent combining CI observability runbooks and SQL audit skills with
+  read-only Kubernetes and Postgres MCP tools.
+kind: agent
+category: agents/devops-data
+harnesses:
+  - opencode
+agent_preset:
+  mode: subagent
+  model: anthropic/claude-sonnet-4-5
+  prompt: Respond to database and cluster incidents using read-only inspection; never mutate state.
+  skills:
+    - sql-query-optimization
+    - ci-observability-runbooks
+  mcp_selections:
+    - server: k8s
+      tools:
+        - list_pods
+        - get_logs
+    - server: postgres-prod
+      tools:
+        - query
+        - list-tables
+tags:
+  - sre
+  - database
+  - read-only
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by open-telemetry/opentelemetry-collector (Apache-2.0).

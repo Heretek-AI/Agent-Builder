@@ -1,0 +1,28 @@
+id: ghidra-re-mcp
+name: Ghidra RE MCP Server
+repo: https://github.com/LaurieWired/GhidraMCP
+tagline: 'Binary analysis via Ghidra: functions, strings, decompilation.'
+description: >-
+  GhidraMCP bridge: function listing, string extraction, and decompilation tools exposing
+  reverse-engineering capability to agents.
+kind: mcp-server
+category: mcp-servers/security-re
+harnesses:
+  - opencode
+  - claude-code
+mcp:
+  server_name: ghidra
+  transport: stdio
+  command: python3
+  args:
+    - '-m'
+    - ghidramcp
+  tools:
+    - list_functions
+    - decompile_function
+    - list_strings
+tags:
+  - ghidra
+  - reverse-engineering
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by LaurieWired/GhidraMCP (MIT).

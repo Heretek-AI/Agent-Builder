@@ -1,0 +1,31 @@
+id: fullstack-polyglot-agent
+name: Full-Stack Polyglot Agent
+repo: https://github.com/Shubhamsaboo/awesome-llm-apps
+tagline: Pre-scoped Python/TS/Go coding specialist with GitHub MCP.
+description: >-
+  Ready-to-run coding specialist agent combining Python, TypeScript, and Go skills with scoped
+  GitHub MCP tools for full-stack feature work.
+kind: agent
+category: agents/coding-specialists
+harnesses:
+  - opencode
+agent_preset:
+  mode: subagent
+  model: anthropic/claude-sonnet-4-5
+  prompt: >-
+    Implement full-stack features across Python, TypeScript, and Go services with tested, reviewed
+    changes.
+  skills:
+    - python-fastapi-service
+    - typescript-strict-patterns
+    - go-concurrent-services
+  mcp_selections:
+    - server: github
+      tools:
+        - get_pull_request
+        - search_repositories
+tags:
+  - fullstack
+  - coding
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by Shubhamsaboo/awesome-llm-apps (Apache-2.0).

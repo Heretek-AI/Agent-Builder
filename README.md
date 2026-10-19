@@ -15,7 +15,7 @@ npx @heretek-ai/agent-builder serve
 # then open the printed local URL, or use the hosted WebUI above
 ```
 
-**Registry stats:** 15 entries (1 agent, 1 design-md, 1 mcp-server, 2 plugin, 1 prompt, 9 skill) across the taxonomy below.
+**Registry stats:** 63 entries (4 agent, 3 design-md, 8 mcp-server, 12 plugin, 3 prompt, 33 skill) across the taxonomy below.
 
 ## Table of Contents
 
@@ -102,6 +102,8 @@ OpenCode v1 & v2 plugins, custom tools, and session hooks.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
+| [Awesome OpenCode Catalog](https://github.com/Heretek-AI/awesome-opencode) | Upstream awesome list of OpenCode plugins, agents, and configs. | [opencode] | — | — |
+| [OpenCode Native Toolchain](https://github.com/sst/opencode) | Official OpenCode runtime: custom tools, hooks, and plugin API. | [opencode] | — | — |
 | [OpenCode Session Hooks Plugin](https://github.com/example/opencode-session-hooks) | Session lifecycle hooks and custom tools for OpenCode. | [opencode] | — | — |
 
 ### Claude Code Plugins
@@ -112,6 +114,8 @@ Claude Code slash-command bundles, hook scripts, and marketplace plugins.
 
 | Name | Tagline | Harnesses | Languages/Platforms | Tools |
 | --- | --- | --- | --- | --- |
+| [Awesome Claude Code Resources](https://github.com/hesreallyhim/awesome-claude-code) | Community catalog of Claude Code commands, agents, and hooks. | [claude-code] | — | — |
+| [Claude Code Runtime](https://github.com/anthropics/claude-code) | Official Claude Code CLI: slash commands, hooks, and MCP support. | [claude-code] | — | — |
 | [Claude Code Slash Bundle](https://github.com/example/claude-slash-bundle) | Slash-command bundle and hook scripts for Claude Code. | [claude-code] | — | — |
 
 ### Codex Plugins & Extensions
@@ -120,7 +124,10 @@ Claude Code slash-command bundles, hook scripts, and marketplace plugins.
 
 Codex CLI wrappers, sandbox profiles, and orchestration extensions.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Codex CLI Runtime](https://github.com/openai/codex) | Official Codex CLI: sandbox profiles and skill wiring. | [codex] | — | — |
+| [Codex Orchestrator Extension](https://github.com/openai/codex) | Multi-step orchestration profiles for Codex CLI sessions. | [codex] | — | — |
 
 ### Gemini CLI Extensions
 
@@ -128,7 +135,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Extensions and tool bridges for Gemini CLI.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Gemini CLI Extension Bridge](https://github.com/google-gemini/gemini-cli) | Extensions and tool bridges for Gemini CLI agents. | [gemini-cli] | — | — |
 
 ### Cursor & Windsurf Extensions
 
@@ -136,7 +145,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 IDE-integrated agent plugins and rule packs.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Cursor Rules Pack](https://github.com/PatrickJS/awesome-cursorrules) | Community rule packs and IDE agent plugins for Cursor. | [cursor] [windsurf] | — | — |
 
 ### Cross-Harness Bridges & Multiplexers
 
@@ -144,7 +155,10 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Multi-agent routers, harness adapters, and cross-provider bridges.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Harness Adapter Kit](https://github.com/sst/opencode) | Adapter patterns for running one agent across harnesses. | [opencode] [claude-code] [codex] [universal] | — | — |
+| [LiteLLM Router Bridge](https://github.com/BerriAI/litellm) | Multi-provider LLM router bridging harnesses to 100+ models. | [opencode] [claude-code] [codex] [universal] | — | — |
 
 ## 2. Agent Skills (By Subject & Domain)
 
@@ -192,7 +206,10 @@ LuaJIT, Neovim plugin development, LÖVE2D, and embedded Lua scripting.
 
 Asyncio, Pydantic, packaging (uv/poetry), type-checking, and FastAPI services.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Python FastAPI Service Skill](https://github.com/tiangolo/fastapi) | Asyncio, Pydantic v2, and FastAPI service patterns. | [opencode] [claude-code] [codex] [universal] | python | — |
+| [Python Packaging with uv Skill](https://github.com/astral-sh/uv) | Modern Python packaging, workspaces, and type-checking with uv. | [opencode] [universal] | python | — |
 
 #### TypeScript & JavaScript
 
@@ -200,7 +217,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Node.js, Bun, Deno, strict TypeScript type-level programming, and ESM bundling.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Strict TypeScript Patterns Skill](https://github.com/microsoft/TypeScript) | Strict type-level TypeScript, ESM bundling, and Bun/Node APIs. | [opencode] [claude-code] [universal] | typescript, javascript | — |
 
 #### Go (Golang)
 
@@ -208,7 +227,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Concurrent Go services, gRPC, profiling, and zero-allocation patterns.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Go Concurrent Services Skill](https://github.com/golang/go) | Concurrent Go services, gRPC, profiling, and zero-alloc patterns. | [opencode] [claude-code] [universal] | go | — |
 
 #### Zig & Low-Level Systems
 
@@ -216,7 +237,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Zig build system, custom allocators, bare-metal, and OS kernel development.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Zig Systems Playbook Skill](https://github.com/ziglang/zig) | Zig build system, custom allocators, and bare-metal patterns. | [opencode] [universal] | zig | — |
 
 #### Java, Kotlin & C# (.NET)
 
@@ -224,7 +247,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 JVM performance, Spring/Ktor, .NET Core, and enterprise backend patterns.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [JVM Spring Patterns Skill](https://github.com/spring-projects/spring-boot) | Spring Boot services, JVM tuning, and enterprise backend patterns. | [opencode] [universal] | java, kotlin | — |
 
 #### SQL & Database Engineering
 
@@ -232,7 +257,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 PostgreSQL, ClickHouse, SQLite, query optimization, and schema migrations.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [SQL Query Optimization Skill](https://github.com/postgres/postgres) | PostgreSQL tuning, EXPLAIN plans, and schema migrations. | [opencode] [universal] | sql | — |
 
 #### Shell, Bash & CLI Tooling
 
@@ -240,7 +267,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 POSIX shell, Zsh, PowerShell, and TUI/CLI ergonomics.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Shell & CLI Ergonomics Skill](https://github.com/mvdan/sh) | POSIX shell, formatting, and TUI/CLI design patterns. | [opencode] [universal] | shell, bash, linux, macos | — |
 
 ### 2.2 Design, UI/UX & Client Platforms
 
@@ -262,7 +291,9 @@ React, Next.js, Vue, Svelte, Tailwind CSS, accessibility (WCAG), and motion desi
 
 WinUI 3, WPF, Win32 COM automation, and Windows installer packaging.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Windows Desktop Patterns Skill](https://github.com/microsoft/WinUI-Gallery) | WinUI 3, WPF, and Windows packaging workflows. | [opencode] [universal] | windows | — |
 
 #### Desktop Apps — macOS
 
@@ -270,7 +301,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 AppKit, SwiftUI for macOS, AppleScript/JXA automation, and notarization.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [macOS SwiftUI Patterns Skill](https://github.com/apple/swift) | AppKit, SwiftUI for macOS, and notarization pipelines. | [opencode] [universal] | swift, macos | — |
 
 #### Desktop Apps — Linux
 
@@ -288,7 +321,9 @@ GTK4, Qt/QML, Wayland/X11 compositors, Flatpak, and systemd desktop integration.
 
 Tauri, Electron, Flutter Desktop, and Dear ImGui.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Tauri Cross-Platform Desktop Skill](https://github.com/tauri-apps/tauri) | Tauri, IPC bridges, and cross-platform desktop builds. | [opencode] [universal] | rust, typescript, windows, macos, linux | — |
 
 #### Mobile — Android
 
@@ -306,7 +341,9 @@ Jetpack Compose, Kotlin Android SDK, ADB automation, and Gradle build tuning.
 
 SwiftUI, UIKit, Xcode build pipelines, XCUITest, and TestFlight workflows.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [iOS SwiftUI Pipelines Skill](https://github.com/Alamofire/Alamofire) | SwiftUI, networking layers, and Xcode/TestFlight workflows. | [opencode] [universal] | swift, ios | — |
 
 #### Mobile — Cross-Platform
 
@@ -314,7 +351,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 React Native, Expo, and Flutter mobile patterns.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Flutter Cross-Platform Mobile Skill](https://github.com/flutter/flutter) | Flutter widgets, state management, and store releases. | [opencode] [universal] | dart, android, ios | — |
 
 ### 2.3 CyberSecurity & Assurance
 
@@ -356,7 +395,9 @@ SAST/DAST triage, threat modeling, smart contract auditing, and differential vul
 
 Authorized offensive testing, Burp Suite workflows, SSRF/IDOR auditing, and protocol fuzzing.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Web & API Pentesting Skill](https://github.com/OWASP/wstg) | Authorized web/API testing: SSRF, IDOR, and Burp workflows. | [opencode] [universal] | — | — |
 
 #### Cloud Security, Supply Chain & Hardening
 
@@ -364,7 +405,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 IAM least-privilege, container hardening, SBOM/cosign verification, and secret scanning.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Cloud & Supply-Chain Hardening Skill](https://github.com/sigstore/cosign) | IAM least-privilege, cosign verification, and secret scanning. | [opencode] [universal] | — | — |
 
 #### DFIR & Threat Intelligence
 
@@ -372,7 +415,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Log forensics, incident response playbooks, OSINT, and detection engineering.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [DFIR & Incident Playbooks Skill](https://github.com/Velocidex/velociraptor) | Log forensics, IR playbooks, and detection engineering. | [opencode] [universal] | — | — |
 
 ### 2.4 DevOps, Cloud & Infrastructure
 
@@ -384,7 +429,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Container builds, Helm, Kubernetes operators, and cluster debugging.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Kubernetes Debugging Skill](https://github.com/kubernetes/kubernetes) | Cluster debugging, Helm releases, and operator patterns. | [opencode] [universal] | linux | — |
 
 #### Terraform, OpenTofu & Cloud IaC
 
@@ -392,7 +439,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 AWS, GCP, Azure, Cloudflare Workers, and declarative infrastructure modules.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Terraform IaC Modules Skill](https://github.com/hashicorp/terraform) | Terraform/OpenTofu modules for AWS, GCP, and Azure. | [opencode] [universal] | — | — |
 
 #### CI/CD Pipelines & Observability
 
@@ -400,7 +449,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 GitHub Actions, GitLab CI, OpenTelemetry, Prometheus, and incident runbooks.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [CI/CD & Observability Skill](https://github.com/open-telemetry/opentelemetry-collector) | GitHub Actions pipelines, OpenTelemetry, and incident runbooks. | [opencode] [universal] | — | — |
 
 ### 2.5 AI Engineering, RAG & Data Science
 
@@ -412,7 +463,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Subagent planning, context compaction, evaluation harnesses, and MCP authoring.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Agent Orchestration Patterns Skill](https://github.com/VoltAgent/awesome-agent-skills) | Subagent planning, compaction, evals, and MCP authoring. | [opencode] [claude-code] [codex] [universal] | — | — |
 
 #### RAG, Vector Search & Knowledge Graphs
 
@@ -420,7 +473,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Hybrid retrieval, chunking, embeddings, and persistent agent memory.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [RAG & Vector Search Playbook Skill](https://github.com/qdrant/qdrant) | Hybrid retrieval, chunking, embeddings, and agent memory. | [opencode] [universal] | python | — |
 
 #### ML Training, Fine-Tuning & Science
 
@@ -428,7 +483,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 LoRA/TRL fine-tuning, benchmark evaluation, bioinformatics, and geospatial analysis.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [ML Fine-Tuning & Evals Skill](https://github.com/huggingface/transformers) | LoRA fine-tuning, benchmark evals, and scientific ML. | [opencode] [universal] | python | — |
 
 ### 2.6 Testing, QA & Verification
 
@@ -440,7 +497,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Playwright, Cypress, Selenium, and visual regression verification.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Playwright E2E Patterns Skill](https://github.com/microsoft/playwright) | Browser automation, fixtures, and visual regression checks. | [opencode] [claude-code] [universal] | typescript | — |
 
 #### Unit, Integration & Property Testing
 
@@ -448,7 +507,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Test generation, mutation testing, fuzzing, and deterministic fixtures.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Property & Fuzz Testing Skill](https://github.com/AltSysrq/proptest) | Property tests, mutation testing, and deterministic fixtures. | [opencode] [universal] | rust | — |
 
 ## 3. MCP Tools & Servers
 
@@ -462,7 +523,9 @@ Model Context Protocol servers with introspected tool names for fine-grained per
 
 Local file operations, sandboxed command execution, and desktop automation.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Filesystem & Shell MCP Server](https://github.com/modelcontextprotocol/servers) | Sandboxed file operations and command execution over MCP. | [opencode] [claude-code] [codex] | — | 4 tools |
 
 ### Git, GitHub & Code Intelligence
 
@@ -470,7 +533,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Repository management, PR workflows, AST search, and LSP bridges.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [GitHub Code Intelligence MCP Server](https://github.com/modelcontextprotocol/servers) | Repo, PR, and issue workflows over MCP with real tool names. | [opencode] [claude-code] | — | 4 tools |
 
 ### Databases & Data Warehouses
 
@@ -488,7 +553,9 @@ PostgreSQL, SQLite, ClickHouse, Supabase, Neon, and Redis MCP connectors.
 
 Playwright, Chrome CDP, Firecrawl, Crawlbase, and SerpApi MCP servers.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Firecrawl Scrape MCP Server](https://github.com/mendableai/firecrawl-mcp-server) | Search, scrape, and crawl the web from agents via MCP. | [opencode] [claude-code] | — | 3 tools |
 
 ### Security, Reverse Engineering & Analysis
 
@@ -496,7 +563,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Ghidra MCP, binary analysis, vulnerability scanners, and log auditing servers.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Ghidra RE MCP Server](https://github.com/LaurieWired/GhidraMCP) | Binary analysis via Ghidra: functions, strings, decompilation. | [opencode] [claude-code] | — | 3 tools |
 
 ### Design, Figma & UI Tooling
 
@@ -504,7 +573,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Figma, Stitch, Storybook, and screenshot diffing MCP servers.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Figma Design MCP Server](https://github.com/Framelink/figma-mcp-server) | Design context, components, and screenshots from Figma. | [opencode] [claude-code] | — | 3 tools |
 
 ### Cloud, Containers & Observability
 
@@ -512,7 +583,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Cloudflare, Kubernetes, Docker, Sentry, and Datadog MCP servers.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Kubernetes Observability MCP Server](https://github.com/Flux159/mcp-server-kubernetes) | Cluster inspection: pods, deployments, and logs over MCP. | [opencode] [claude-code] | — | 3 tools |
 
 ### Knowledge Bases, Docs & Comms
 
@@ -520,7 +593,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Obsidian, Notion, NotebookLM, Slack, and Google Workspace MCP servers.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Notion Knowledge MCP Server](https://github.com/makersu/notion-mcp-server) | Docs and knowledge-base search over MCP. | [opencode] [claude-code] | — | 3 tools |
 
 ## 4. DESIGN.md Systems
 
@@ -544,7 +619,9 @@ Terminal-first, dark-mode, and high-contrast engineering design systems.
 
 Clean editorial workspaces, data-dense analytics, and collaborative UI systems.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [SaaS Dashboard DESIGN.md](https://github.com/VoltAgent/awesome-design-md) | Clean editorial dashboards and analytics workspace specs. | [universal] | — | — |
 
 ### Fintech, Media & Consumer Brands
 
@@ -552,7 +629,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 High-trust financial interfaces, editorial media, and consumer web aesthetics.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Fintech Editorial DESIGN.md](https://github.com/VoltAgent/awesome-design-md) | High-trust financial interfaces and editorial media specs. | [universal] | — | — |
 
 ## 5. System Prompts & Personas
 
@@ -566,7 +645,9 @@ Curated system prompts, meta-prompts, and reasoning workflows.
 
 System prompts for refactoring, architecture critique, and spec authoring.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Architecture Review Prompt](https://github.com/f/prompts.chat) | Refactoring, architecture critique, and spec authoring prompts. | [universal] [opencode] [claude-code] | — | — |
 
 ### Security & Adversarial Audit Prompts
 
@@ -584,7 +665,9 @@ Red-team, threat-modeling, and multi-subagent code audit prompts.
 
 Design critique, documentation, and specification interview prompts.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Design Critique Prompt](https://github.com/f/prompts.chat) | Design critique, documentation, and spec-interview prompts. | [universal] | — | — |
 
 ## 6. Complete Agent Presets & Multi-Agent Teams
 
@@ -598,7 +681,9 @@ Ready-to-run scoped agent configurations combining a prompt, allowed skills, and
 
 Pre-scoped Rust, C++, Python, and Full-Stack subagents.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Full-Stack Polyglot Agent](https://github.com/Shubhamsaboo/awesome-llm-apps) | Pre-scoped Python/TS/Go coding specialist with GitHub MCP. | [opencode] | — | — |
 
 ### Security, RE & Malware Triage Agents
 
@@ -616,7 +701,9 @@ Least-privilege security auditing and reverse-engineering agents.
 
 Frontend, desktop, and mobile UI builder agents paired with DESIGN.md specs.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [Frontend Design Agent](https://github.com/VoltAgent/awesome-design-md) | UI builder agent pairing WebUI skills with Figma MCP. | [opencode] | — | — |
 
 ### DevOps, Database & Research Agents
 
@@ -624,7 +711,9 @@ _No entries yet — contributions welcome (see Contributing below)._
 
 Read-only database auditors, SRE responders, and deep-research teams.
 
-_No entries yet — contributions welcome (see Contributing below)._
+| Name | Tagline | Harnesses | Languages/Platforms | Tools |
+| --- | --- | --- | --- | --- |
+| [SRE Database Responder Agent](https://github.com/open-telemetry/opentelemetry-collector) | Read-only K8s and Postgres responder with SQL audit skills. | [opencode] | — | — |
 
 ## Per-Agent Skill & MCP Scoping
 

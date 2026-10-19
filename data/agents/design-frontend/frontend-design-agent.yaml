@@ -1,0 +1,28 @@
+id: frontend-design-agent
+name: Frontend Design Agent
+repo: https://github.com/VoltAgent/awesome-design-md
+tagline: UI builder agent pairing WebUI skills with Figma MCP.
+description: >-
+  Ready-to-run design agent combining WebUI frontend skills and SaaS dashboard DESIGN.md specs with
+  scoped Figma MCP tools.
+kind: agent
+category: agents/design-frontend
+harnesses:
+  - opencode
+agent_preset:
+  mode: subagent
+  model: anthropic/claude-sonnet-4-5
+  prompt: Build accessible, responsive UI from the DESIGN.md spec, verifying against Figma context.
+  skills:
+    - webui-frontend-patterns
+    - playwright-e2e-patterns
+  mcp_selections:
+    - server: figma
+      tools:
+        - get_design_context
+        - get_screenshot
+tags:
+  - frontend
+  - design
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by VoltAgent/awesome-design-md (MIT).

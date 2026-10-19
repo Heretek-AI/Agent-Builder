@@ -1,0 +1,17 @@
+id: opencode-native-toolchain
+name: OpenCode Native Toolchain
+repo: https://github.com/sst/opencode
+tagline: 'Official OpenCode runtime: custom tools, hooks, and plugin API.'
+description: >-
+  The official sst/opencode runtime documenting the plugin API, custom tool definitions, session
+  lifecycle hooks, and permission schemas used to author OpenCode v1/v2 plugins.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - runtime
+  - hooks
+  - tools
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by sst/opencode (MIT).

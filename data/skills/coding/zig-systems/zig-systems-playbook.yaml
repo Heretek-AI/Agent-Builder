@@ -1,0 +1,20 @@
+id: zig-systems-playbook
+name: Zig Systems Playbook Skill
+repo: https://github.com/ziglang/zig
+tagline: Zig build system, custom allocators, and bare-metal patterns.
+description: >-
+  Skill bundle for Zig and low-level systems: build.zig structuring, custom allocators, comptime
+  generics, and bare-metal/OS kernel workflows.
+kind: skill
+category: skills/coding/zig-systems
+harnesses:
+  - opencode
+  - universal
+languages:
+  - zig
+tags:
+  - allocators
+  - bare-metal
+  - kernel
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by ziglang/zig (MIT).

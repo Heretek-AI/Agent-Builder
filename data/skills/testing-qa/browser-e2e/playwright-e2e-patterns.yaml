@@ -1,0 +1,21 @@
+id: playwright-e2e-patterns
+name: Playwright E2E Patterns Skill
+repo: https://github.com/microsoft/playwright
+tagline: Browser automation, fixtures, and visual regression checks.
+description: >-
+  Skill bundle for E2E automation: Playwright fixtures, page-object models, trace viewers, and
+  visual regression verification.
+kind: skill
+category: skills/testing-qa/browser-e2e
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+languages:
+  - typescript
+tags:
+  - playwright
+  - e2e
+  - regression
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by microsoft/playwright (Apache-2.0).

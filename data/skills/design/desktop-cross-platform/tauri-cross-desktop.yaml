@@ -1,0 +1,25 @@
+id: tauri-cross-desktop
+name: Tauri Cross-Platform Desktop Skill
+repo: https://github.com/tauri-apps/tauri
+tagline: Tauri, IPC bridges, and cross-platform desktop builds.
+description: >-
+  Skill bundle for cross-platform desktop: Tauri v2 app scaffolding, Rust/JS IPC bridges, bundling,
+  and auto-update channels.
+kind: skill
+category: skills/design/desktop-cross-platform
+harnesses:
+  - opencode
+  - universal
+languages:
+  - rust
+  - typescript
+platforms:
+  - windows
+  - macos
+  - linux
+tags:
+  - tauri
+  - ipc
+  - bundling
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by tauri-apps/tauri (MIT).

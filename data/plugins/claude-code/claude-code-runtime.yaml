@@ -1,0 +1,17 @@
+id: claude-code-runtime
+name: Claude Code Runtime
+repo: https://github.com/anthropics/claude-code
+tagline: 'Official Claude Code CLI: slash commands, hooks, and MCP support.'
+description: >-
+  The official anthropics/claude-code runtime covering slash-command bundles, hook scripts,
+  marketplace plugins, and .mcp.json server wiring for Claude Code agents.
+kind: plugin
+category: plugins/claude-code
+harnesses:
+  - claude-code
+tags:
+  - runtime
+  - slash-commands
+  - hooks
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by anthropics/claude-code.

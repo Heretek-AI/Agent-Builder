@@ -1,0 +1,29 @@
+id: firecrawl-scrape-mcp
+name: Firecrawl Scrape MCP Server
+repo: https://github.com/mendableai/firecrawl-mcp-server
+tagline: Search, scrape, and crawl the web from agents via MCP.
+description: >-
+  Firecrawl MCP server: web search, page scraping, and site crawling tools for research and
+  browser-automation agents.
+kind: mcp-server
+category: mcp-servers/browser-web
+harnesses:
+  - opencode
+  - claude-code
+mcp:
+  server_name: firecrawl
+  transport: stdio
+  command: npx
+  args:
+    - '-y'
+    - firecrawl-mcp
+  tools:
+    - firecrawl_scrape
+    - firecrawl_search
+    - firecrawl_crawl
+tags:
+  - scraping
+  - search
+  - browser
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by mendableai/firecrawl-mcp-server (MIT).

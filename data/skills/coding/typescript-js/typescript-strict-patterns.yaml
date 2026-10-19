@@ -1,0 +1,22 @@
+id: typescript-strict-patterns
+name: Strict TypeScript Patterns Skill
+repo: https://github.com/microsoft/TypeScript
+tagline: Strict type-level TypeScript, ESM bundling, and Bun/Node APIs.
+description: >-
+  Skill bundle for TypeScript: strict-mode type-level programming, ESM module design, bundling, and
+  Bun/Node/Deno runtime patterns.
+kind: skill
+category: skills/coding/typescript-js
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+languages:
+  - typescript
+  - javascript
+tags:
+  - typescript
+  - esm
+  - bun
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by microsoft/TypeScript (Apache-2.0).

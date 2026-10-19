@@ -1,0 +1,20 @@
+id: sql-query-optimization
+name: SQL Query Optimization Skill
+repo: https://github.com/postgres/postgres
+tagline: PostgreSQL tuning, EXPLAIN plans, and schema migrations.
+description: >-
+  Skill bundle for SQL engineering: PostgreSQL EXPLAIN analysis, index design, query optimization,
+  and zero-downtime schema migrations.
+kind: skill
+category: skills/coding/sql-databases
+harnesses:
+  - opencode
+  - universal
+languages:
+  - sql
+tags:
+  - postgres
+  - indexing
+  - migrations
+license: PostgreSQL
+source_attribution: Curated for Agent-Builder; inspired by postgres/postgres (PostgreSQL license).

@@ -1,0 +1,17 @@
+id: cursor-rules-pack
+name: Cursor Rules Pack
+repo: https://github.com/PatrickJS/awesome-cursorrules
+tagline: Community rule packs and IDE agent plugins for Cursor.
+description: >-
+  Community-curated .cursor/rules rule packs and IDE-integrated agent plugins from
+  PatrickJS/awesome-cursorrules for Cursor and Windsurf editors.
+kind: plugin
+category: plugins/cursor-windsurf
+harnesses:
+  - cursor
+  - windsurf
+tags:
+  - rules
+  - ide
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by PatrickJS/awesome-cursorrules.

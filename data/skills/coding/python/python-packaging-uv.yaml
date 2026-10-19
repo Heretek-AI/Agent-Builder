@@ -1,0 +1,20 @@
+id: python-packaging-uv
+name: Python Packaging with uv Skill
+repo: https://github.com/astral-sh/uv
+tagline: Modern Python packaging, workspaces, and type-checking with uv.
+description: >-
+  Skill bundle for modern Python packaging with astral-sh/uv: workspaces, lockfiles, ruff linting,
+  and mypy/pyright type-checking workflows.
+kind: skill
+category: skills/coding/python
+harnesses:
+  - opencode
+  - universal
+languages:
+  - python
+tags:
+  - uv
+  - packaging
+  - ruff
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by astral-sh/uv (MIT).

@@ -1,0 +1,21 @@
+id: jvm-spring-patterns
+name: JVM Spring Patterns Skill
+repo: https://github.com/spring-projects/spring-boot
+tagline: Spring Boot services, JVM tuning, and enterprise backend patterns.
+description: >-
+  Skill bundle for JVM backends: Spring Boot service layering, GC/JVM performance tuning, and
+  enterprise integration patterns.
+kind: skill
+category: skills/coding/jvm-dotnet
+harnesses:
+  - opencode
+  - universal
+languages:
+  - java
+  - kotlin
+tags:
+  - spring
+  - jvm
+  - backend
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by spring-projects/spring-boot (Apache-2.0).

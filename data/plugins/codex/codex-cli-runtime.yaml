@@ -1,0 +1,16 @@
+id: codex-cli-runtime
+name: Codex CLI Runtime
+repo: https://github.com/openai/codex
+tagline: 'Official Codex CLI: sandbox profiles and skill wiring.'
+description: >-
+  The official openai/codex CLI runtime covering config.toml sandbox profiles, AGENTS.md skill
+  wiring, and orchestration extensions for Codex agents.
+kind: plugin
+category: plugins/codex
+harnesses:
+  - codex
+tags:
+  - runtime
+  - sandbox
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by openai/codex.

@@ -1,0 +1,24 @@
+id: shell-cli-ergonomics
+name: Shell & CLI Ergonomics Skill
+repo: https://github.com/mvdan/sh
+tagline: POSIX shell, formatting, and TUI/CLI design patterns.
+description: >-
+  Skill bundle for shell and CLI tooling: POSIX-safe scripting, shfmt formatting, flag parsing
+  conventions, and TUI ergonomics.
+kind: skill
+category: skills/coding/shell-cli
+harnesses:
+  - opencode
+  - universal
+languages:
+  - shell
+  - bash
+platforms:
+  - linux
+  - macos
+tags:
+  - posix
+  - tui
+  - scripting
+license: BSD-3-Clause
+source_attribution: Curated for Agent-Builder; inspired by mvdan/sh (BSD-3-Clause).

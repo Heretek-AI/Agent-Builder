@@ -1,0 +1,16 @@
+id: claude-code-resources
+name: Awesome Claude Code Resources
+repo: https://github.com/hesreallyhim/awesome-claude-code
+tagline: Community catalog of Claude Code commands, agents, and hooks.
+description: >-
+  The hesreallyhim/awesome-claude-code community catalog (CC0-1.0/MIT per resource) of slash-command
+  bundles, subagent definitions, hook scripts, and marketplace plugins.
+kind: plugin
+category: plugins/claude-code
+harnesses:
+  - claude-code
+tags:
+  - awesome-list
+  - upstream
+license: CC0-1.0
+source_attribution: Curated for Agent-Builder; upstream hesreallyhim/awesome-claude-code (CC0-1.0/MIT).

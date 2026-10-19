@@ -1,0 +1,20 @@
+id: agent-orchestration-patterns
+name: Agent Orchestration Patterns Skill
+repo: https://github.com/VoltAgent/awesome-agent-skills
+tagline: Subagent planning, compaction, evals, and MCP authoring.
+description: >-
+  Skill bundle for agent architecture: subagent planning, context compaction, evaluation harnesses,
+  and MCP server authoring (MIT upstream catalog).
+kind: skill
+category: skills/data-ai/agent-orchestration
+harnesses:
+  - opencode
+  - claude-code
+  - codex
+  - universal
+tags:
+  - orchestration
+  - evals
+  - mcp-authoring
+license: MIT
+source_attribution: Curated for Agent-Builder; upstream VoltAgent/awesome-agent-skills (MIT).

@@ -1,0 +1,20 @@
+id: k8s-operator-debugging
+name: Kubernetes Debugging Skill
+repo: https://github.com/kubernetes/kubernetes
+tagline: Cluster debugging, Helm releases, and operator patterns.
+description: >-
+  Skill bundle for Kubernetes: kubectl triage, Helm release management, operator patterns, and
+  service-mesh debugging.
+kind: skill
+category: skills/devops-cloud/containers-k8s
+harnesses:
+  - opencode
+  - universal
+platforms:
+  - linux
+tags:
+  - kubernetes
+  - helm
+  - operators
+license: Apache-2.0
+source_attribution: Curated for Agent-Builder; inspired by kubernetes/kubernetes (Apache-2.0).

@@ -1,0 +1,28 @@
+id: k8s-observe-mcp
+name: Kubernetes Observability MCP Server
+repo: https://github.com/Flux159/mcp-server-kubernetes
+tagline: 'Cluster inspection: pods, deployments, and logs over MCP.'
+description: >-
+  Kubernetes MCP server: pod/deployment listing and log retrieval tools for SRE responder agents
+  with read-only cluster scope.
+kind: mcp-server
+category: mcp-servers/cloud-devops
+harnesses:
+  - opencode
+  - claude-code
+mcp:
+  server_name: k8s
+  transport: stdio
+  command: npx
+  args:
+    - '-y'
+    - mcp-server-kubernetes
+  tools:
+    - list_pods
+    - list_deployments
+    - get_logs
+tags:
+  - kubernetes
+  - observability
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by Flux159/mcp-server-kubernetes (MIT).

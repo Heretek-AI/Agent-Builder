@@ -1,0 +1,32 @@
+id: filesystem-shell-mcp
+name: Filesystem & Shell MCP Server
+repo: https://github.com/modelcontextprotocol/servers
+path: src/filesystem
+tagline: Sandboxed file operations and command execution over MCP.
+description: >-
+  Official MCP filesystem server: sandboxed file read/write, directory listing, and controlled
+  command execution for OS automation agents.
+kind: mcp-server
+category: mcp-servers/filesystem-shell
+harnesses:
+  - opencode
+  - claude-code
+  - codex
+mcp:
+  server_name: filesystem
+  transport: stdio
+  command: npx
+  args:
+    - '-y'
+    - '@modelcontextprotocol/server-filesystem'
+    - /tmp
+  tools:
+    - read_file
+    - write_file
+    - list_directory
+    - execute_command
+tags:
+  - filesystem
+  - shell
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by modelcontextprotocol/servers (MIT).

@@ -1,0 +1,18 @@
+id: terraform-iac-modules
+name: Terraform IaC Modules Skill
+repo: https://github.com/hashicorp/terraform
+tagline: Terraform/OpenTofu modules for AWS, GCP, and Azure.
+description: >-
+  Skill bundle for IaC: Terraform/OpenTofu module authoring, remote state, plan review, and
+  AWS/GCP/Azure/Cloudflare patterns.
+kind: skill
+category: skills/devops-cloud/iac-terraform
+harnesses:
+  - opencode
+  - universal
+tags:
+  - terraform
+  - opentofu
+  - iac
+license: BUSL-1.1
+source_attribution: Curated for Agent-Builder; inspired by hashicorp/terraform module patterns.
