@@ -702,6 +702,10 @@ async function findCandidates(rootDir, limit, token, repo) {
 
 function candidateInput(c) {
   const description = truncate(c.info.description || c.manifest.description || c.pkg.description || '', 600);
+  let license;
+  const li = c.info && c.info.licenseInfo;
+  if (typeof li === 'string' && li && li.toUpperCase() !== 'NOASSERTION') license = li;
+  else if (typeof c.manifest.license === 'string' && c.manifest.license) license = c.manifest.license;
   return {
     name: c.pkg.name,
     repo: c.source.repo,
@@ -711,6 +715,7 @@ function candidateInput(c) {
     kind: c.cls.kind,
     harnesses: c.cls.harnesses,
     topics: c.cls.topics,
+    ...(license ? { license } : {}),
     tagline: truncate(c.manifest.description || description || c.pkg.name, 120),
     description: description || c.pkg.name,
   };
@@ -811,6 +816,7 @@ function buildEntryYaml(input, taxonomyIds) {
   if (!taxonomyIds.has(category)) problems.push(`unknown category '${category || '(missing)'}'`);
   const tagline = truncate(input.tagline || input.description || name, 120);
   if (!tagline) problems.push('missing tagline');
+  if (!input.license || (typeof input.license === 'string' && !input.license.trim())) problems.push('missing license');
   if (problems.length > 0) return { ok: false, problems };
   const id = slugify(name);
   const doc = {
@@ -825,7 +831,7 @@ function buildEntryYaml(input, taxonomyIds) {
     category,
     harnesses: Array.isArray(input.harnesses) && input.harnesses.length > 0 ? input.harnesses : ['universal'],
     ...(Array.isArray(input.topics) && input.topics.length > 0 ? { tags: input.topics } : {}),
-    license: String(input.license || 'MIT'),
+    license: String(input.license),
   };
   const ordered = {};
   for (const key of KEY_ORDER) {
@@ -898,11 +904,11 @@ async function cmdAccept(rootDir) {
   let body = issue.body || '';
   let opened = 0;
   for (const line of body.split('\n')) {
-    const candidate = line.match(/^- \[( |x)\] .*<!-- scout:(c\d+) -->$/i);
+    const candidate = line.match(/^- \[( |x)\] .*<!-- scout:(c\d+) -->\r?$/i);
     if (!candidate) continue;
     const id = candidate[2];
     const selected = candidate[1].toLowerCase() === 'x';
-    if (!selected || / → #\d+/.test(line) || opened >= ACCEPT_LIMIT) continue;
+    if (!selected || / → /.test(line) || opened >= ACCEPT_LIMIT) continue;
     if (!scoutData[id]) continue;
     const input = scoutData[id];
     const result = buildEntryYaml(input, ids);
@@ -923,8 +929,14 @@ async function cmdAccept(rootDir) {
         gitExec(['add', result.file]);
         gitExec(['-c', 'user.name=agent-builder-scout', '-c', 'user.email=agent-builder-scout@users.noreply.github.com',
           'commit', '-m', `docs: add ${input.name} to ${input.category}`]);
-        gitExec(['-c', `http.https://github.com/.extraheader=AUTHORIZATION: bearer ${token}`,
-          'push', '--set-upstream', 'origin', branch]);
+        gitExec(['push', '--set-upstream', 'origin', branch], {
+          env: {
+            ...process.env,
+            GIT_CONFIG_COUNT: '1',
+            GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+            GIT_CONFIG_VALUE_0: `AUTHORIZATION: bearer ${token}`,
+          },
+        });
         const { ok: pok, data: pr } = await rest(`/repos/${repo}/pulls`, {
           method: 'POST', token,
           body: {
@@ -953,7 +965,7 @@ async function cmdAccept(rootDir) {
         // Roll back the working tree file so the next candidate starts clean.
         try { gitExec(['checkout', '--', result.file]); } catch (_e) { /* ignore */ }
         try { if (fs.existsSync(path.join(rootDir, result.file))) fs.unlinkSync(path.join(rootDir, result.file)); } catch (_e) { /* ignore */ }
-        note = ` → not added: ${truncate(err.message, 200)}`;
+        note = ` → not added: ${truncate(token ? String(err.message || '').split(token).join('[redacted]') : String(err.message || ''), 200)}`;
       }
     }
     body = body.replace(line, line.replace(/^- \[x\]/i, '- [x]').replace(/ <!-- scout:/, `${note} <!-- scout:`));
