@@ -1,0 +1,16 @@
+id: secure-code-audit
+name: Secure Code Audit Skill
+repo: https://github.com/example/secure-code-audit
+tagline: SAST/DAST triage, threat modeling, and audit checklists.
+description: A security-auditing skill with SAST and DAST triage workflows, threat-modeling templates, and differential vulnerability discovery checklists.
+kind: skill
+category: skills/cybersecurity/security-auditing
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+tags:
+  - sast
+  - threat-model
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).

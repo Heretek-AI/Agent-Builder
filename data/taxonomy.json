@@ -1,0 +1,149 @@
+{
+  "version": "1.0.0",
+  "harnesses": [
+    { "id": "opencode", "name": "OpenCode", "config_files": ["opencode.json", "opencode.jsonc", ".opencode/agent/*.md"] },
+    { "id": "claude-code", "name": "Claude Code", "config_files": [".claude.json", ".mcp.json", ".claude/agents/*.md", "CLAUDE.md"] },
+    { "id": "codex", "name": "Codex CLI", "config_files": ["config.toml", ".agents/skills/*/SKILL.md", "AGENTS.md"] },
+    { "id": "gemini-cli", "name": "Gemini CLI", "config_files": [".gemini/settings.json", "GEMINI.md"] },
+    { "id": "cursor", "name": "Cursor", "config_files": [".cursor/mcp.json", ".cursor/rules/*.mdc"] },
+    { "id": "windsurf", "name": "Windsurf", "config_files": [".windsurf/skills/*", ".windsurfrules"] },
+    { "id": "copilot", "name": "GitHub Copilot", "config_files": [".github/copilot-instructions.md"] },
+    { "id": "universal", "name": "Universal / Multi-Harness", "config_files": ["AGENTS.md", "SKILL.md", "DESIGN.md"] }
+  ],
+  "categories": [
+    {
+      "id": "plugins",
+      "title": "1. Plugins & Extensions (By Harness)",
+      "description": "Native harness plugins, lifecycle hooks, memory extensions, and statuslines.",
+      "children": [
+        { "id": "plugins/opencode", "title": "OpenCode Plugins", "description": "OpenCode v1 & v2 plugins, custom tools, and session hooks." },
+        { "id": "plugins/claude-code", "title": "Claude Code Plugins", "description": "Claude Code slash-command bundles, hook scripts, and marketplace plugins." },
+        { "id": "plugins/codex", "title": "Codex Plugins & Extensions", "description": "Codex CLI wrappers, sandbox profiles, and orchestration extensions." },
+        { "id": "plugins/gemini-cli", "title": "Gemini CLI Extensions", "description": "Extensions and tool bridges for Gemini CLI." },
+        { "id": "plugins/cursor-windsurf", "title": "Cursor & Windsurf Extensions", "description": "IDE-integrated agent plugins and rule packs." },
+        { "id": "plugins/cross-harness", "title": "Cross-Harness Bridges & Multiplexers", "description": "Multi-agent routers, harness adapters, and cross-provider bridges." }
+      ]
+    },
+    {
+      "id": "skills",
+      "title": "2. Agent Skills (By Subject & Domain)",
+      "description": "Installable SKILL.md playbooks and domain-specific instruction bundles.",
+      "children": [
+        {
+          "id": "skills/coding",
+          "title": "2.1 Coding & Programming Languages",
+          "children": [
+            { "id": "skills/coding/c-cpp", "title": "C & C++", "description": "Modern C++20/23, CMake, embedded C, memory safety, and sanitizer workflows." },
+            { "id": "skills/coding/rust", "title": "Rust", "description": "Cargo workspaces, unsafe auditing, async Tokio, lifetime refactoring, and FFI." },
+            { "id": "skills/coding/lua", "title": "Lua & Neovim / Game Scripting", "description": "LuaJIT, Neovim plugin development, LÖVE2D, and embedded Lua scripting." },
+            { "id": "skills/coding/python", "title": "Python", "description": "Asyncio, Pydantic, packaging (uv/poetry), type-checking, and FastAPI services." },
+            { "id": "skills/coding/typescript-js", "title": "TypeScript & JavaScript", "description": "Node.js, Bun, Deno, strict TypeScript type-level programming, and ESM bundling." },
+            { "id": "skills/coding/go", "title": "Go (Golang)", "description": "Concurrent Go services, gRPC, profiling, and zero-allocation patterns." },
+            { "id": "skills/coding/zig-systems", "title": "Zig & Low-Level Systems", "description": "Zig build system, custom allocators, bare-metal, and OS kernel development." },
+            { "id": "skills/coding/jvm-dotnet", "title": "Java, Kotlin & C# (.NET)", "description": "JVM performance, Spring/Ktor, .NET Core, and enterprise backend patterns." },
+            { "id": "skills/coding/sql-databases", "title": "SQL & Database Engineering", "description": "PostgreSQL, ClickHouse, SQLite, query optimization, and schema migrations." },
+            { "id": "skills/coding/shell-cli", "title": "Shell, Bash & CLI Tooling", "description": "POSIX shell, Zsh, PowerShell, and TUI/CLI ergonomics." }
+          ]
+        },
+        {
+          "id": "skills/design",
+          "title": "2.2 Design, UI/UX & Client Platforms",
+          "children": [
+            { "id": "skills/design/webui", "title": "WebUI & Frontend Frameworks", "description": "React, Next.js, Vue, Svelte, Tailwind CSS, accessibility (WCAG), and motion design." },
+            { "id": "skills/design/desktop-windows", "title": "Desktop Apps — Windows", "description": "WinUI 3, WPF, Win32 COM automation, and Windows installer packaging." },
+            { "id": "skills/design/desktop-macos", "title": "Desktop Apps — macOS", "description": "AppKit, SwiftUI for macOS, AppleScript/JXA automation, and notarization." },
+            { "id": "skills/design/desktop-linux", "title": "Desktop Apps — Linux", "description": "GTK4, Qt/QML, Wayland/X11 compositors, Flatpak, and systemd desktop integration." },
+            { "id": "skills/design/desktop-cross-platform", "title": "Desktop Apps — Cross-Platform", "description": "Tauri, Electron, Flutter Desktop, and Dear ImGui." },
+            { "id": "skills/design/mobile-android", "title": "Mobile — Android", "description": "Jetpack Compose, Kotlin Android SDK, ADB automation, and Gradle build tuning." },
+            { "id": "skills/design/mobile-ios", "title": "Mobile — iOS & iPadOS", "description": "SwiftUI, UIKit, Xcode build pipelines, XCUITest, and TestFlight workflows." },
+            { "id": "skills/design/mobile-cross-platform", "title": "Mobile — Cross-Platform", "description": "React Native, Expo, and Flutter mobile patterns." }
+          ]
+        },
+        {
+          "id": "skills/cybersecurity",
+          "title": "2.3 CyberSecurity & Assurance",
+          "children": [
+            { "id": "skills/cybersecurity/reverse-engineering", "title": "Reverse Engineering", "description": "Ghidra, IDA Pro, Binary Ninja, radare2/rizin, firmware unpacking, and protocol decompilation." },
+            { "id": "skills/cybersecurity/malware-analysis", "title": "Malware Analysis & Triage", "description": "Static/dynamic binary triage, YARA rule authoring, deobfuscation, and sandbox detonation analysis." },
+            { "id": "skills/cybersecurity/security-auditing", "title": "Security Auditing & Code Review", "description": "SAST/DAST triage, threat modeling, smart contract auditing, and differential vulnerability discovery." },
+            { "id": "skills/cybersecurity/web-network-pentesting", "title": "Web, API & Network Pentesting", "description": "Authorized offensive testing, Burp Suite workflows, SSRF/IDOR auditing, and protocol fuzzing." },
+            { "id": "skills/cybersecurity/cloud-devsecops", "title": "Cloud Security, Supply Chain & Hardening", "description": "IAM least-privilege, container hardening, SBOM/cosign verification, and secret scanning." },
+            { "id": "skills/cybersecurity/dfir-threat-intel", "title": "DFIR & Threat Intelligence", "description": "Log forensics, incident response playbooks, OSINT, and detection engineering." }
+          ]
+        },
+        {
+          "id": "skills/devops-cloud",
+          "title": "2.4 DevOps, Cloud & Infrastructure",
+          "children": [
+            { "id": "skills/devops-cloud/containers-k8s", "title": "Docker, Kubernetes & Service Mesh", "description": "Container builds, Helm, Kubernetes operators, and cluster debugging." },
+            { "id": "skills/devops-cloud/iac-terraform", "title": "Terraform, OpenTofu & Cloud IaC", "description": "AWS, GCP, Azure, Cloudflare Workers, and declarative infrastructure modules." },
+            { "id": "skills/devops-cloud/ci-cd-observability", "title": "CI/CD Pipelines & Observability", "description": "GitHub Actions, GitLab CI, OpenTelemetry, Prometheus, and incident runbooks." }
+          ]
+        },
+        {
+          "id": "skills/data-ai",
+          "title": "2.5 AI Engineering, RAG & Data Science",
+          "children": [
+            { "id": "skills/data-ai/agent-orchestration", "title": "Agent Architecture & Orchestration", "description": "Subagent planning, context compaction, evaluation harnesses, and MCP authoring." },
+            { "id": "skills/data-ai/rag-memory", "title": "RAG, Vector Search & Knowledge Graphs", "description": "Hybrid retrieval, chunking, embeddings, and persistent agent memory." },
+            { "id": "skills/data-ai/ml-scientific", "title": "ML Training, Fine-Tuning & Science", "description": "LoRA/TRL fine-tuning, benchmark evaluation, bioinformatics, and geospatial analysis." }
+          ]
+        },
+        {
+          "id": "skills/testing-qa",
+          "title": "2.6 Testing, QA & Verification",
+          "children": [
+            { "id": "skills/testing-qa/browser-e2e", "title": "Browser & E2E Automation", "description": "Playwright, Cypress, Selenium, and visual regression verification." },
+            { "id": "skills/testing-qa/unit-property", "title": "Unit, Integration & Property Testing", "description": "Test generation, mutation testing, fuzzing, and deterministic fixtures." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mcp-servers",
+      "title": "3. MCP Tools & Servers",
+      "description": "Model Context Protocol servers with introspected tool names for fine-grained per-agent scoping.",
+      "children": [
+        { "id": "mcp-servers/filesystem-shell", "title": "Filesystem, Terminal & OS Automation", "description": "Local file operations, sandboxed command execution, and desktop automation." },
+        { "id": "mcp-servers/git-repos", "title": "Git, GitHub & Code Intelligence", "description": "Repository management, PR workflows, AST search, and LSP bridges." },
+        { "id": "mcp-servers/databases", "title": "Databases & Data Warehouses", "description": "PostgreSQL, SQLite, ClickHouse, Supabase, Neon, and Redis MCP connectors." },
+        { "id": "mcp-servers/browser-web", "title": "Browser Automation, Search & Scraping", "description": "Playwright, Chrome CDP, Firecrawl, Crawlbase, and SerpApi MCP servers." },
+        { "id": "mcp-servers/security-re", "title": "Security, Reverse Engineering & Analysis", "description": "Ghidra MCP, binary analysis, vulnerability scanners, and log auditing servers." },
+        { "id": "mcp-servers/design-ui", "title": "Design, Figma & UI Tooling", "description": "Figma, Stitch, Storybook, and screenshot diffing MCP servers." },
+        { "id": "mcp-servers/cloud-devops", "title": "Cloud, Containers & Observability", "description": "Cloudflare, Kubernetes, Docker, Sentry, and Datadog MCP servers." },
+        { "id": "mcp-servers/knowledge-productivity", "title": "Knowledge Bases, Docs & Comms", "description": "Obsidian, Notion, NotebookLM, Slack, and Google Workspace MCP servers." }
+      ]
+    },
+    {
+      "id": "design-md",
+      "title": "4. DESIGN.md Systems",
+      "description": "Drop-in DESIGN.md brand and UI system specs (inspired by Google Stitch & VoltAgent/awesome-design-md).",
+      "children": [
+        { "id": "design-md/ai-dev-tools", "title": "AI Platforms & Developer Tools", "description": "Terminal-first, dark-mode, and high-contrast engineering design systems." },
+        { "id": "design-md/saas-productivity", "title": "SaaS, Dashboards & Productivity", "description": "Clean editorial workspaces, data-dense analytics, and collaborative UI systems." },
+        { "id": "design-md/fintech-consumer", "title": "Fintech, Media & Consumer Brands", "description": "High-trust financial interfaces, editorial media, and consumer web aesthetics." }
+      ]
+    },
+    {
+      "id": "prompts",
+      "title": "5. System Prompts & Personas",
+      "description": "Curated system prompts, meta-prompts, and reasoning workflows.",
+      "children": [
+        { "id": "prompts/coding-architecture", "title": "Software Architecture & Code Review Prompts", "description": "System prompts for refactoring, architecture critique, and spec authoring." },
+        { "id": "prompts/security-research", "title": "Security & Adversarial Audit Prompts", "description": "Red-team, threat-modeling, and multi-subagent code audit prompts." },
+        { "id": "prompts/product-design", "title": "Product, UI/UX & Technical Writing Prompts", "description": "Design critique, documentation, and specification interview prompts." }
+      ]
+    },
+    {
+      "id": "agents",
+      "title": "6. Complete Agent Presets & Multi-Agent Teams",
+      "description": "Ready-to-run scoped agent configurations combining a prompt, allowed skills, and scoped MCP tools.",
+      "children": [
+        { "id": "agents/coding-specialists", "title": "Language & Stack Specialist Agents", "description": "Pre-scoped Rust, C++, Python, and Full-Stack subagents." },
+        { "id": "agents/security-auditors", "title": "Security, RE & Malware Triage Agents", "description": "Least-privilege security auditing and reverse-engineering agents." },
+        { "id": "agents/design-frontend", "title": "UI/UX & Cross-Platform Design Agents", "description": "Frontend, desktop, and mobile UI builder agents paired with DESIGN.md specs." },
+        { "id": "agents/devops-data", "title": "DevOps, Database & Research Agents", "description": "Read-only database auditors, SRE responders, and deep-research teams." }
+      ]
+    }
+  ]
+}

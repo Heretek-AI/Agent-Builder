@@ -1,0 +1,19 @@
+id: android-compose-patterns
+name: Android Compose Patterns
+repo: https://github.com/example/android-compose-patterns
+tagline: Jetpack Compose, ADB automation, and Gradle tuning.
+description: A mobile Android skill covering Jetpack Compose patterns, Kotlin Android SDK usage, ADB automation scripts, and Gradle build performance tuning.
+kind: skill
+category: skills/design/mobile-android
+harnesses:
+  - opencode
+  - universal
+languages:
+  - kotlin
+platforms:
+  - android
+tags:
+  - compose
+  - gradle
+license: Apache-2.0
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, Apache-2.0).

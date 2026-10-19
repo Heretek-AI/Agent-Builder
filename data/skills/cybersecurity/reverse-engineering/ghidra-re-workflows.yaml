@@ -1,0 +1,16 @@
+id: ghidra-re-workflows
+name: Ghidra RE Workflows
+repo: https://github.com/example/ghidra-re-workflows
+tagline: Ghidra, rizin, and firmware unpacking workflows.
+description: A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and protocol decompilation checklists for authorized analysis.
+kind: skill
+category: skills/cybersecurity/reverse-engineering
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+tags:
+  - ghidra
+  - firmware
+license: MIT
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).

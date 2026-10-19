@@ -1,0 +1,19 @@
+id: modern-cpp-playbook
+name: Modern C++ Playbook
+repo: https://github.com/example/modern-cpp-playbook
+tagline: Modern C++20/23, CMake, and sanitizer workflows.
+description: A SKILL.md playbook covering modern C++20/23 idioms, CMake project layout, sanitizer runs, and memory-safety review checklists.
+kind: skill
+category: skills/coding/c-cpp
+harnesses:
+  - opencode
+  - claude-code
+  - universal
+languages:
+  - cpp
+  - c
+tags:
+  - cmake
+  - sanitizers
+license: CC0-1.0
+source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, CC0-1.0).
