@@ -242,13 +242,50 @@ function searchRegistry(rawArgs) {
   };
 }
 
+function isSafeContentFileRef(cf) {
+  if (typeof cf !== 'string' || cf.length === 0) {
+    return false;
+  }
+  if (path.isAbsolute(cf)) {
+    return false;
+  }
+  if (cf.startsWith('/') || cf.startsWith('\\')) {
+    return false;
+  }
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(cf)) {
+    return false; // URL scheme (http:, https:, file:, data:, ...).
+  }
+  if (cf.includes('..')) {
+    return false;
+  }
+  if (!cf.endsWith('.md')) {
+    return false;
+  }
+  if (!/^[A-Za-z0-9_]/.test(cf)) {
+    return false;
+  }
+  if (!/^(?!\/)(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_./-]*\.md$/.test(cf)) {
+    return false;
+  }
+  const abs = path.resolve(ROOT_DIR, cf);
+  if (abs !== ROOT_DIR && !abs.startsWith(ROOT_DIR + path.sep)) {
+    return false;
+  }
+  return true;
+}
+
 function readBundledContent(entry) {
   const candidates = [];
   if (typeof entry.content_file === 'string' && entry.content_file.length > 0) {
-    candidates.push({
-      abs: path.resolve(ROOT_DIR, entry.content_file),
-      rel: entry.content_file
-    });
+    if (isSafeContentFileRef(entry.content_file)) {
+      candidates.push({
+        abs: path.resolve(ROOT_DIR, entry.content_file),
+        rel: entry.content_file
+      });
+    }
+    // Unsafe content_file refs are fail-closed: skipped entirely (null
+    // unless a dist/_site fallback exists). Never resolve absolute,
+    // traversal, URL, or non-.md refs against the host filesystem.
   }
   candidates.push({
     abs: path.join(ROOT_DIR, 'dist', 'content', entry.id + '.md'),
@@ -527,5 +564,7 @@ module.exports = {
   getEntryDetails,
   compileAgentConfig,
   installAgentBundle,
-  handleMessage
+  handleMessage,
+  readBundledContent,
+  isSafeContentFileRef
 };

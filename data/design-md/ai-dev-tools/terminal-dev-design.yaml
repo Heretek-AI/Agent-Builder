@@ -1,6 +1,6 @@
 id: terminal-dev-design
 name: Terminal Dev Design System
-repo: https://github.com/example/terminal-dev-design
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Terminal-first dark-mode DESIGN.md for dev tools.
 description: >-
   A drop-in DESIGN.md brand system for AI developer tools with terminal-first dark-mode palettes,
@@ -13,4 +13,5 @@ tags:
   - dark-mode
   - design-system
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

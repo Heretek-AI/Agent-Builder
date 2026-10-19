@@ -1,6 +1,6 @@
 id: db-security-auditor
 name: DB Security Auditor Agent
-repo: https://github.com/example/db-security-auditor
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Least-privilege database security auditor agent.
 description: >-
   A ready-to-run scoped agent preset combining SQL audit skills with a read-only Postgres MCP tool
@@ -19,10 +19,11 @@ agent_preset:
   mcp_selections:
     - server: postgres-prod
       tools:
-        - query
-        - list-tables
+        - execute_query
+        - list_tables
 tags:
   - security
   - postgres
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

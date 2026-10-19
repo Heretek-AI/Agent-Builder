@@ -18,9 +18,11 @@ mcp:
     - '-y'
     - mcp-server-kubernetes
   tools:
-    - list_pods
-    - list_deployments
-    - get_logs
+    # Verified 2026-10-19 against mcp-server-kubernetes@4.1.9 tools/list (23 tools):
+    # kubectl_get, kubectl_describe, kubectl_logs are the read-only observability subset.
+    - kubectl_get
+    - kubectl_describe
+    - kubectl_logs
 tags:
   - kubernetes
   - observability

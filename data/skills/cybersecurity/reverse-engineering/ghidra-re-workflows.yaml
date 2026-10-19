@@ -1,6 +1,6 @@
 id: ghidra-re-workflows
 name: Ghidra RE Workflows
-repo: https://github.com/example/ghidra-re-workflows
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Ghidra, rizin, and firmware unpacking workflows.
 description: >-
   A reverse-engineering skill with Ghidra and rizin workflows, firmware unpacking steps, and
@@ -15,4 +15,5 @@ tags:
   - ghidra
   - firmware
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

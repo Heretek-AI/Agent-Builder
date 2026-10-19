@@ -79,9 +79,24 @@ function main() {
 
   for (const e of sorted) {
     if (!e.content_file) continue;
-    const srcAbs = path.isAbsolute(e.content_file)
-      ? e.content_file
-      : path.join(rootDir, e.content_file);
+    const cf = String(e.content_file);
+    // Fail-closed containment: never copy absolute/traversal/URL/non-.md.
+    // Must match the schema pattern: relative, no `..`, .md suffix.
+    const isUrl = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(cf);
+    const hasTraversal = cf.includes('..');
+    const isAbsolute = path.isAbsolute(cf);
+    const isMd = cf.endsWith('.md');
+    const startsOk = /^[A-Za-z0-9_]/.test(cf);
+    const noLeadingSlash = !cf.startsWith('/') && !cf.startsWith('\\');
+    if (isUrl || hasTraversal || isAbsolute || !isMd || !startsOk || !noLeadingSlash) {
+      console.warn(`WARNING: content_file '${e.content_file}' for entry '${e.id}' rejected (unsafe); skipping.`);
+      continue;
+    }
+    const srcAbs = path.resolve(rootDir, cf);
+    if (srcAbs !== rootDir && !srcAbs.startsWith(rootDir + path.sep)) {
+      console.warn(`WARNING: content_file '${e.content_file}' for entry '${e.id}' escapes repo; skipping.`);
+      continue;
+    }
     const destAbs = path.join(contentDir, `${e.id}.md`);
     if (fs.existsSync(srcAbs) && fs.statSync(srcAbs).isFile()) {
       fs.copyFileSync(srcAbs, destAbs);

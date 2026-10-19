@@ -1,6 +1,6 @@
 id: figma-design-mcp
 name: Figma Design MCP Server
-repo: https://github.com/Framelink/figma-mcp-server
+repo: https://github.com/planetabhi/figma-mcp-server
 tagline: Design context, components, and screenshots from Figma.
 description: >-
   Figma MCP server: design-context extraction, component listing, and screenshot tooling pairing UI
@@ -18,11 +18,14 @@ mcp:
     - '-y'
     - figma-mcp-server
   tools:
-    - get_design_context
-    - get_screenshot
+    # Verified 2026-10-19 against figma-mcp-server@3.1.2 tools/list (50 tools):
+    # get_design_context/get_screenshot are not exported; get_figma_file and
+    # render_images are the real design-context and screenshot equivalents.
+    - get_figma_file
+    - render_images
     - list_components
 tags:
   - figma
   - design
 license: MIT
-source_attribution: Curated for Agent-Builder; inspired by Framelink/figma-mcp-server (MIT).
+source_attribution: Curated for Agent-Builder; inspired by planetabhi/figma-mcp-server (npm license MIT; repo declares Other — see REMEDIATION_LOG Stage 2).

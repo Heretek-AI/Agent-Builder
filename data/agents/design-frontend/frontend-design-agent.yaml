@@ -19,8 +19,8 @@ agent_preset:
   mcp_selections:
     - server: figma
       tools:
-        - get_design_context
-        - get_screenshot
+        - get_figma_file
+        - render_images
 tags:
   - frontend
   - design

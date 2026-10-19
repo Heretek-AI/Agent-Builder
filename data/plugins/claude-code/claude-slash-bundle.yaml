@@ -1,6 +1,6 @@
 id: claude-slash-bundle
 name: Claude Code Slash Bundle
-repo: https://github.com/example/claude-slash-bundle
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: Slash-command bundle and hook scripts for Claude Code.
 description: >-
   A Claude Code marketplace plugin bundling slash commands, hook scripts, and agent instructions for
@@ -14,4 +14,5 @@ tags:
   - hooks
 installation: Install via Claude Code marketplace.
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

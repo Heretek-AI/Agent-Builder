@@ -195,7 +195,7 @@ describe('mcp tools/call compile_agent_config', () => {
       { action: 'skill', resource: '*', effect: 'deny' },
       { action: 'skill', resource: 'python-fastapi-service', effect: 'allow' }
     ]);
-    assert.ok(perms.some((r) => r.action === 'postgres_prod_query' && r.effect === 'allow'));
+    assert.ok(perms.some((r) => r.action === 'postgres-prod_query' && r.effect === 'allow'));
     assert.ok(out.opencodeMarkdown.includes('mcp-test-agent') || out.opencodeMarkdown.includes('Audit things.'));
   });
 });

@@ -1,7 +1,8 @@
 // scripts/build-site.js
 // Assembles _site/ for GitHub Pages (CommonJS).
 //
-// Steps (idempotent):
+// Steps (idempotent except for `generated_at` timestamps, which advance on
+// every run unless SOURCE_DATE_EPOCH is set — see below):
 //   1. mkdir _site/ (and _site/core/, _site/content/).
 //   2. Copy site/index.html, site/styles.css, site/app.js -> _site/.
 //   3. Copy src/core/compiler.js, src/core/importer.js -> _site/core/.
@@ -12,6 +13,14 @@
 //      otherwise write a fresh { status: "ok", generated_at } file.
 //   7. Write empty _site/.nojekyll.
 // Prints SITE_BUILT on success; fail-closed (exit 1) on any error.
+//
+// Reproducibility (AB-5.3-registry-idempotency): every build stamps
+// `generated_at` with the current time, so two consecutive runs differ by
+// that one timestamp line and are otherwise byte-identical. When the
+// `SOURCE_DATE_EPOCH` environment variable is set (seconds since the Unix
+// epoch, per https://reproducible-builds.org/specs/source-date-epoch/),
+// it is used as the timestamp source instead, making two runs fully
+// byte-identical: `SOURCE_DATE_EPOCH=$(date +%s) npm run site` twice ->
 
 const fs = require('fs');
 const path = require('path');
@@ -20,6 +29,29 @@ const { loadCatalog } = require('./utils/catalog');
 const VERSION = '1.0.0';
 const REPOSITORY = 'https://github.com/Heretek-AI/Agent-Builder';
 const REGISTRY_URL = 'https://heretek-ai.github.io/Agent-Builder/registry.json';
+
+// Timestamp source for `generated_at` fields. Honors SOURCE_DATE_EPOCH
+// (seconds since epoch) for reproducible builds; otherwise wall-clock time.
+// Fail-closed: a present-but-unparseable value aborts the build rather than
+// silently stamping a bogus date.
+function resolveGeneratedAt() {
+  const raw = process.env.SOURCE_DATE_EPOCH;
+  if (raw === undefined || raw === '') {
+    return new Date().toISOString();
+  }
+  const trimmed = String(raw).trim();
+  let ms;
+  if (/^-?\d+$/.test(trimmed)) {
+    ms = Number(trimmed) * 1000;
+  } else {
+    ms = Date.parse(trimmed);
+  }
+  if (!Number.isFinite(ms)) {
+    console.error(`ERROR: invalid SOURCE_DATE_EPOCH=${JSON.stringify(raw)} (expected integer seconds since epoch)`);
+    process.exit(1);
+  }
+  return new Date(ms).toISOString();
+}
 
 function copyFile(src, dest) {
   if (!fs.existsSync(src)) {
@@ -40,6 +72,17 @@ function main() {
     process.exit(1);
   }
 
+  // 0. Hygiene (AB-5.3-nojekyll-hygiene): start from a clean _site/ so a stale
+  // artifact (e.g. a leftover .nojekyll) can never mask a build regression.
+  // Fail-closed: abort if the old tree cannot be removed.
+  try {
+    if (fs.existsSync(outDir)) {
+      fs.rmSync(outDir, { recursive: true, force: true });
+    }
+  } catch (err) {
+    console.error(`ERROR: unable to clean _site/: ${err.message}`);
+    process.exit(1);
+  }
   fs.mkdirSync(outDir, { recursive: true });
   fs.mkdirSync(path.join(outDir, 'core'), { recursive: true });
   fs.mkdirSync(path.join(outDir, 'content'), { recursive: true });
@@ -84,7 +127,7 @@ function main() {
     version: VERSION,
     repository: REPOSITORY,
     registry_url: REGISTRY_URL,
-    generated_at: new Date().toISOString(),
+    generated_at: resolveGeneratedAt(),
     stats: { total: sorted.length, by_kind: byKind, by_category: byCategory, by_harness: byHarness },
     taxonomy,
     entries: sorted,
@@ -106,7 +149,7 @@ function main() {
   if (fs.existsSync(distHealth)) {
     fs.copyFileSync(distHealth, path.join(outDir, 'health.json'));
   } else {
-    const health = { status: 'ok', generated_at: new Date().toISOString() };
+    const health = { status: 'ok', generated_at: resolveGeneratedAt() };
     fs.writeFileSync(path.join(outDir, 'health.json'), `${JSON.stringify(health, null, 2)}\n`);
   }
 

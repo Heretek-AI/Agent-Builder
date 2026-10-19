@@ -23,10 +23,15 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const path = require('path');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const MCP_TIMEOUT_MS = 5000;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+// Fail-closed allowlist for /api/mcp/introspect (AB-5.6-introspect-rce).
+// Compared via path.basename(command.trim()); never spawn anything else.
+const MCP_COMMAND_ALLOWLIST = new Set(['npx', 'node', 'python3']);
 
 function loadVersion() {
   try {
@@ -81,14 +86,32 @@ function contentTypeFor(filePath) {
   }
 }
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+function isLoopbackOrigin(origin) {
+  try {
+    const u = new URL(String(origin));
+    const h = u.hostname.toLowerCase();
+    return h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]';
+  } catch (_e) {
+    return false;
+  }
 }
 
-function sendJson(res, statusCode, obj) {
-  setCors(res);
+// Fail-closed CORS: never emit `Access-Control-Allow-Origin: *`.
+// Only echo loopback origins (same-machine WebUI); all other callers get
+// no CORS headers, so arbitrary websites cannot read /api/* responses.
+function setCors(res, req) {
+  const origin = req && req.headers ? req.headers.origin : undefined;
+  if (typeof origin === 'string' && isLoopbackOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-ab-token');
+  }
+  // Non-loopback / no-Origin: send no CORS headers (no wildcard).
+}
+
+function sendJson(res, statusCode, obj, req) {
+  setCors(res, req);
   res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(obj) + '\n');
 }
@@ -133,7 +156,100 @@ function resolveChatUrl(baseUrl) {
   return trimmed + '/v1/chat/completions';
 }
 
-function proxyLlmChat(body) {
+function isIPv4Literal(host) {
+  const parts = String(host).split('.');
+  if (parts.length !== 4) {
+    return false;
+  }
+  return parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) >= 0 && Number(p) <= 255);
+}
+
+function isLoopbackLiteral(host) {
+  const h = String(host).toLowerCase();
+  if (h === 'localhost') {
+    return true;
+  }
+  if (h === '::1' || h === '[::1]' || h === '::' || h === '[::]') {
+    return true;
+  }
+  if (h === '0.0.0.0') {
+    return true;
+  }
+  if (isIPv4Literal(h)) {
+    return Number(h.split('.')[0]) === 127;
+  }
+  return false;
+}
+
+function isPrivateOrReservedLiteral(host) {
+  let h = String(host).toLowerCase();
+  if (h.startsWith('[') && h.endsWith(']')) {
+    h = h.slice(1, -1);
+  }
+  if (h === '::1' || h === '::' || h === '0.0.0.0') {
+    return true;
+  }
+  if (h.includes(':')) {
+    // Any other IPv6 literal: treat link-local/unique-local/loopback as
+    // blocked. Fail-closed: block fe80::/10, fc00::/7, ::1.
+    if (h === '::1' || h.startsWith('fe80:') || h.startsWith('fec0:')) {
+      return true;
+    }
+    if (h.startsWith('fc') || h.startsWith('fd')) {
+      return true;
+    }
+    return false;
+  }
+  if (!isIPv4Literal(h)) {
+    return false;
+  }
+  const o = h.split('.').map(Number);
+  if (o[0] === 10) {
+    return true; // 10/8
+  }
+  if (o[0] === 172 && o[1] >= 16 && o[1] <= 31) {
+    return true; // 172.16/12
+  }
+  if (o[0] === 192 && o[1] === 168) {
+    return true; // 192.168/16
+  }
+  if (o[0] === 169 && o[1] === 254) {
+    return true; // 169.254/16
+  }
+  if (o[0] === 127) {
+    return true; // 127/8
+  }
+  if (o[0] === 0 && o[1] === 0 && o[2] === 0 && o[3] === 0) {
+    return true; // 0.0.0.0
+  }
+  return false;
+}
+
+// Fail-closed SSRF gate (AB-5.5-ssrf-private-range). Throws
+// `baseUrl target not permitted` for userinfo, literal private ranges,
+// loopback (unless explicitly allowed), and non-http(s) targets.
+// NOTE: upstream fetch uses raw http/https request with no redirect
+// following (redirect mode: manual — 3xx responses are relayed, never
+// followed), so a 302 can never escape this gate.
+function assertBaseUrlPermitted(target, options) {
+  const opts = options || {};
+  const allowLoopback = opts.allowLoopbackLlm === true;
+  if (target.username || target.password) {
+    throw new Error('baseUrl target not permitted (userinfo not allowed)');
+  }
+  const host = target.hostname || '';
+  if (!host) {
+    throw new Error('baseUrl target not permitted (empty host)');
+  }
+  if (isPrivateOrReservedLiteral(host)) {
+    if (allowLoopback && isLoopbackLiteral(host)) {
+      return; // --allow-loopback-llm permits loopback only, not RFC1918.
+    }
+    throw new Error('baseUrl target not permitted');
+  }
+}
+
+function proxyLlmChat(body, options) {
   return new Promise((resolve, reject) => {
     let baseUrl = body.baseUrl;
     const model = body.model;
@@ -164,6 +280,12 @@ function proxyLlmChat(body) {
     }
     if (target.protocol !== 'http:' && target.protocol !== 'https:') {
       reject(new Error('field "baseUrl" must use http or https'));
+      return;
+    }
+    try {
+      assertBaseUrlPermitted(target, options);
+    } catch (e) {
+      reject(e);
       return;
     }
     const payload = JSON.stringify({
@@ -243,8 +365,14 @@ function introspectMcpServer(body) {
     }
     let child;
     try {
-      // Array argv only; never a shell string (no interpolation).
-      child = spawn(command.trim(), args.slice(), { env, stdio: ['pipe', 'pipe', 'pipe'] });
+      // Fail-closed allowlist (AB-5.6-introspect-rce): only npx/node/python3.
+      // Array argv only; never a shell string (no interpolation, no shell flag).
+      const trimmed = command.trim();
+      const base = path.basename(trimmed);
+      if (!MCP_COMMAND_ALLOWLIST.has(base) && !MCP_COMMAND_ALLOWLIST.has(trimmed)) {
+        throw new Error('command not allowlisted');
+      }
+      child = spawn(trimmed, args.slice(), { env, stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (e) {
       reject(new Error('failed to spawn MCP server: ' + e.message));
       return;
@@ -401,12 +529,57 @@ function installRecipeFiles(recipe, registryEntries, targetDir, harness) {
   return { slug: compiled.slug, written };
 }
 
-function serveStatic(reqUrl, staticRoot, res) {
+// Fail-closed HTTP targetDir gate (AB-5.4-targetdir-unrestricted):
+// rejects absolute paths and any `..` segment (raw or URL-decoded)
+// before installRecipeFiles ever resolves them.
+function assertHttpTargetDir(targetDir) {
+  const s = String(targetDir);
+  if (path.isAbsolute(s)) {
+    throw new Error('targetDir must be a relative path (absolute paths not allowed over HTTP)');
+  }
+  let decoded = s;
+  try {
+    decoded = decodeURIComponent(s);
+  } catch (_e) {
+    // Keep raw value; invalid encoding is itself suspicious but the
+    // raw `..`/absolute checks below still apply.
+  }
+  for (const v of [s, decoded]) {
+    if (v.split(/[\\/]/).includes('..')) {
+      throw new Error('targetDir must not contain ..');
+    }
+    if (path.isAbsolute(v)) {
+      throw new Error('targetDir must be a relative path (absolute paths not allowed over HTTP)');
+    }
+  }
+}
+
+function getRequestToken(req) {
+  try {
+    if (req && req.headers && typeof req.headers['x-ab-token'] === 'string' && req.headers['x-ab-token'].length > 0) {
+      return req.headers['x-ab-token'];
+    }
+  } catch (_e) {
+    // Fall through to query param.
+  }
+  try {
+    const u = new URL(req.url || '/', 'http://localhost');
+    const t = u.searchParams.get('token');
+    if (typeof t === 'string' && t.length > 0) {
+      return t;
+    }
+  } catch (_e) {
+    // No usable token.
+  }
+  return '';
+}
+
+function serveStatic(reqUrl, staticRoot, res, req) {
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(reqUrl, 'http://localhost').pathname);
   } catch (_e) {
-    sendJson(res, 400, { error: 'malformed URL' });
+    sendJson(res, 400, { error: 'malformed URL' }, req);
     return;
   }
   if (pathname === '/') {
@@ -416,30 +589,30 @@ function serveStatic(reqUrl, staticRoot, res) {
   if (pathname === '/registry.json' && !fs.existsSync(path.join(staticRoot, 'registry.json'))) {
     const fallback = path.join(path.dirname(staticRoot), 'dist', 'registry.json');
     if (fs.existsSync(fallback)) {
-      setCors(res);
+      setCors(res, req);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       fs.createReadStream(fallback).pipe(res);
       return;
     }
-    sendJson(res, 404, { error: 'registry.json not found (run: npm run export)' });
+    sendJson(res, 404, { error: 'registry.json not found (run: npm run export)' }, req);
     return;
   }
   const rel = pathname.replace(/^\/+/, '');
   if (rel.includes('..') || path.isAbsolute(rel)) {
-    sendJson(res, 403, { error: 'forbidden path' });
+    sendJson(res, 403, { error: 'forbidden path' }, req);
     return;
   }
   const dest = path.resolve(staticRoot, rel);
   if (dest !== path.resolve(staticRoot) && !dest.startsWith(path.resolve(staticRoot) + path.sep)) {
-    sendJson(res, 403, { error: 'forbidden path' });
+    sendJson(res, 403, { error: 'forbidden path' }, req);
     return;
   }
   fs.stat(dest, (err, st) => {
     if (err || !st.isFile()) {
-      sendJson(res, 404, { error: 'not found: ' + pathname });
+      sendJson(res, 404, { error: 'not found: ' + pathname }, req);
       return;
     }
-    setCors(res);
+    setCors(res, req);
     res.writeHead(200, { 'Content-Type': contentTypeFor(dest) });
     fs.createReadStream(dest).pipe(res);
   });
@@ -455,6 +628,16 @@ function startLocalServer(options) {
   const rootDir = opts.rootDir || path.join(__dirname, '..', '..');
   const staticRoot = opts.staticRoot || resolveStaticRoot(rootDir);
   const version = loadVersion();
+  const allowLoopbackLlm = opts.allowLoopbackLlm === true;
+  // Per-boot token (AB-5.6-introspect-rce): required on all /api/* POSTs.
+  // Generated at server start, logged to stdout for local use, never sent
+  // over CORS wildcard (wildcard removed above).
+  const bootToken = crypto.randomUUID();
+  try {
+    console.log(`AGENT_BUILDER_LOCAL_TOKEN ${bootToken}`);
+  } catch (_e) {
+    // stdout unavailable; token still on server object.
+  }
 
   const server = http.createServer((req, res) => {
     (async () => {
@@ -463,59 +646,71 @@ function startLocalServer(options) {
       try {
         pathname = new URL(req.url || '/', 'http://localhost').pathname;
       } catch (_e) {
-        sendJson(res, 400, { error: 'malformed URL' });
+        sendJson(res, 400, { error: 'malformed URL' }, req);
         return;
       }
       if (method === 'OPTIONS') {
-        setCors(res);
+        setCors(res, req);
         res.writeHead(204);
         res.end();
         return;
       }
       if (method === 'GET' && pathname === '/api/status') {
-        sendJson(res, 200, { mode: 'local-cli', version, mcpBridge: true });
+        sendJson(res, 200, { mode: 'local-cli', version, mcpBridge: true }, req);
         return;
       }
       if (method === 'POST' && pathname === '/api/llm/chat') {
+        if (getRequestToken(req) !== bootToken) {
+          sendJson(res, 401, { error: 'missing or invalid token' }, req);
+          return;
+        }
         let body;
         try {
           body = await readJsonBody(req);
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
           return;
         }
         try {
-          const out = await proxyLlmChat(body || {});
-          setCors(res);
+          const out = await proxyLlmChat(body || {}, { allowLoopbackLlm });
+          setCors(res, req);
           res.writeHead(out.status, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify(out.body) + '\n');
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
         }
         return;
       }
       if (method === 'POST' && pathname === '/api/mcp/introspect') {
+        if (getRequestToken(req) !== bootToken) {
+          sendJson(res, 401, { error: 'missing or invalid token' }, req);
+          return;
+        }
         let body;
         try {
           body = await readJsonBody(req);
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
           return;
         }
         try {
           const out = await introspectMcpServer(body || {});
-          sendJson(res, 200, { ok: true, tools: out.tools, resources: out.resources, serverInfo: out.serverInfo });
+          sendJson(res, 200, { ok: true, tools: out.tools, resources: out.resources, serverInfo: out.serverInfo }, req);
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
         }
         return;
       }
       if (method === 'POST' && pathname === '/api/install') {
+        if (getRequestToken(req) !== bootToken) {
+          sendJson(res, 401, { error: 'missing or invalid token' }, req);
+          return;
+        }
         let body;
         try {
           body = await readJsonBody(req);
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
           return;
         }
         try {
@@ -526,22 +721,23 @@ function startLocalServer(options) {
             throw new Error('field "recipe" must be an object');
           }
           const targetDir = body.targetDir === undefined ? '.' : String(body.targetDir);
+          assertHttpTargetDir(targetDir);
           const entries = loadRegistryEntries(rootDir);
           const out = installRecipeFiles(body.recipe, entries, path.resolve(targetDir), body.harness);
-          sendJson(res, 200, { ok: true, slug: out.slug, written: out.written });
+          sendJson(res, 200, { ok: true, slug: out.slug, written: out.written }, req);
         } catch (e) {
-          sendJson(res, 400, { error: e.message });
+          sendJson(res, 400, { error: e.message }, req);
         }
         return;
       }
       if (method === 'GET' || method === 'HEAD') {
-        serveStatic(req.url, staticRoot, res);
+        serveStatic(req.url, staticRoot, res, req);
         return;
       }
-      sendJson(res, 405, { error: 'method not allowed: ' + method + ' ' + pathname });
+      sendJson(res, 405, { error: 'method not allowed: ' + method + ' ' + pathname }, req);
     })().catch((err) => {
       try {
-        sendJson(res, 500, { error: 'internal error: ' + err.message });
+        sendJson(res, 500, { error: 'internal error: ' + err.message }, req);
       } catch (_e) {
         // Response already closed.
       }
@@ -551,6 +747,8 @@ function startLocalServer(options) {
   return new Promise((resolve, reject) => {
     server.on('error', reject);
     server.listen(port, host, () => {
+      server.bootToken = bootToken;
+      server.allowLoopbackLlm = allowLoopbackLlm;
       resolve(server);
     });
   });
@@ -561,5 +759,12 @@ module.exports = {
   loadRegistryEntries,
   installRecipeFiles,
   introspectMcpServer,
+  proxyLlmChat,
+  assertBaseUrlPermitted,
+  assertHttpTargetDir,
+  isSafeRelPath,
+  isLoopbackOrigin,
+  getRequestToken,
+  MCP_COMMAND_ALLOWLIST,
   MCP_TIMEOUT_MS
 };

@@ -471,8 +471,14 @@
     install: function (c) { return 'install-' + c.slug + '.txt'; },
   };
 
-  function installCommand(slug) {
-    return 'npx @heretek-ai/agent-builder install --slug ' + slug;
+  // AB-5.2: the CLI (`bin/agent-builder.js install`) accepts
+  // `--recipe <file.json|base64url|inline JSON>` via loadRecipe and has no
+  // `--slug` flag, so the Install tab emits a pastable
+  // `--recipe <base64url>` command. base64url is shell-safe (no
+  // spaces/quotes) and the CLI decodes it with decodeBase64Url.
+  function installCommand(recipe) {
+    var r = (recipe && typeof recipe === 'object') ? recipe : currentRecipe();
+    return 'node bin/agent-builder.js install --recipe ' + base64UrlEncode(JSON.stringify(r));
   }
 
   function tabText(tab, compiled) {
@@ -485,7 +491,7 @@
           '\n--- .mcp.json ---\n' +
           JSON.stringify(compiled.claudeCodeMcp, null, 2) + '\n';
       case 'codex': return compiled.codexConfigToml;
-      case 'install': return installCommand(compiled.slug) + '\n';
+      case 'install': return installCommand(currentRecipe()) + '\n';
       default: return '';
     }
   }

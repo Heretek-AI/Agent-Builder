@@ -1,6 +1,6 @@
 id: lua-neovim-scripting
 name: Lua and Neovim Scripting Skill
-repo: https://github.com/example/lua-neovim-scripting
+repo: https://github.com/Heretek-AI/Agent-Builder
 tagline: LuaJIT, Neovim plugins, and embedded Lua scripting.
 description: >-
   A skill covering LuaJIT idioms, Neovim plugin development with Lua, LOVE2D game scripting, and
@@ -16,4 +16,5 @@ tags:
   - neovim
   - luajit
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Synthetic seed entry for Agent-Builder (no external upstream, MIT).
+synthetic: true

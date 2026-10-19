@@ -1,6 +1,6 @@
 id: postgres-mcp-connector
 name: Postgres MCP Connector
-repo: https://github.com/example/postgres-mcp-connector
+repo: https://github.com/kristofer84/mcp-postgres
 tagline: Read-only Postgres MCP server with audited tools.
 description: >-
   An MCP server connector for PostgreSQL exposing query, list-tables, and schema inspection tools
@@ -16,15 +16,18 @@ mcp:
   command: npx
   args:
     - '-y'
-    - '@example/postgres-mcp'
+    - mcp-postgres
   tools:
-    - query
-    - list-tables
-    - describe-table
+    # Tool names per the published mcp-postgres@1.4.2 README (Available Tools):
+    # execute_query, list_tables, describe_table (get_schema/get_table_sample omitted).
+    - execute_query
+    - list_tables
+    - describe_table
   resources:
     - schema
 tags:
   - postgres
   - sql
 license: MIT
-source_attribution: Curated seed entry for Agent-Builder Milestone 2 (example upstream, MIT).
+source_attribution: Curated for Agent-Builder; inspired by kristofer84/mcp-postgres (MIT).
+synthetic: false

@@ -19,12 +19,12 @@ agent_preset:
   mcp_selections:
     - server: k8s
       tools:
-        - list_pods
-        - get_logs
+        - kubectl_get
+        - kubectl_logs
     - server: postgres-prod
       tools:
-        - query
-        - list-tables
+        - execute_query
+        - list_tables
 tags:
   - sre
   - database
