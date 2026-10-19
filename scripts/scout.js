@@ -923,9 +923,13 @@ async function cmdAccept(rootDir) {
         try { gitExec(['fetch', 'origin', base]); } catch (_e) { /* offline-safe: use local base */ }
         try { gitExec(['checkout', '-B', branch, `origin/${base}`]); }
         catch (_e) { gitExec(['checkout', '-B', branch, base]); }
-        if (fs.existsSync(outAbs)) throw new Error(`refusing to overwrite existing file '${result.file}'`);
         fs.mkdirSync(path.dirname(outAbs), { recursive: true });
-        fs.writeFileSync(outAbs, result.text, 'utf8');
+        try {
+          fs.writeFileSync(outAbs, result.text, { encoding: 'utf8', flag: 'wx' });
+        } catch (e) {
+          if (e && e.code === 'EEXIST') throw new Error(`refusing to overwrite existing file '${result.file}'`);
+          throw e;
+        }
         gitExec(['add', result.file]);
         gitExec(['-c', 'user.name=agent-builder-scout', '-c', 'user.email=agent-builder-scout@users.noreply.github.com',
           'commit', '-m', `docs: add ${input.name} to ${input.category}`]);
@@ -964,7 +968,7 @@ async function cmdAccept(rootDir) {
       } catch (err) {
         // Roll back the working tree file so the next candidate starts clean.
         try { gitExec(['checkout', '--', result.file]); } catch (_e) { /* ignore */ }
-        try { if (fs.existsSync(path.join(rootDir, result.file))) fs.unlinkSync(path.join(rootDir, result.file)); } catch (_e) { /* ignore */ }
+        try { fs.unlinkSync(path.join(rootDir, result.file)); } catch (e) { if (e && e.code !== 'ENOENT') { /* ignore - best-effort rollback */ } }
         note = ` → not added: ${truncate(token ? String(err.message || '').split(token).join('[redacted]') : String(err.message || ''), 200)}`;
       }
     }
