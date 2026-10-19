@@ -138,3 +138,22 @@
   - Command: synthetic add-entry + publish-agent issue JSONs via `submit-entry.js --dry-run` -> both `SUBMIT_OK (dry-run)` with correct YAML (skill + agent_preset with model/skills/mcp_selections); `scout.js accept --issue 42 --dry-run` -> `ACCEPT_OK (dry-run)`, exit `0`.
   - Command: `npm test` -> `pass 33, fail 0`; `npm run validate` -> `VALIDATED 63 ENTRIES OK` (no regressions).
 - No blockers. 0 failed attempts (M10).
+
+## Milestone 11 — GitHub Actions Workflows (2026-10-19)
+
+- Created all 9 workflows under `.github/workflows/` (no prior `workflows/` dir; `.scratch/repos/` absent so no upstream port source — wrote from the brief + M10 script CLIs): `validate-pr.yml` (PR trigger, matrix `22.x`/`24.x`, `npm ci --ignore-scripts` + `validate` + `test` + `site`), `generate-readme.yml` (push to `main` on `data/**`/`scripts/**`, `fmt`/`validate`/`export`/`generate` + `stefanzweifel/git-auto-commit-action@v5` committing `README.md`/`dist/registry.json`/`data/**`), `site.yml` (push to `main` + `workflow_dispatch`, `pages: write` + `id-token: write`, `build` job with `health-check.js --dry-run` + `build-site.js` + `upload-pages-artifact@v5` `path: _site`, `deploy` job with `deploy-pages@v4` + `github-pages` environment), `health.yml` (weekly cron `0 6 * * 1` + dispatch, `npm run health`), `issues.yml` (issues `opened`, gated on `new-entry`/`publish-agent` labels, serializes issue to `issue.json` then `submit-entry.js --issue issue.json --dry-run`), `reprobe.yml` (cron `30 6 * * 1` + dispatch, `node scripts/reprobe.js`), `scout.yml` (cron `0 7 * * 1` + dispatch, `npm run scout`), `triage.yml` (issues + PRs `opened`, `node scripts/triage.js --dry-run`), `ai-review.yml` (PRs to `main`, full `fetch-depth: 0`, `ai-review.js collect`/`run`/`selftest`).
+- Decisions: `"on"` key quoted in every workflow (avoids YAML 1.1 `on` -> boolean coercion under some parsers); all jobs `runs-on: ubuntu-latest` with `actions/checkout@v4` + `actions/setup-node@v4`; `cache: npm` on setup-node steps; `contents: read` baseline with `contents: write` only where commits/PRs are created, `issues`/`pull-requests: write` only for triage/issues/ai-review.
+- Evidence:
+  - Command: `node -e "const fs=require('fs'), yaml=require('js-yaml'); for (const d of ['.github/workflows', '.github/ISSUE_TEMPLATE']) { for (const f of fs.readdirSync(d)) { yaml.load(fs.readFileSync(d+'/'+f, 'utf8')); } } console.log('WORKFLOW_YAML_OK');"` -> stdout `WORKFLOW_YAML_OK`, exit `0`.
+  - Command: structural audit script -> 9 workflows, every job has `runs-on: ubuntu-latest` + non-empty `steps`, validate-pr matrix is `[22.x, 24.x]`, site.yml wires `upload-pages-artifact`/`deploy-pages` with `_site`, `WORKFLOW_STRUCTURE_OK`, exit `0`.
+  - Command: `npm run validate` -> `VALIDATED 63 ENTRIES OK`; `npm test` -> `pass 33, fail 0` (no regressions).
+- Failed attempts: 1 (YAML-only, no implementation change). Initial `issues.yml` used an inline `run: node -e "...JSON.stringify({ number: ...` plain scalar; the `{ number: ` colon-space ended the mapping (`bad indentation of a mapping entry`, line 32) -> converted that step to a `run: |` block scalar; acceptance then passed.
+
+## Milestone 11 — Rework Cycle 1/3: issues.yml label drift fix (2026-10-19)
+
+- Drift finding 2 (real bug): `.github/ISSUE_TEMPLATE/publish-agent.yml` emits `labels: ["new-agent"]` but `.github/workflows/issues.yml` `convert` job gated only on `new-entry`/`publish-agent`, so Publish-Agent issues would never match and would be silently skipped.
+- Fix: extended the `convert` `if:` in `.github/workflows/issues.yml:16` to also match `new-agent` while preserving existing `new-entry`/`publish-agent` matching: `contains(..., 'new-entry') || contains(..., 'new-agent') || contains(..., 'publish-agent')`. Minimal single-line edit; no other workflow touched. Finding 1 (uncommitted files) is coordinator commit timing — left uncommitted per instructions.
+- Evidence:
+  - Command: `node -e "const fs=require('fs'), yaml=require('js-yaml'); ..."` -> stdout `WORKFLOW_YAML_OK`, exit `0`.
+  - Command: `npm run validate` -> `VALIDATED 63 ENTRIES OK`, exit `0`.
+  - Command: `npm test` -> `pass 33, fail 0`, exit `0`.

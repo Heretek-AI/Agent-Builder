@@ -1,0 +1,39 @@
+name: Regenerate README and Registry
+
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - data/**
+      - scripts/**
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Format entries
+        run: npm run fmt
+      - name: Validate registry
+        run: npm run validate
+      - name: Export registry JSON
+        run: npm run export
+      - name: Regenerate README
+        run: npm run generate
+      - name: Commit regenerated files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: regenerate README.md and dist/registry.json"
+          file_pattern: README.md dist/registry.json data/**
