@@ -502,11 +502,14 @@
       skills.length > 0 ? '\n## Active Skills\n' + skills.map(function (s) { return '- ' + s; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
-  // Cursor / Windsurf / Copilot MCP JSON has no per-tool allow/deny field,
-  // so a narrowed selection must never be emitted as an unrestricted server:
+  // Cursor / Windsurf MCP JSON has no per-tool allow/deny field, so a
+  // narrowed selection must never be emitted as an unrestricted server:
   // record the enforced tool scope as a limitation note in the companion
-  // rules doc, where the host actually reads it.
-  function scopedMcpNote(selections) {
+  // rules doc, where the host actually reads it. Copilot repository/VS Code
+  // MCP config *does* support a per-server `tools` allowlist, so it is
+  // emitted below (fail-closed); the advisory note is kept as defence in
+  // depth.
+  function scopedMcpNote(selections, enforcedHint) {
     if (!Array.isArray(selections) || selections.length === 0) {
       return '';
     }
@@ -519,8 +522,52 @@
       }
       return '- ' + sel.server + ': ' + scope;
     });
-    return '\n## Scoped MCP Tools (host-enforced; mcp.json cannot restrict tools)\n'
+    var header = enforcedHint
+      ? '\n## Scoped MCP Tools (also enforced in .vscode/mcp.json `tools` allowlist)\n'
+      : '\n## Scoped MCP Tools (host-enforced; mcp.json cannot restrict tools)\n';
+    return header
       + lines.join('\n');
+  }
+
+  // Copilot per-server `tools` allowlist (GitHub Docs: repository MCP config
+  // supports a `tools` key per server, `'*'` for all). Fail-closed: deny-only
+  // (empty tools) emits `[]`; wildcard + explicit denies resolves against the
+  // registry tool universe minus denies; wildcard + denies with no known
+  // universe emits `[]` rather than `['*']` so a denied tool is never exposed
+  // as allowed. Explicit allows minus denies (deny wins, exact + normalized).
+  function copilotToolsFor(sel, reg) {
+    var denied = sel.deniedTools.map(function (d) { return String(d).trim(); });
+    var hasDenyAll = denied.some(function (d) { return d === '*'; });
+    if (hasDenyAll) {
+      return [];
+    }
+    var deniedSet = {};
+    var deniedNorm = {};
+    denied.forEach(function (d) {
+      if (d !== '*') {
+        deniedSet[d] = true;
+        deniedNorm[normalizeMcpId(d)] = true;
+      }
+    });
+    var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
+    if (wildcard) {
+      if (denied.length === 0) {
+        return ['*'];
+      }
+      if (reg && isPlainObject(reg.mcp) && Array.isArray(reg.mcp.tools)) {
+        return reg.mcp.tools.map(function (t) { return String(t); }).filter(function (t) {
+          return !deniedSet[t] && !deniedNorm[normalizeMcpId(t)];
+        });
+      }
+      return [];
+    }
+    return sel.tools.map(function (t) { return String(t); }).filter(function (t) {
+      var trimmed = t.trim();
+      if (trimmed === '*') {
+        return false;
+      }
+      return !deniedSet[trimmed] && !deniedNorm[normalizeMcpId(trimmed)];
+    });
   }
 
     // 2. Cursor (`.cursor/mcp.json` + `.cursor/rules/<slug>.mdc`)
@@ -556,14 +603,21 @@
     ].join('\n').trim() + '\n';
 
     // 4. GitHub Copilot (`.vscode/mcp.json` + `.github/copilot-instructions.md`)
-    var vscodeMcpJson = { servers: cursorMcpServers };
+    var vscodeMcpServers = {};
+    selections.forEach(function (sel) {
+      var reg = findRegistryMcp(sel.server, registryEntries);
+      var entry = serverTransport(sel, reg);
+      entry.tools = copilotToolsFor(sel, reg);
+      vscodeMcpServers[sel.server] = entry;
+    });
+    var vscodeMcpJson = { servers: vscodeMcpServers };
     var copilotInstructionsMd = [
       '# GitHub Copilot Instructions — ' + slug,
       '',
       description ? '> ' + description + '\n' : '',
       prompt || '',
       skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : '',
-      scopedMcpNote(selections)
+      scopedMcpNote(selections, true)
     ].join('\n').trim() + '\n';
 
     return {
