@@ -17,7 +17,7 @@ node bin/agent-builder.js serve
 
 > **Note:** `@heretek-ai/agent-builder` is not published on the npm registry yet (`npm view` still 404s — a known gap, AB-6.1). Do not use `npx @heretek-ai/agent-builder`; run from source as above or `npm pack` until `npm publish` lands.
 
-**Registry stats:** 64 entries (4 agent, 3 design-md, 8 mcp-server, 13 plugin, 3 prompt, 33 skill) across the taxonomy below.
+**Registry stats:** 66 entries (4 agent, 3 design-md, 8 mcp-server, 15 plugin, 3 prompt, 33 skill) across the taxonomy below.
 
 ## Table of Contents
 
@@ -162,6 +162,8 @@ Multi-agent routers, harness adapters, and cross-provider bridges.
 | --- | --- | --- | --- | --- |
 | [Harness Adapter Kit](https://github.com/anomalyco/opencode) | Adapter patterns for running one agent across harnesses. | [opencode] [claude-code] [codex] [universal] | — | — |
 | [LiteLLM Router Bridge](https://github.com/BerriAI/litellm) | Multi-provider LLM router bridging harnesses to 100+ models. | [opencode] [claude-code] [codex] [universal] | — | — |
+| [Pi Coding Agent](https://github.com/earendil-works/pi) | Minimal extensible Pi coding-agent CLI with read, bash, edit, and session tools. | [universal] | — | — |
+| [Pi Review](https://github.com/earendil-works/pi-review) | Practical /review and /end-review code-review workflow extension for Pi. | [universal] | — | — |
 
 ## 2. Agent Skills (By Subject & Domain)
 

@@ -2,7 +2,7 @@ id: pi-coding-agent
 name: Pi Coding Agent
 repo: https://github.com/earendil-works/pi
 path: packages/coding-agent
-npm: "@earendil-works/pi-coding-agent"
+npm: '@earendil-works/pi-coding-agent'
 tagline: Minimal extensible Pi coding-agent CLI with read, bash, edit, and session tools.
 description: >-
   earendil-works/pi (MIT) is the Pi coding-agent harness: a minimal extensible agent loop with a
