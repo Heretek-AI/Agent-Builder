@@ -1,0 +1,20 @@
+id: javierkaiser-opencode-indexing
+name: '@javierkaiser/opencode-indexing'
+repo: https://github.com/Javierkaiser/opencode-indexing
+npm: '@javierkaiser/opencode-indexing'
+tagline: >-
+  OpenCode plugin: semantic code search that reuses Kilo Code indexes (Qdrant/LanceDB) and maintains
+  its own independent…
+description: >-
+  OpenCode plugin: semantic code search over your codebase, reusing Kilo Code indexes
+  (Qdrant/LanceDB) and keeping its own incremental index.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/Javierkaiser/opencode-indexing (MIT).
