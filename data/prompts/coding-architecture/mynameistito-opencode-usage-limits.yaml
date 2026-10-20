@@ -1,0 +1,22 @@
+id: mynameistito-opencode-usage-limits
+name: '@mynameistito/opencode-usage-limits'
+repo: https://github.com/mynameistito/opencode-plugins
+path: packages/opencode-usage-limits
+npm: '@mynameistito/opencode-usage-limits'
+tagline: >-
+  OpenCode TUI plugin that shows Codex, DeepSeek, Moonshot/Kimi API balances, Novita AI, OpenRouter,
+  Command Code,…
+description: My Personal OpenCode v2 Plugins
+kind: prompt
+category: prompts/coding-architecture
+harnesses:
+  - opencode
+  - codex
+tags:
+  - opencode
+  - codex
+  - prompt
+  - plugin
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/mynameistito/opencode-plugins (MIT).
