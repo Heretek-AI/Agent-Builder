@@ -1,0 +1,24 @@
+id: smart-coders-hq-opencode-model-fallback
+name: '@smart-coders-hq/opencode-model-fallback'
+repo: https://github.com/Smart-Coders-HQ/opencode-model-fallback
+npm: '@smart-coders-hq/opencode-model-fallback'
+tagline: >-
+  OpenCode plugin for ordered model fallback chains, preemptive redirect, and automatic rate limit
+  recovery.
+description: >-
+  OpenCode plugin for ordered model fallback chains, preemptive redirect, and automatic rate limit
+  recovery.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - ml
+  - git
+  - github
+license: Apache-2.0
+source_attribution: >-
+  Discovered by Agent-Builder scout from https://github.com/Smart-Coders-HQ/opencode-model-fallback
+  (Apache-2.0).
