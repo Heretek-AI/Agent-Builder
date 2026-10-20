@@ -1,0 +1,19 @@
+id: plannotator-opencode
+name: '@plannotator/opencode'
+repo: https://github.com/backnotprop/plannotator
+path: apps/opencode-plugin
+npm: '@plannotator/opencode'
+tagline: Plannotator plugin for OpenCode - interactive plan review with visual annotation
+description: >-
+  Annotate and review coding agent plans and code diffs visually, share with your team, send
+  feedback to agents with one click.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - agent
+  - plugin
+license: Apache-2.0
+source_attribution: Discovered by Agent-Builder scout from https://github.com/backnotprop/plannotator (Apache-2.0).
