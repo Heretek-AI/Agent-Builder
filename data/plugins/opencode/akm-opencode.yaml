@@ -1,0 +1,23 @@
+id: akm-opencode
+name: akm-opencode
+repo: https://github.com/itlackey/akm-plugins
+path: opencode
+npm: akm-opencode
+tagline: >-
+  OpenCode plugin for AKM with discovery tools, feedback, memory, and automatic learning proposals
+  from corrections and…
+description: >-
+  OpenCode plugin for AKM with discovery tools, feedback, memory, and automatic learning proposals
+  from corrections and recurring workflows.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - agent
+  - plugin
+  - extension
+  - typescript
+license: MPL-2.0
+source_attribution: Discovered by Agent-Builder scout from https://github.com/itlackey/akm-plugins (MPL-2.0).
