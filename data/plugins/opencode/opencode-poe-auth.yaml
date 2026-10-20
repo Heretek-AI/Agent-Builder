@@ -1,0 +1,19 @@
+id: opencode-poe-auth
+name: opencode-poe-auth
+repo: https://github.com/poe-platform/poe-code
+path: packages/opencode-poe-auth
+npm: opencode-poe-auth
+tagline: Poe OAuth authentication plugin for OpenCode
+description: >-
+  Use Poe to power your favorite coding agents (Claude Code, Codex, OpenCode, etc). No need for
+  multiple subscriptions.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/poe-platform/poe-code (MIT).
