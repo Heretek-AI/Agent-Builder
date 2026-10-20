@@ -1,0 +1,16 @@
+id: opencode-with-claude
+name: opencode-with-claude
+repo: https://github.com/ianjwhite99/opencode-with-claude
+npm: opencode-with-claude
+tagline: OpenCode plugin to use your Claude Max subscription via Meridian proxy
+description: OpenCode plugin to use your Claude Max/Pro subscription with OpenCode via Meridian
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/ianjwhite99/opencode-with-claude (MIT).
