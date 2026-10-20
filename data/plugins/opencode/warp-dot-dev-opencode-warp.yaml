@@ -1,0 +1,16 @@
+id: warp-dot-dev-opencode-warp
+name: '@warp-dot-dev/opencode-warp'
+repo: https://github.com/warpdotdev/opencode-warp
+npm: '@warp-dot-dev/opencode-warp'
+tagline: Warp terminal integration for OpenCode — native notifications and more
+description: Internal repo for Warp's Opencode plugin.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/warpdotdev/opencode-warp (MIT).
