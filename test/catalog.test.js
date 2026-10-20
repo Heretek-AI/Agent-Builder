@@ -168,15 +168,66 @@ describe('scripts/generate-readme.js (README.md)', () => {
 });
 
 describe('scripts/build-site.js (_site/)', () => {
-  it('produces index.html, registry.json, and .nojekyll for GitHub Pages', () => {
+  // _site/ is gitignored build output (see .gitignore): validate-pr runs
+  // `npm test` with no prior `npm run site`, so a missing _site/ skips
+  // (site.yml covers the Pages build; stage4.test.js exercises build-site.js
+  // directly). When _site/ is present, the registry is validated
+  // self-consistently — never against committed dist/registry.json, which
+  // lags data/** by design (scout PRs add only data/*.yaml; the
+  // generate-readme bot regenerates dist/README after merge).
+  const siteRegistryPath = path.join(ROOT, '_site', 'registry.json');
+  const sitePresent = fs.existsSync(siteRegistryPath);
+  it('produces index.html, registry.json, and .nojekyll for GitHub Pages', { skip: !sitePresent }, async () => {
+    // stage4.test.js rebuilds _site/ in-process while node --test runs test
+    // files in parallel: between its rmSync(_site) and the registry rewrite
+    // there is a window where artifacts are missing or torn. Retry briefly
+    // so a concurrent rebuild cannot flake this test; a genuinely broken
+    // site still fails after the deadline (fail-closed).
+    const deadline = Date.now() + 15000;
+    for (;;) {
+      try {
+        checkSite();
+        return;
+      } catch (err) {
+        if (Date.now() > deadline) throw err;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    }
+  });
+
+  function checkSite() {
     for (const rel of ['_site/index.html', '_site/registry.json', '_site/.nojekyll']) {
       assert.ok(fs.existsSync(path.join(ROOT, rel)), `missing site artifact: ${rel} (run npm run site)`);
     }
     const siteRegistry = readJson('_site/registry.json');
-    const distRegistry = readJson('dist/registry.json');
-    assert.equal(siteRegistry.entries.length, distRegistry.entries.length);
     assert.equal(siteRegistry.version, '1.0.0');
+    assert.ok(siteRegistry.taxonomy, 'site registry must carry taxonomy');
+    assert.ok(Array.isArray(siteRegistry.entries), 'site registry must carry entries[]');
+    assert.ok(siteRegistry.entries.length >= 60, `expected 60+ entries, got ${siteRegistry.entries.length}`);
+    assert.ok(siteRegistry.stats, 'site registry must carry stats');
+
+    // Deterministic order: category, then id.
+    const keys = siteRegistry.entries.map((e) => `${e.category}\0${e.id}`);
+    const sorted = [...keys].sort();
+    assert.deepEqual(keys, sorted, 'entries must be sorted by category, then id');
+
+    // Stats counts match the entries.
+    const byKind = {};
+    const byCategory = {};
+    const byHarness = {};
+    for (const e of siteRegistry.entries) {
+      byKind[e.kind] = (byKind[e.kind] || 0) + 1;
+      byCategory[e.category] = (byCategory[e.category] || 0) + 1;
+      for (const h of e.harnesses || []) {
+        byHarness[h] = (byHarness[h] || 0) + 1;
+      }
+    }
+    assert.equal(siteRegistry.stats.total, siteRegistry.entries.length);
+    assert.deepEqual(siteRegistry.stats.by_kind, byKind);
+    assert.deepEqual(siteRegistry.stats.by_category, byCategory);
+    assert.deepEqual(siteRegistry.stats.by_harness, byHarness);
+
     const html = fs.readFileSync(path.join(ROOT, '_site', 'index.html'), 'utf8');
     assert.ok(html.length > 1000, 'index.html looks too small to be the WebUI shell');
-  });
+  }
 });
