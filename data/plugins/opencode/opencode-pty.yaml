@@ -1,0 +1,21 @@
+id: opencode-pty
+name: opencode-pty
+repo: https://github.com/shekohex/opencode-pty
+npm: opencode-pty
+tagline: >-
+  OpenCode plugin for interactive PTY management - run background processes, send input, read output
+  with regex filtering
+description: >-
+  OpenCode plugin for interactive PTY management - run background processes, send input, read output
+  with regex filtering
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - playwright
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/shekohex/opencode-pty (MIT).
