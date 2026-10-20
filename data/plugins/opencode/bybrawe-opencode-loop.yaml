@@ -1,0 +1,21 @@
+id: bybrawe-opencode-loop
+name: '@bybrawe/opencode-loop'
+repo: https://github.com/ByBrawe/opencode-loop
+npm: '@bybrawe/opencode-loop'
+tagline: >-
+  Idle-safe /loop scheduling and background automation for OpenCode, with optional legacy Loop Goal
+  compatibility and a…
+description: Claude Code style auto-continue for OpenCode.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+  - claude-code
+tags:
+  - opencode
+  - claude-code
+  - agent
+  - plugin
+  - go
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/ByBrawe/opencode-loop (MIT).
