@@ -371,6 +371,71 @@ describe('v2-overhaul: Pi + extra-client exports cover all 10 compile targets', 
   });
 });
 
+describe('copilot tools allowlist content (fail-closed copilotToolsFor)', () => {
+  const { compileAgentRecipe } = require('../src/core/compiler');
+  const REG = [
+    {
+      id: 'known',
+      kind: 'mcp-server',
+      mcp: { server_name: 'known-srv', tools: ['read', 'write', 'admin'] },
+    },
+  ];
+  function copilotTools(recipe, registry) {
+    const out = compileAgentRecipe(recipe, registry === undefined ? REG : registry);
+    assert.ok(out.vscodeMcpJson && out.vscodeMcpJson.servers, 'vscodeMcpJson.servers must exist');
+    return out.vscodeMcpJson.servers;
+  }
+  function toolsFor(server, selections, registry) {
+    const servers = copilotTools(
+      { slug: 'copilot-probe', description: 'd', prompt: 'p', skills: [], mcpSelections: selections },
+      registry
+    );
+    assert.ok(servers[server], `expected .vscode/mcp.json server entry for ${server}`);
+    assert.ok(Array.isArray(servers[server].tools), `tools for ${server} must be an array (fail-closed)`);
+    return servers[server].tools;
+  }
+
+  it('explicit tools are preserved verbatim', () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: ['read', 'write'] }]), ['read', 'write']);
+  });
+
+  it('explicit tools minus denies (deny wins)', () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['read', 'write'], deniedTools: ['write'] }]),
+      ['read']
+    );
+  });
+
+  it("wildcard with no denies emits ['*']", () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'] }]), ['*']);
+  });
+
+  it('wildcard + deny resolves against the known registry universe minus denies', () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'], deniedTools: ['write'] }]),
+      ['read', 'admin']
+    );
+  });
+
+  it('wildcard + deny with no known universe emits [] (never [*\'])', () => {
+    assert.deepEqual(
+      toolsFor('ghost-srv', [{ server: 'ghost-srv', tools: ['*'], deniedTools: ['write'] }], []),
+      []
+    );
+  });
+
+  it('deny-only (empty tools) emits []', () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: [] }]), []);
+  });
+
+  it("deniedTools ['*'] emits [] even with a wildcard allow", () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'], deniedTools: ['*'] }]),
+      []
+    );
+  });
+});
+
 describe('v2-overhaul: Studio site wires all 5 agent presets', () => {
   it('index.html preset dropdown offers the 5 curated presets', () => {
     const html = fs.readFileSync(path.join(ROOT, 'site', 'index.html'), 'utf8');
