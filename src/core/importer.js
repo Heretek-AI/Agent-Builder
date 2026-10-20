@@ -524,6 +524,10 @@
           // allow. The explicit allow list stands even when empty (deny-only).
           tools = allowedList;
         }
+      } else if (srv.exposure === 'hidden') {
+        // Fail-closed (CWE-284): hidden with no toolExposure map is
+        // deny-only — never fall back to wildcard allow.
+        tools = [];
       }
       // Gemini CLI `includeTools` / `excludeTools` support
       if (Array.isArray(srv.includeTools) && srv.includeTools.length > 0) {

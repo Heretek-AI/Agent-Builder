@@ -519,6 +519,59 @@ describe('importer: comments, v1, v2, claude, markdown', () => {
     ]);
   });
 
+  it('imports hidden Pi servers as explicit deny-only (CWE-284, r4328783393)', () => {
+    // Hidden with no toolExposure at all (compiler deny-only shape:
+    // exposure hidden + no toolExposure key) must be tools: [], not ['*'].
+    let recipes = parseUploadedConfig('mcp.json', JSON.stringify({
+      mcpServers: { 'secret-srv': { command: 'npx', args: ['-y', 'x'], exposure: 'hidden' } }
+    }));
+    assert.deepEqual(recipes[0].mcpSelections, [
+      { server: 'secret-srv', tools: [], deniedTools: [], allowResources: false }
+    ]);
+    // Hidden with only hidden entries stays deny-only, hidden entries denied.
+    recipes = parseUploadedConfig('mcp.json', JSON.stringify({
+      mcpServers: {
+        'secret-srv': { command: 'npx', args: ['-y', 'x'], exposure: 'hidden', toolExposure: { q: 'hidden' } }
+      }
+    }));
+    assert.deepEqual(recipes[0].mcpSelections, [
+      { server: 'secret-srv', tools: [], deniedTools: ['q'], allowResources: false }
+    ]);
+    // Hidden with mixed entries: explicit allow list only, wildcard key and
+    // hidden entries excluded.
+    recipes = parseUploadedConfig('mcp.json', JSON.stringify({
+      mcpServers: {
+        'mix-srv': {
+          command: 'npx', args: ['-y', 'x'], exposure: 'hidden',
+          toolExposure: { query: 'codemode', 'drop-table': 'hidden', '*': 'codemode' }
+        }
+      }
+    }));
+    assert.deepEqual(recipes[0].mcpSelections, [
+      { server: 'mix-srv', tools: ['query'], deniedTools: ['drop-table'], allowResources: false }
+    ]);
+    // Non-hidden keeps the wildcard default.
+    recipes = parseUploadedConfig('mcp.json', JSON.stringify({
+      mcpServers: { 'open-srv': { command: 'npx', args: ['-y', 'x'] } }
+    }));
+    assert.deepEqual(recipes[0].mcpSelections, [
+      { server: 'open-srv', tools: ['*'], deniedTools: [], allowResources: false }
+    ]);
+    // Compile -> import round-trip of a deny-only selection stays deny-only.
+    const { compileAgentRecipe: compile } = require('../src/core/compiler');
+    const compiled = compile(
+      { slug: 'deny', description: 'd', prompt: 'p', skills: [], mcpSelections: [{ server: 'secret-srv', tools: [], deniedTools: [] }] },
+      []
+    );
+    const piServer = compiled.piMcpJson.mcpServers['secret-srv'];
+    assert.equal(piServer.exposure, 'hidden');
+    assert.ok(!('toolExposure' in piServer), 'deny-only Pi export must omit toolExposure');
+    const roundTrip = parseUploadedConfig('mcp.json', JSON.stringify(compiled.piMcpJson));
+    assert.deepEqual(roundTrip[0].mcpSelections, [
+      { server: 'secret-srv', tools: [], deniedTools: [], allowResources: false }
+    ]);
+  });
+
   it('rejects unknown shapes with descriptive errors', () => {
     assert.throws(() => parseUploadedConfig('opencode.json', '{not json'), /not valid JSON/);
     assert.throws(() => parseUploadedConfig('opencode.json', '{"foo": 1}'), /does not look like/);
