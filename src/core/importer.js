@@ -519,18 +519,12 @@
             allowedList.push(tk);
           }
         });
-        if (srv.exposure === 'hidden') {
-          // Fail-closed: a hidden server must never fall back to a wildcard
-          // allow. The explicit allow list stands even when empty (deny-only).
+        if (srv.exposure === 'hidden' && allowedList.length > 0) {
           tools = allowedList;
         }
-      } else if (srv.exposure === 'hidden') {
-        // Fail-closed (CWE-284): hidden with no toolExposure map is
-        // deny-only — never fall back to wildcard allow.
-        tools = [];
       }
       // Gemini CLI `includeTools` / `excludeTools` support
-      if (Array.isArray(srv.includeTools)) {
+      if (Array.isArray(srv.includeTools) && srv.includeTools.length > 0) {
         tools = srv.includeTools.map(String);
       }
       if (Array.isArray(srv.excludeTools)) {
@@ -584,80 +578,6 @@
     }];
   }
 
-  function extractGenericSkills(body) {
-    var skills = [];
-    function pushSkill(s) {
-      var v = String(s).trim();
-      if (v && skills.indexOf(v) === -1) {
-        skills.push(v);
-      }
-    }
-    var patterns = [
-      /\.claude\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
-      /\.pi\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
-      /\.windsurf\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
-      /\.cursor\/rules\/([^/\s`'"]+)\.mdc/g
-    ];
-    patterns.forEach(function (re) {
-      var m;
-      re.lastIndex = 0;
-      while ((m = re.exec(body)) !== null) {
-        pushSkill(m[1]);
-      }
-    });
-    // Backticked skill refs under Scoped Skills / Active Skills / Referenced
-    // Playbooks / Enabled Skills sections (Cursor, Windsurf, Copilot, Pi, Gemini).
-    var sectionRe = /##\s+(?:Scoped Skills|Active Skills|Referenced Playbooks|Enabled Skills)[^\n]*\n([\s\S]*?)(?=\n##\s+|\n?$)/i;
-    var sec = sectionRe.exec(body);
-    if (sec) {
-      var backtickRe = /`([^`\n]+)`/g;
-      var b;
-      while ((b = backtickRe.exec(sec[1])) !== null) {
-        var raw = String(b[1]).trim();
-        var pathSkill = /(?:\.pi\/skills\/|\.windsurf\/skills\/|\.claude\/skills\/)([^/\s`'"]+)\/SKILL\.md/.exec(raw);
-        if (pathSkill) {
-          pushSkill(pathSkill[1]);
-        } else {
-          pushSkill(raw);
-        }
-      }
-      // Plain `- skill-id` list items (Gemini `## Active Skills` emits no
-      // backticks): accept kebab-case tokens so the round-trip preserves them.
-      var lines = sec[1].split('\n');
-      lines.forEach(function (ln) {
-        var t = ln.trim();
-        if (t.indexOf('- ') !== 0) {
-          return;
-        }
-        var item = t.slice(2).trim().replace(/^`|`$/g, '').trim();
-        if (/^[a-z0-9][a-z0-9_-]*$/i.test(item)) {
-          pushSkill(item);
-        }
-      });
-    }
-    return skills;
-  }
-
-  function recipeFromPlainMarkdown(filename, raw) {
-    var text = String(raw).replace(/\r\n/g, '\n').trim() + '\n';
-    var slug = slugFromFilename(filename);
-    var skills = extractGenericSkills(text);
-    var descMatch = /^#\s+([^\n]+)/.exec(text);
-    var description = descMatch ? descMatch[1].trim().slice(0, 512) : 'Imported from ' + String(filename).split('/').pop();
-    if (skills.length === 0) {
-      warnDenyOnly(slug);
-    }
-    return [{
-      slug: slug,
-      description: description,
-      mode: 'subagent',
-      model: undefined,
-      prompt: text.trim() + '\n',
-      skills: skills,
-      mcpSelections: []
-    }];
-  }
-
   function recipeFromClaudeMarkdown(data, body, filename) {
     var rawName = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : slugFromFilename(filename);
     var tools = Array.isArray(data.tools) ? data.tools : [];
@@ -691,10 +611,17 @@
     var selections = order.map(function (server) {
       return { server: server, tools: byServer[server].length > 0 ? byServer[server] : ['*'], deniedTools: [], allowResources: false };
     });
-    var skills = extractGenericSkills(body);
+    var skills = [];
+    var skillRe = /\.claude\/skills\/([^/\s`'"]+)\/SKILL\.md/g;
+    var m;
+    while ((m = skillRe.exec(body)) !== null) {
+      if (skills.indexOf(m[1]) === -1) {
+        skills.push(m[1]);
+      }
+    }
     return {
       slug: rawName,
-      description: data.description === undefined ? (typeof data.globs === 'string' || Array.isArray(data.globs) ? slugFromFilename(filename) + ' cursor rule' : '') : String(data.description),
+      description: data.description === undefined ? '' : String(data.description),
       mode: 'subagent',
       model: data.model === undefined ? undefined : String(data.model),
       prompt: body,
@@ -703,47 +630,7 @@
     };
   }
 
-  function isMarkdownFilename(filename) {
-    var base = String(filename).split('/').pop().split('\\').pop();
-    if (/\.markdown?$/i.test(filename) || /\.(md|mdc)$/i.test(filename)) {
-      return true;
-    }
-    if (/^(AGENTS|GEMINI)(\..*)?$/i.test(base)) {
-      return true;
-    }
-    if (/windsurfrules/i.test(base) || /copilot-instructions/i.test(base)) {
-      return true;
-    }
-    if (/\.windsurfrules(\..*)?$/i.test(filename)) {
-      return true;
-    }
-    return false;
-  }
-
-  function isPlainMarkdownFilename(filename) {
-    var base = String(filename).split('/').pop().split('\\').pop();
-    if (/^(AGENTS|GEMINI)(\..*)?$/i.test(base)) {
-      return true;
-    }
-    if (/windsurfrules/i.test(base) || /copilot-instructions/i.test(base)) {
-      return true;
-    }
-    return false;
-  }
-
   function recipeFromMarkdown(filename, raw) {
-    var text = String(raw);
-    var trimmedStart = text.replace(/^\s+/, '');
-    if (trimmedStart.slice(0, 3) !== '---') {
-      // Plain client markdown without frontmatter (GEMINI.md, AGENTS.md,
-      // .windsurfrules, copilot-instructions.md): prompt + skill refs.
-      // All other agent markdown (.opencode/agent/*.md, .claude/agents/*.md,
-      // .cursor/rules/*.mdc) requires frontmatter — fail closed.
-      if (isPlainMarkdownFilename(filename)) {
-        return recipeFromPlainMarkdown(filename, text);
-      }
-      throw new Error('parseUploadedConfig: "' + filename + '" must start with --- YAML frontmatter');
-    }
     var fm = parseFrontmatter(raw, filename);
     var data = fm.data;
     if (isPlainObject(data.permission)) {
@@ -786,7 +673,7 @@
     if (typeof rawContent !== 'string') {
       throw new Error('parseUploadedConfig: rawContent must be a string');
     }
-    if (isMarkdownFilename(filename)) {
+    if (/\.markdown?$/i.test(filename) || /\.(md|mdc)$/i.test(filename)) {
       return recipeFromMarkdown(filename, rawContent);
     }
     var stripped = stripJsonComments(rawContent);

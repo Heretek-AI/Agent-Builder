@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "repository": "https://github.com/Heretek-AI/Agent-Builder",
   "registry_url": "https://heretek-ai.github.io/Agent-Builder/registry.json",
-  "generated_at": "2026-10-20T19:56:53.321Z",
+  "generated_at": "2026-10-20T20:37:51.362Z",
   "stats": {
     "total": 66,
     "by_kind": {
@@ -72,10 +72,10 @@
       "skills/testing-qa/unit-property": 1
     },
     "by_harness": {
-      "opencode": 53,
+      "opencode": 54,
       "universal": 43,
-      "claude-code": 25,
-      "codex": 7,
+      "claude-code": 26,
+      "codex": 8,
       "cursor": 1,
       "windsurf": 1,
       "gemini-cli": 1
@@ -1142,48 +1142,64 @@
     },
     {
       "id": "pi-coding-agent",
-      "name": "Pi Coding Agent",
+      "name": "Pi Coding Agent Harness",
       "repo": "https://github.com/earendil-works/pi",
       "path": "packages/coding-agent",
       "npm": "@earendil-works/pi-coding-agent",
-      "tagline": "Minimal extensible Pi coding-agent CLI with read, bash, edit, and session tools.",
-      "description": "earendil-works/pi (MIT) is the Pi coding-agent harness: a minimal extensible agent loop with a unified LLM API, TUI, print/JSON automation modes, RPC, and the @earendil-works/pi-coding-agent CLI (read, bash, edit, write tools plus session management). Pi packages bundle extensions, skills, prompt templates, and themes for sharing via npm or git.",
+      "homepage": "https://pi.dev",
+      "tagline": "Minimal, extensible terminal AI coding agent harness with Codemode & MCP.",
+      "description": "Earendil Works' minimal, extensible coding agent CLI and SDK featuring unified multi-provider LLM routing, QuickJS Codemode tool orchestration, streamable HTTP/stdio MCP tool exposure, and differential terminal UI rendering.",
       "kind": "plugin",
       "category": "plugins/cross-harness",
       "harnesses": [
+        "opencode",
+        "claude-code",
+        "codex",
         "universal"
+      ],
+      "languages": [
+        "typescript"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
       ],
       "tags": [
         "pi",
-        "pi-package",
-        "coding-agent",
-        "tui",
-        "cross-harness"
+        "codemode",
+        "mcp",
+        "agent-harness"
       ],
-      "installation": "npm install -g --ignore-scripts @earendil-works/pi-coding-agent@1.3.0",
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by earendil-works/pi (MIT)."
+      "source_attribution": "Curated from earendil-works/pi (MIT)."
     },
     {
-      "id": "pi-review",
-      "name": "Pi Review",
+      "id": "pi-review-extension",
+      "name": "Pi Code Review Extension",
       "repo": "https://github.com/earendil-works/pi-review",
-      "tagline": "Practical /review and /end-review code-review workflow extension for Pi.",
-      "description": "earendil-works/pi-review (MIT) adds a practical code review workflow to the Pi coding agent via /review and /end-review slash commands: reviews uncommitted changes, base-branch diffs, single commits, GitHub pull requests (via gh), or folder/file snapshots, with prioritized findings, a clear verdict, actionable follow-ups, and optional shared REVIEW_GUIDELINES.md instructions.",
+      "tagline": "Practical /review and /end-review workflow extension for Pi.",
+      "description": "Official Earendil Works code review workflow package for Pi adding structured /review and /end-review slash commands for interactive branch and diff auditing.",
       "kind": "plugin",
       "category": "plugins/cross-harness",
       "harnesses": [
         "universal"
       ],
+      "languages": [
+        "typescript"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
       "tags": [
         "pi",
-        "pi-package",
-        "pi-extension",
-        "code-review"
+        "code-review",
+        "extension"
       ],
-      "installation": "pi install git:github.com/earendil-works/pi-review",
       "license": "MIT",
-      "source_attribution": "Curated for Agent-Builder; inspired by earendil-works/pi-review (MIT)."
+      "source_attribution": "Curated from earendil-works/pi-review (MIT)."
     },
     {
       "id": "cursor-rules-pack",

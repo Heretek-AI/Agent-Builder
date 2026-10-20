@@ -22,28 +22,13 @@ const VALID_HARNESSES = [
   'opencode-v1',
   'opencode-md',
   'claude-code',
-  'claude',
   'codex',
   'pi',
   'gemini-cli',
-  'gemini',
   'cursor',
   'windsurf',
   'copilot'
 ];
-
-// Canonical aliases: `gemini` <-> `gemini-cli`, `claude` <-> `claude-code`.
-// Fail-closed: unknown ids are rejected by callers; this only normalizes
-// known spellings to the canonical render path.
-function canonicalHarness(harness) {
-  if (harness === 'gemini') {
-    return 'gemini-cli';
-  }
-  if (harness === 'claude') {
-    return 'claude-code';
-  }
-  return harness;
-}
 
 function loadVersion() {
   try {
@@ -181,7 +166,7 @@ function unwrapRecipe(parsed) {
 }
 
 function renderCompiled(compiled, harness) {
-  switch (canonicalHarness(harness)) {
+  switch (harness) {
     case 'opencode-v2':
       return JSON.stringify(compiled.opencodeV2, null, 2) + '\n';
     case 'opencode-v1':

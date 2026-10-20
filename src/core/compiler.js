@@ -464,13 +464,7 @@
       var tr = serverTransport(sel, reg);
       var gEntry = {};
       if (tr.url !== undefined) {
-        // Gemini CLI uses `httpUrl` for Streamable-HTTP remotes and `url`
-        // for SSE remotes; serverTransport reports the distinction via type.
-        if (tr.type === 'http') {
-          gEntry.httpUrl = tr.url;
-        } else {
-          gEntry.url = tr.url;
-        }
+        gEntry.url = tr.url;
       } else {
         gEntry.command = tr.command;
         gEntry.args = tr.args;
@@ -479,10 +473,7 @@
         }
       }
       var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
-      if (!wildcard) {
-        // Fail-closed: an explicit (possibly empty) tool list must always
-        // narrow Gemini; omitting includeTools would allow every tool.
-        // Wildcard selections omit includeTools (allow all) by design.
+      if (!wildcard && sel.tools.length > 0) {
         gEntry.includeTools = sel.tools.slice();
       }
       if (sel.deniedTools.length > 0) {
@@ -502,74 +493,6 @@
       skills.length > 0 ? '\n## Active Skills\n' + skills.map(function (s) { return '- ' + s; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
-  // Cursor / Windsurf MCP JSON has no per-tool allow/deny field, so a
-  // narrowed selection must never be emitted as an unrestricted server:
-  // record the enforced tool scope as a limitation note in the companion
-  // rules doc, where the host actually reads it. Copilot repository/VS Code
-  // MCP config *does* support a per-server `tools` allowlist, so it is
-  // emitted below (fail-closed); the advisory note is kept as defence in
-  // depth.
-  function scopedMcpNote(selections, enforcedHint) {
-    if (!Array.isArray(selections) || selections.length === 0) {
-      return '';
-    }
-    var lines = selections.map(function (sel) {
-      var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
-      var scope = wildcard ? 'all tools'
-        : sel.tools.length > 0 ? sel.tools.join(', ') : '(none - deny-only)';
-      if (sel.deniedTools.length > 0) {
-        scope += '; denied: ' + sel.deniedTools.join(', ');
-      }
-      return '- ' + sel.server + ': ' + scope;
-    });
-    var header = enforcedHint
-      ? '\n## Scoped MCP Tools (also enforced in .vscode/mcp.json `tools` allowlist)\n'
-      : '\n## Scoped MCP Tools (host-enforced; mcp.json cannot restrict tools)\n';
-    return header
-      + lines.join('\n');
-  }
-
-  // Copilot per-server `tools` allowlist (GitHub Docs: repository MCP config
-  // supports a `tools` key per server, `'*'` for all). Fail-closed: deny-only
-  // (empty tools) emits `[]`; wildcard + explicit denies resolves against the
-  // registry tool universe minus denies; wildcard + denies with no known
-  // universe emits `[]` rather than `['*']` so a denied tool is never exposed
-  // as allowed. Explicit allows minus denies (deny wins, exact + normalized).
-  function copilotToolsFor(sel, reg) {
-    var denied = sel.deniedTools.map(function (d) { return String(d).trim(); });
-    var hasDenyAll = denied.some(function (d) { return d === '*'; });
-    if (hasDenyAll) {
-      return [];
-    }
-    var deniedSet = {};
-    var deniedNorm = {};
-    denied.forEach(function (d) {
-      if (d !== '*') {
-        deniedSet[d] = true;
-        deniedNorm[normalizeMcpId(d)] = true;
-      }
-    });
-    var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
-    if (wildcard) {
-      if (denied.length === 0) {
-        return ['*'];
-      }
-      if (reg && isPlainObject(reg.mcp) && Array.isArray(reg.mcp.tools)) {
-        return reg.mcp.tools.map(function (t) { return String(t); }).filter(function (t) {
-          return !deniedSet[t] && !deniedNorm[normalizeMcpId(t)];
-        });
-      }
-      return [];
-    }
-    return sel.tools.map(function (t) { return String(t); }).filter(function (t) {
-      var trimmed = t.trim();
-      if (trimmed === '*') {
-        return false;
-      }
-      return !deniedSet[trimmed] && !deniedNorm[normalizeMcpId(trimmed)];
-    });
-  }
-
     // 2. Cursor (`.cursor/mcp.json` + `.cursor/rules/<slug>.mdc`)
     var cursorMcpServers = {};
     selections.forEach(function (sel) {
@@ -587,8 +510,7 @@
       '# ' + slug,
       '',
       prompt || '',
-      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : '',
-      scopedMcpNote(selections)
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
     // 3. Windsurf (`.windsurf/mcp_config.json` + `.windsurfrules`)
@@ -598,26 +520,17 @@
       description ? '# ' + description : '',
       '',
       prompt || '',
-      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- .windsurf/skills/' + s + '/SKILL.md'; }).join('\n') : '',
-      scopedMcpNote(selections)
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- .windsurf/skills/' + s + '/SKILL.md'; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
     // 4. GitHub Copilot (`.vscode/mcp.json` + `.github/copilot-instructions.md`)
-    var vscodeMcpServers = {};
-    selections.forEach(function (sel) {
-      var reg = findRegistryMcp(sel.server, registryEntries);
-      var entry = serverTransport(sel, reg);
-      entry.tools = copilotToolsFor(sel, reg);
-      vscodeMcpServers[sel.server] = entry;
-    });
-    var vscodeMcpJson = { servers: vscodeMcpServers };
+    var vscodeMcpJson = { servers: cursorMcpServers };
     var copilotInstructionsMd = [
       '# GitHub Copilot Instructions — ' + slug,
       '',
       description ? '> ' + description + '\n' : '',
       prompt || '',
-      skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : '',
-      scopedMcpNote(selections, true)
+      skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
     return {
@@ -884,42 +797,30 @@
       '# Safe placeholder script: creates directories and prints next steps. No secrets embedded.',
       'set -eu',
       'AGENT_SLUG=' + shQ(slug),
-      'mkdir -p ".opencode/agent" ".claude/agents" ".agents/skills" ".pi" ".gemini" ".cursor/rules" ".windsurf" ".vscode" ".github"',
+      'mkdir -p ".opencode/agent" ".claude/agents" ".agents/skills" ".pi" ".gemini" ".cursor/rules" ".windsurf"',
       'echo "Installing agent ${AGENT_SLUG}..."',
       'echo " - OpenCode v2/v1 : merge opencode.${AGENT_SLUG}.v2.json / opencode.${AGENT_SLUG}.v1.json into opencode.json"',
       'echo " - OpenCode agent : .opencode/agent/${AGENT_SLUG}.md"',
-      'echo " - Pi (pi.dev)    : .pi/settings.json and .pi/mcp.json + AGENTS.md"',
+      'echo " - Pi (pi.dev)    : .pi/settings.json and .pi/mcp.json"',
       'echo " - Claude Code    : .claude/agents/${AGENT_SLUG}.md and .mcp.${AGENT_SLUG}.json"',
       'echo " - Codex CLI      : merge codex.${AGENT_SLUG}.toml into config.toml"',
-      'echo " - Gemini CLI     : .gemini/settings.json + GEMINI.md"',
-      'echo " - Cursor IDE     : .cursor/rules/${AGENT_SLUG}.mdc + .cursor/mcp.json"',
-      'echo " - Windsurf IDE   : .windsurfrules + .windsurf/mcp_config.json"',
-      'echo " - Copilot        : .github/copilot-instructions.md + .vscode/mcp.json"',
+      'echo " - Gemini / IDE   : .gemini/settings.json, .cursor/rules/${AGENT_SLUG}.mdc, .windsurfrules"',
       'echo "Done. Review the deny-first permission rules before running the agent."',
       ''
     ].join('\n');
 
-    // ---- Workspace bundle (10 targets, slug-qualified for multi-agent safety) ----
-    // Canonical install locations are documented in installScriptSh; bundle
-    // paths are slug-qualified so multiple agents can coexist in one export.
+    // ---- Workspace bundle ----
     var bundleFiles = [
       { path: 'opencode.' + slug + '.v2.json', content: JSON.stringify(opencodeV2, null, 2) + '\n' },
       { path: 'opencode.' + slug + '.v1.json', content: JSON.stringify(opencodeV1, null, 2) + '\n' },
       { path: '.opencode/agent/' + slug + '.md', content: opencodeMarkdown },
-      { path: '.pi/settings.' + slug + '.json', content: JSON.stringify(piOut.piSettingsJson, null, 2) + '\n' },
-      { path: '.pi/mcp.' + slug + '.json', content: JSON.stringify(piOut.piMcpJson, null, 2) + '\n' },
-      { path: 'AGENTS.' + slug + '.md', content: piOut.piAgentsMd },
       { path: '.claude/agents/' + slug + '.md', content: claudeCodeAgentMd },
       { path: '.mcp.' + slug + '.json', content: JSON.stringify(claudeCodeMcp, null, 2) + '\n' },
       { path: 'codex.' + slug + '.toml', content: codexConfigToml },
+      { path: '.pi/settings.' + slug + '.json', content: JSON.stringify(piOut.piSettingsJson, null, 2) + '\n' },
+      { path: '.pi/mcp.' + slug + '.json', content: JSON.stringify(piOut.piMcpJson, null, 2) + '\n' },
       { path: '.gemini/settings.' + slug + '.json', content: JSON.stringify(extraClients.geminiSettingsJson, null, 2) + '\n' },
-      { path: 'GEMINI.' + slug + '.md', content: extraClients.geminiMd },
       { path: '.cursor/rules/' + slug + '.mdc', content: extraClients.cursorRuleMdc },
-      { path: '.cursor/mcp.' + slug + '.json', content: JSON.stringify(extraClients.cursorMcpJson, null, 2) + '\n' },
-      { path: '.windsurf/mcp_config.' + slug + '.json', content: JSON.stringify(extraClients.windsurfMcpJson, null, 2) + '\n' },
-      { path: '.windsurfrules.' + slug, content: extraClients.windsurfRules },
-      { path: '.vscode/mcp.' + slug + '.json', content: JSON.stringify(extraClients.vscodeMcpJson, null, 2) + '\n' },
-      { path: '.github/copilot-instructions.' + slug + '.md', content: extraClients.copilotInstructionsMd },
       { path: 'install-' + slug + '.sh', content: installScriptSh }
     ];
 

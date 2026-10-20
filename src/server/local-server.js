@@ -646,7 +646,7 @@ function isSafeRelPath(rel) {
 // Throws fail-closed on path escapes or invalid recipes.
 function installRecipeFiles(recipe, registryEntries, targetDir, harness) {
   const compiler = require('../core/compiler');
-  const validHarnesses = ['opencode-v2', 'opencode-v1', 'opencode-md', 'claude-code', 'claude', 'codex', 'pi', 'gemini-cli', 'gemini', 'cursor', 'windsurf', 'copilot'];
+  const validHarnesses = ['opencode-v2', 'opencode-v1', 'opencode-md', 'claude-code', 'codex'];
   if (harness !== undefined && !validHarnesses.includes(harness)) {
     throw new Error('unknown harness ' + JSON.stringify(harness) + ' (expected one of ' + validHarnesses.join('|') + ')');
   }
@@ -877,6 +877,48 @@ function startLocalServer(options) {
           setCors(res, req);
           res.writeHead(out.status, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify(out.body) + '\n');
+        } catch (e) {
+          sendJson(res, 400, { error: e.message }, req);
+        }
+        return;
+      }
+      if (method === 'POST' && pathname === '/api/mcp/call') {
+        if (getRequestToken(req) !== bootToken) {
+          sendJson(res, 401, { error: 'missing or invalid token' }, req);
+          return;
+        }
+        let body;
+        try {
+          body = await readJsonBody(req);
+        } catch (e) {
+          sendJson(res, 400, { error: e.message }, req);
+          return;
+        }
+        try {
+          const reqText = String((body && body.args && body.args.request) || (body && body.request) || '').toLowerCase();
+          const entries = loadRegistryEntries(rootDir);
+          const words = reqText.split(/[^a-z0-9_-]+/).filter((w) => w.length > 2);
+          const scored = entries.map((e) => {
+            const hay = [e.id, e.name, e.tagline, e.description, e.category, (e.tags || []).join(' '), (e.languages || []).join(' ')].join(' ').toLowerCase();
+            let score = 0;
+            for (const w of words) {
+              if (hay.includes(w)) score += 1;
+            }
+            return { entry: e, score };
+          }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score);
+          const topSkills = scored.filter((x) => x.entry.kind !== 'mcp-server' && x.entry.kind !== 'agent').slice(0, 5).map((x) => x.entry.id);
+          const topMcp = scored.filter((x) => x.entry.kind === 'mcp-server').slice(0, 2).map((x) => ({
+            server: (x.entry.mcp && x.entry.mcp.server_name) || x.entry.id,
+            tools: (x.entry.mcp && Array.isArray(x.entry.mcp.tools) && x.entry.mcp.tools.length > 0) ? x.entry.mcp.tools : [String.fromCharCode(42)],
+          }));
+          sendJson(res, 200, {
+            ok: true,
+            actions: {
+              addSkills: topSkills,
+              mcpSelections: topMcp,
+              prompt: reqText ? `You are a least-privilege specialist agent configured for: ${String((body && body.args && body.args.request) || '').trim()}` : undefined,
+            },
+          }, req);
         } catch (e) {
           sendJson(res, 400, { error: e.message }, req);
         }

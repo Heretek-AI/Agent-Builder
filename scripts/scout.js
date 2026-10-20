@@ -98,8 +98,7 @@ function printUsage() {
   console.log('Usage:');
   console.log('  node scripts/scout.js run [--dry-run] [--limit 20]');
   console.log('  node scripts/scout.js accept --issue <n> [--sender <login>] [--dry-run]');
-  console.log('  node scripts/scout.js classify <pkg|dir> [--description <text>] [--keywords <k1,k2>] [--deps <d1,d2>] [--json]');
-  console.log('  node scripts/scout.js classify --name <pkg> [--description <text>] [--keywords <k1,k2>] [--deps <d1,d2>] [--json]');
+  console.log('  node scripts/scout.js classify --name <pkg> [--description <text>] [--keywords <k1,k2>]');
 }
 
 function parseRunArgs(argv) {
@@ -191,222 +190,30 @@ function parseAcceptArgs(argv) {
 }
 
 function parseClassifyArgs(argv) {
-  const args = { target: '', name: '', description: '', keywords: [], deps: [], json: false };
+  const args = { name: '', description: '', keywords: [], deps: [] };
   for (let i = 3; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--help' || a === '-h') {
       printUsage();
       process.exit(0);
     }
-    if (a === '--json') {
-      args.json = true;
-      continue;
-    }
     if (a === '--name') {
-      const next = argv[i + 1];
-      if (next === undefined || next.startsWith('--')) {
-        console.error('ERROR: --name requires a value');
-        process.exit(1);
-      }
-      args.name = next;
-      i += 1;
-      continue;
+      args.name = argv[++i] || '';
     } else if (a.startsWith('--name=')) {
       args.name = a.slice('--name='.length);
-      continue;
     } else if (a === '--description') {
-      const next = argv[i + 1];
-      if (next === undefined || next.startsWith('--')) {
-        console.error('ERROR: --description requires a value');
-        process.exit(1);
-      }
-      args.description = next;
-      i += 1;
-      continue;
+      args.description = argv[++i] || '';
     } else if (a.startsWith('--description=')) {
       args.description = a.slice('--description='.length);
-      continue;
     } else if (a === '--keywords') {
-      const next = argv[i + 1];
-      if (next === undefined || next.startsWith('--')) {
-        console.error('ERROR: --keywords requires a value');
-        process.exit(1);
-      }
-      args.keywords = String(next).split(',').map((s) => s.trim()).filter(Boolean);
-      i += 1;
-      continue;
+      args.keywords = String(argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
     } else if (a.startsWith('--keywords=')) {
       args.keywords = a.slice('--keywords='.length).split(',').map((s) => s.trim()).filter(Boolean);
-      continue;
     } else if (a === '--deps') {
-      const next = argv[i + 1];
-      if (next === undefined || next.startsWith('--')) {
-        console.error('ERROR: --deps requires a value');
-        process.exit(1);
-      }
-      args.deps = String(next).split(',').map((s) => s.trim()).filter(Boolean);
-      i += 1;
-      continue;
-    } else if (a.startsWith('--deps=')) {
-      args.deps = a.slice('--deps='.length).split(',').map((s) => s.trim()).filter(Boolean);
-      continue;
-    } else if (a.startsWith('--')) {
-      console.error(`ERROR: unknown argument '${a}' (see --help)`);
-      process.exit(1);
+      args.deps = String(argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
     }
-    if (args.target) {
-      console.error(`ERROR: classify accepts a single <pkg|dir> target (got '${args.target}' and '${a}')`);
-      process.exit(1);
-    }
-    args.target = a;
   }
   return args;
-}
-
-// Fail-closed npm name check (scoped packages allowed, no URLs/paths).
-function isNpmName(s) {
-  return /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/i.test(String(s || ''));
-}
-
-// Resolve a `classify <pkg|dir>` target (or legacy --name/flags) into a
-// { pkg, manifest } pair for classifyManifest. Local directories are read
-// from package.json (+ README.md as Tier-4 context); package names are
-// fetched live from the npm registry (`/.../latest`). Fail-closed: unknown
-// packages, unreadable dirs, and invalid manifests exit non-zero.
-async function resolveClassifyInput(args) {
-  // Legacy/override flags without a positional target: synthetic manifest.
-  if (!args.target) {
-    if (!args.name) {
-      fail('classify requires <pkg|dir> or --name <pkg> (see --help)');
-    }
-    const depsObj = {};
-    args.deps.forEach((d) => { depsObj[d] = '*'; });
-    return {
-      label: args.name,
-      pkg: { name: args.name, description: args.description },
-      manifest: {
-        name: args.name,
-        description: args.description,
-        keywords: args.keywords,
-        dependencies: depsObj,
-      },
-    };
-  }
-  // Local directory target: package.json (+ README.md context).
-  let stat = null;
-  try {
-    stat = fs.statSync(args.target);
-  } catch (_e) {
-    stat = null;
-  }
-  if (stat && stat.isDirectory()) {
-    const pkgPath = path.join(args.target, 'package.json');
-    if (!fs.existsSync(pkgPath)) {
-      fail(`classify: directory '${args.target}' has no package.json`);
-    }
-    let parsed;
-    try {
-      parsed = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    } catch (err) {
-      fail(`classify: invalid package.json in '${args.target}': ${err.message}`);
-    }
-    if (!parsed || typeof parsed !== 'object' || !parsed.name) {
-      fail(`classify: package.json in '${args.target}' has no name`);
-    }
-    let readme = '';
-    for (const candidate of ['README.md', 'readme.md', 'Readme.md']) {
-      const rp = path.join(args.target, candidate);
-      if (fs.existsSync(rp)) {
-        try {
-          readme = String(fs.readFileSync(rp, 'utf8')).slice(0, 2000);
-        } catch (_e) {
-          readme = '';
-        }
-        break;
-      }
-    }
-    const description = args.description || String(parsed.description || '');
-    const hasExplicitDeps = args.deps.length > 0;
-    const explicitDeps = hasExplicitDeps
-      ? Object.fromEntries(args.deps.map((d) => [d, '*']))
-      : null;
-    return {
-      label: `${parsed.name} (${args.target})`,
-      pkg: { name: parsed.name, description },
-      // Preserve the full manifest (pi/opencode markers, dev/peerDeps, files)
-      // so classifyManifest sees every Tier-1 signal; explicit --deps
-      // overrides dependencies and clears peer/devDeps.
-      manifest: Object.assign({}, parsed, {
-        name: parsed.name,
-        description: readme ? `${description} ${readme}` : description,
-        keywords: args.keywords.length > 0 ? args.keywords : (parsed.keywords || []),
-        dependencies: hasExplicitDeps ? explicitDeps : (parsed.dependencies || {}),
-        peerDependencies: hasExplicitDeps ? {} : (parsed.peerDependencies || {}),
-        devDependencies: hasExplicitDeps ? {} : (parsed.devDependencies || {}),
-      }),
-    };
-  }
-  // npm package target (positional or --name override wins).
-  const name = args.name || args.target;
-  if (!isNpmName(name)) {
-    fail(`classify: '${args.target}' is neither a directory nor a valid npm package name`);
-  }
-  let manifest;
-  try {
-    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`, {
-      headers: { 'User-Agent': 'agent-builder-scout' },
-    });
-    if (res.status === 404) {
-      fail(`classify: package '${name}' not found on npm (HTTP 404)`);
-    }
-    if (!res.ok) {
-      fail(`classify: npm lookup for '${name}' failed (HTTP ${res.status})`);
-    }
-    manifest = await res.json();
-  } catch (err) {
-    if (err && err.message && err.message.startsWith('classify:')) throw err;
-    fail(`classify: npm lookup for '${name}' failed: ${(err && err.message) || err}`);
-  }
-  if (manifest.deprecated) {
-    fail(`classify: package '${name}' is deprecated (${manifest.deprecated}); refusing to classify`);
-  }
-  const description = args.description || String(manifest.description || '');
-  const hasExplicitDeps = args.deps.length > 0;
-  const explicitDeps = hasExplicitDeps
-    ? Object.fromEntries(args.deps.map((d) => [d, '*']))
-    : null;
-  return {
-    label: name,
-    pkg: { name, description },
-    // Preserve the full registry manifest (pi/opencode markers, dev/peerDeps,
-    // files, mcp) so classifyManifest sees every Tier-1 signal; explicit
-    // --deps overrides dependencies and clears peer/devDeps.
-    manifest: Object.assign({}, manifest, {
-      name,
-      description,
-      keywords: args.keywords.length > 0 ? args.keywords : (manifest.keywords || []),
-      dependencies: hasExplicitDeps ? explicitDeps : (manifest.dependencies || {}),
-      peerDependencies: hasExplicitDeps ? {} : (manifest.peerDependencies || {}),
-      devDependencies: hasExplicitDeps ? {} : (manifest.devDependencies || {}),
-    }),
-  };
-}
-
-function formatClassifyHuman(label, res) {
-  const lines = [
-    `${label} => ${res.kind} / ${res.category}`,
-    `Harnesses: ${(res.harnesses || []).join(', ')}`,
-    `Confidence: ${res.confidence}%`,
-    'Breakdown:',
-    ...(Array.isArray(res.reasons) && res.reasons.length > 0 ? res.reasons.map((r) => `  - ${r}`) : ['  - (no signals)']),
-    'Runner-up categories:',
-    ...(Array.isArray(res.alternativeCategories) && res.alternativeCategories.length > 0
-      ? res.alternativeCategories.map((a) => `  - ${a.category} (score ${a.score})`)
-      : ['  - (none)']),
-    `Topics: ${(res.topics || []).join(', ') || '(none)'}`,
-    `Signal: ${res.signal ? 'yes' : 'no'}`,
-  ];
-  return lines.join('\n');
 }
 
 function loadDeclined(rootDir) {
@@ -818,15 +625,18 @@ function cmdRun(rootDir) {
   return cmdRunLive(rootDir, args.limit);
 }
 
-async function cmdClassify(rootDir) {
+function cmdClassify() {
   const args = parseClassifyArgs(process.argv);
-  const input = await resolveClassifyInput(args);
-  const res = classifyManifest(input.pkg, input.manifest);
-  if (args.json) {
-    console.log(JSON.stringify({ package: input.label, ...res }, null, 2));
-    return;
+  if (!args.name) {
+    fail('classify requires --name <pkg>');
   }
-  console.log(formatClassifyHuman(input.label, res));
+  const depsObj = {};
+  args.deps.forEach((d) => { depsObj[d] = '*'; });
+  const res = classifyManifest(
+    { name: args.name, description: args.description },
+    { name: args.name, description: args.description, keywords: args.keywords, dependencies: depsObj }
+  );
+  console.log(JSON.stringify(res, null, 2));
 }
 
 function gitExec(args, options) {
@@ -871,6 +681,10 @@ function buildEntryYaml(input, taxonomyIds) {
   if (!input.license || (typeof input.license === 'string' && !input.license.trim())) problems.push('missing license');
   if (problems.length > 0) return { ok: false, problems };
   const id = slugify(name);
+  const validHarnesses = new Set(['opencode', 'claude-code', 'codex', 'gemini-cli', 'cursor', 'windsurf', 'copilot', 'universal']);
+  const filteredHarnesses = Array.isArray(input.harnesses)
+    ? input.harnesses.filter((h) => validHarnesses.has(String(h)))
+    : [];
   const doc = {
     id,
     name,
@@ -881,9 +695,10 @@ function buildEntryYaml(input, taxonomyIds) {
     description: truncate(input.description || tagline, 2000),
     kind,
     category,
-    harnesses: Array.isArray(input.harnesses) && input.harnesses.length > 0 ? input.harnesses : ['universal'],
+    harnesses: filteredHarnesses.length > 0 ? filteredHarnesses : ['universal'],
     ...(Array.isArray(input.topics) && input.topics.length > 0 ? { tags: input.topics } : {}),
     license: String(input.license),
+    source_attribution: `Discovered by Agent-Builder scout from ${repoUrl} (${String(input.license)}).`,
   };
   const ordered = {};
   for (const key of KEY_ORDER) {
@@ -971,6 +786,8 @@ async function cmdAccept(rootDir) {
       const branch = `scout/${result.id}`;
       try {
         const outAbs = path.join(rootDir, result.file);
+        // Clear any checkout-persisted extraheader so gitAuthEnv never sends duplicate Authorization headers.
+        try { gitExec(['config', '--local', '--unset-all', 'http.https://github.com/.extraheader']); } catch (_e) { /* ignore */ }
         try { gitExec(['fetch', 'origin', base], { env: gitAuthEnv(token) }); } catch (_e) { /* offline-safe */ }
         try { gitExec(['checkout', '-B', branch, `origin/${base}`]); }
         catch (_e) { gitExec(['checkout', '-B', branch, base]); }
@@ -982,15 +799,16 @@ async function cmdAccept(rootDir) {
           throw e;
         }
         gitExec(['add', result.file]);
+        const commitTitle = `docs: add ${input.name} to ${input.category}`;
         gitExec(['-c', 'user.name=agent-builder-scout', '-c', 'user.email=agent-builder-scout@users.noreply.github.com',
-          'commit', '-m', `docs: add ${input.name} to ${input.category}`]);
-        gitExec(['push', '--set-upstream', 'origin', branch], {
+          'commit', '-m', commitTitle]);
+        gitExec(['push', '--force', '--set-upstream', 'origin', branch], {
           env: gitAuthEnv(token),
         });
-        const { ok: pok, data: pr } = await rest(`/repos/${repo}/pulls`, {
+        let { ok: pok, status: pstatus, data: pr } = await rest(`/repos/${repo}/pulls`, {
           method: 'POST', token,
           body: {
-            title: `docs: add ${input.name} to ${input.category}`,
+            title: commitTitle,
             head: branch,
             base,
             body: [
@@ -1002,15 +820,26 @@ async function cmdAccept(rootDir) {
             ].join('\n'),
           },
         });
+        if (!pok && pstatus === 422) {
+          const owner = repo.split('/')[0];
+          const existing = await rest(`/repos/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}`, { token });
+          if (existing.ok && Array.isArray(existing.data) && existing.data.length > 0) {
+            pok = true;
+            pr = existing.data[0];
+          }
+        }
         if (pok && pr && pr.number) {
           await rest(`/repos/${repo}/issues/${pr.number}/labels`, {
             method: 'POST', token, body: { labels: ['scout', `category: ${input.category}`] },
           }).catch(() => null);
           note = ` → #${pr.number}`;
         } else {
-          note = ' → (PR creation failed; branch pushed)';
+          const compareUrl = `https://github.com/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(branch)}?quick_pull=1&title=${encodeURIComponent(commitTitle)}`;
+          const apiErr = pr && pr.message ? truncate(redactSecrets(pr.message, token), 80) : `HTTP ${pstatus}`;
+          note = ` → [Open PR ↗](${compareUrl}) (PR API: ${apiErr}; branch pushed)`;
         }
         opened += 1;
+        try { gitExec(['checkout', '-f', base]); } catch (_e) { /* ignore */ }
       } catch (err) {
         try { gitExec(['checkout', '--', result.file]); } catch (_e) { /* ignore */ }
         try { fs.unlinkSync(path.join(rootDir, result.file)); } catch (_e) { /* ignore */ }
@@ -1047,10 +876,7 @@ function main() {
     return;
   }
   if (cmd === 'classify') {
-    Promise.resolve(cmdClassify(rootDir)).catch((err) => {
-      console.error(`ERROR: ${err && err.message ? err.message : err}`);
-      process.exit(1);
-    });
+    cmdClassify();
     return;
   }
   console.error(`ERROR: unknown command '${cmd}' (expected 'run', 'accept', or 'classify'; see --help)`);
@@ -1061,4 +887,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, suggestTopics, buildEntryYaml, truncate, canonicalRepoKey, gitAuthEnv, redactSecrets, parseClassifyArgs, resolveClassifyInput, formatClassifyHuman };
+module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, suggestTopics, buildEntryYaml, truncate, canonicalRepoKey, gitAuthEnv, redactSecrets };

@@ -7,19 +7,45 @@ name: Convert Entry Issues to PRs
       - edited
       - reopened
       - labeled
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to convert or process (optional)"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   convert:
+    concurrency:
+      group: convert-issue-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'new-entry') || contains(github.event.issue.labels.*.name, 'new-agent') || contains(github.event.issue.labels.*.name, 'publish-agent')
+    if: >-
+      (
+        github.event_name == 'issues' && (
+          contains(github.event.issue.labels.*.name, 'new-entry') ||
+          contains(github.event.issue.labels.*.name, 'new-agent') ||
+          contains(github.event.issue.labels.*.name, 'publish-agent') ||
+          startsWith(github.event.issue.title, '[entry]') ||
+          startsWith(github.event.issue.title, '[agent]') ||
+          startsWith(github.event.issue.title, 'Publish agent:')
+        )
+      ) || (
+        github.event_name == 'workflow_dispatch' && inputs.issue_number != ''
+      )
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -29,18 +55,28 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Save issue payload
         env:
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          ISSUE_TITLE: ${{ github.event.issue.title || '' }}
+          ISSUE_BODY: ${{ github.event.issue.body || '' }}
         run: |
           node -e "const fs=require('fs'); fs.writeFileSync('issue.json', JSON.stringify({ number: process.env.ISSUE_NUMBER, title: process.env.ISSUE_TITLE, body: process.env.ISSUE_BODY }));"
-      - name: Convert issue to catalog entry
-        run: node scripts/submit-entry.js --issue issue.json --dry-run
+      - name: Convert issue to catalog entry and open PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/submit-entry.js --issue issue.json --open-pr
+
   scout-accept:
     concurrency:
-      group: issue-${{ github.event.issue.number }}
+      group: issue-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
       cancel-in-progress: false
-    if: github.event.action == 'edited' && contains(github.event.issue.labels.*.name, 'scout')
+    if: >-
+      (
+        github.event_name == 'issues' &&
+        contains(github.event.issue.labels.*.name, 'scout')
+      ) || (
+        github.event_name == 'workflow_dispatch' && inputs.issue_number != ''
+      )
     permissions:
       contents: write
       pull-requests: write
@@ -52,6 +88,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -62,12 +99,10 @@ jobs:
       # Issue text is untrusted: it is only read by scripts/scout.js as data
       # via the API. ISSUE_NUMBER/SENDER pass as env then argv; nothing from
       # the issue body is interpolated into shell commands.
-      # Auth relies on the default persisted GITHUB_TOKEN credential helper
-      # (no persist-credentials:false), so `git push` works without a custom
-      # extraheader (mirrors the awesome-opencode sister workflow).
       - name: Open PRs for ticked candidates
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           SENDER: ${{ github.event.sender.login }}
         run: node scripts/scout.js accept --issue "$ISSUE_NUMBER" --sender "$SENDER"

@@ -162,8 +162,8 @@ Multi-agent routers, harness adapters, and cross-provider bridges.
 | --- | --- | --- | --- | --- |
 | [Harness Adapter Kit](https://github.com/anomalyco/opencode) | Adapter patterns for running one agent across harnesses. | [opencode] [claude-code] [codex] [universal] | — | — |
 | [LiteLLM Router Bridge](https://github.com/BerriAI/litellm) | Multi-provider LLM router bridging harnesses to 100+ models. | [opencode] [claude-code] [codex] [universal] | — | — |
-| [Pi Coding Agent](https://github.com/earendil-works/pi) | Minimal extensible Pi coding-agent CLI with read, bash, edit, and session tools. | [universal] | — | — |
-| [Pi Review](https://github.com/earendil-works/pi-review) | Practical /review and /end-review code-review workflow extension for Pi. | [universal] | — | — |
+| [Pi Coding Agent Harness](https://github.com/earendil-works/pi) | Minimal, extensible terminal AI coding agent harness with Codemode & MCP. | [opencode] [claude-code] [codex] [universal] | typescript, linux, macos, windows | — |
+| [Pi Code Review Extension](https://github.com/earendil-works/pi-review) | Practical /review and /end-review workflow extension for Pi. | [universal] | typescript, linux, macos, windows | — |
 
 ## 2. Agent Skills (By Subject & Domain)
 
