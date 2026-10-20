@@ -2,14 +2,14 @@
   "version": "1.0.0",
   "repository": "https://github.com/Heretek-AI/Agent-Builder",
   "registry_url": "https://heretek-ai.github.io/Agent-Builder/registry.json",
-  "generated_at": "2026-10-20T13:51:38.648Z",
+  "generated_at": "2026-10-20T14:06:27.934Z",
   "stats": {
-    "total": 63,
+    "total": 64,
     "by_kind": {
       "agent": 4,
       "design-md": 3,
       "mcp-server": 8,
-      "plugin": 12,
+      "plugin": 13,
       "prompt": 3,
       "skill": 33
     },
@@ -34,7 +34,7 @@
       "plugins/cross-harness": 2,
       "plugins/cursor-windsurf": 1,
       "plugins/gemini-cli": 1,
-      "plugins/opencode": 3,
+      "plugins/opencode": 4,
       "prompts/coding-architecture": 1,
       "prompts/product-design": 1,
       "prompts/security-research": 1,
@@ -72,7 +72,7 @@
       "skills/testing-qa/unit-property": 1
     },
     "by_harness": {
-      "opencode": 52,
+      "opencode": 53,
       "universal": 41,
       "claude-code": 25,
       "codex": 7,
@@ -1235,6 +1235,27 @@
       "license": "MIT",
       "source_attribution": "Synthetic seed entry for Agent-Builder (no external upstream, MIT).",
       "synthetic": true
+    },
+    {
+      "id": "pi-weave",
+      "name": "pi-weave",
+      "repo": "https://github.com/EranYonai/pi-weave",
+      "npm": "pi-weave",
+      "tagline": "Local-first Markdown memory and knowledge graph for Pi and OpenCode: preserve decisions, recall sessions, and explore…",
+      "description": "Local-first Markdown memory and knowledge graph for Pi: preserve decisions, recall across sessions, and explore notes with code.",
+      "kind": "plugin",
+      "category": "plugins/opencode",
+      "harnesses": [
+        "opencode"
+      ],
+      "tags": [
+        "opencode",
+        "agent",
+        "plugin",
+        "rag",
+        "playwright"
+      ],
+      "license": "MIT"
     },
     {
       "id": "architecture-review-prompt",

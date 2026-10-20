@@ -17,7 +17,7 @@ node bin/agent-builder.js serve
 
 > **Note:** `@heretek-ai/agent-builder` is not published on the npm registry yet (`npm view` still 404s — a known gap, AB-6.1). Do not use `npx @heretek-ai/agent-builder`; run from source as above or `npm pack` until `npm publish` lands.
 
-**Registry stats:** 63 entries (4 agent, 3 design-md, 8 mcp-server, 12 plugin, 3 prompt, 33 skill) across the taxonomy below.
+**Registry stats:** 64 entries (4 agent, 3 design-md, 8 mcp-server, 13 plugin, 3 prompt, 33 skill) across the taxonomy below.
 
 ## Table of Contents
 
@@ -107,6 +107,7 @@ OpenCode v1 & v2 plugins, custom tools, and session hooks.
 | [Awesome OpenCode Catalog](https://github.com/Heretek-AI/awesome-opencode) | Upstream awesome list of OpenCode plugins, agents, and configs. | [opencode] | — | — |
 | [OpenCode Native Toolchain](https://github.com/anomalyco/opencode) | Official OpenCode runtime: custom tools, hooks, and plugin API. | [opencode] | — | — |
 | [OpenCode Session Hooks Plugin](https://github.com/Heretek-AI/Agent-Builder) | Session lifecycle hooks and custom tools for OpenCode. | [opencode] | — | — |
+| [pi-weave](https://github.com/EranYonai/pi-weave) | Local-first Markdown memory and knowledge graph for Pi and OpenCode: preserve decisions, recall sessions, and explore… | [opencode] | — | — |
 
 ### Claude Code Plugins
 
