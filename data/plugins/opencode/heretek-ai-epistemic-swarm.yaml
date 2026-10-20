@@ -1,0 +1,23 @@
+id: heretek-ai-epistemic-swarm
+name: '@heretek-ai/epistemic-swarm'
+repo: https://github.com/Heretek-AI/IUMBTEMS
+path: packages/opencode
+npm: '@heretek-ai/epistemic-swarm'
+tagline: >-
+  Epistemic Swarm: an AI build factory for OpenCode v2 — grill, research, spec, build, QA and
+  release, gated mechanically.
+description: >-
+  IUMBTEMS (I Use My Brain To Express My Self): High-integrity dialectic research agent harness for
+  Claude Code, Pi (pi.dev), and OpenCode V2. Enforces verified empirical citations, dialectic
+  thesis/antithesis swarms, and Socratic grilling.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - agent
+  - plugin
+  - typescript
+license: Apache-2.0
+source_attribution: Discovered by Agent-Builder scout from https://github.com/Heretek-AI/IUMBTEMS (Apache-2.0).
