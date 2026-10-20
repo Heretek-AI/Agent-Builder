@@ -1,0 +1,22 @@
+id: opencode-goal-plugin
+name: opencode-goal-plugin
+repo: https://github.com/william-ricchiuti/OpenCode-goal-plugin
+npm: opencode-goal-plugin
+tagline: Durable, guarded goal workflows for OpenCode.
+description: >-
+  Durable, guarded goal workflows for OpenCode with persistence, safety limits, agent tools, and
+  evidence-gated completion.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - agent
+  - plugin
+  - typescript
+  - go
+license: MIT
+source_attribution: >-
+  Discovered by Agent-Builder scout from https://github.com/william-ricchiuti/OpenCode-goal-plugin
+  (MIT).
