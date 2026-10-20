@@ -22,6 +22,7 @@ const VALID_HARNESSES = [
   'opencode-v1',
   'opencode-md',
   'claude-code',
+  'claude',
   'codex',
   'pi',
   'gemini-cli',

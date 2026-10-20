@@ -347,7 +347,7 @@
       $('agentMode').value = 'primary';
       $('agentModel').value = 'anthropic/claude-sonnet-4-5';
       $('agentPrompt').value = 'Architect, implement, and verify multi-file changes using Pi codemode scripts and least-privilege MCP tools.';
-      state.selectedIds = ['typescript-strict-patterns', 'rust-secure-coding', 'github-mcp', 'filesystem-mcp'].filter(function (id) {
+      state.selectedIds = ['typescript-strict-patterns', 'rust-secure-coding', 'github-code-intel-mcp', 'filesystem-shell-mcp'].filter(function (id) {
         return Boolean(entryById(id));
       });
       state.previewTab = 'pi';
@@ -692,7 +692,7 @@
       yamlLines.push('tags:');
       cls.topics.forEach(function (t) { yamlLines.push('  - ' + t); });
     }
-    yamlLines.push('license: MIT');
+    yamlLines.push('license: UNKNOWN');
     $('scoutYamlOutput').textContent = yamlLines.join('\n') + '\n';
   }
 
@@ -712,7 +712,7 @@
         category: sc.cls.category,
         harnesses: sc.cls.harnesses,
         tags: sc.cls.topics || [],
-        license: 'MIT'
+        license: 'UNKNOWN'
       };
       if (sc.cls.kind === 'mcp-server') {
         newEntry.mcp = {
@@ -809,6 +809,9 @@
       var compiled = compileCurrent();
       if ($('previewTargetPath') && TAB_FILES[state.previewTab]) {
         $('previewTargetPath').textContent = TAB_FILES[state.previewTab](compiled);
+      }
+      if ($('downloadBundle') && compiled && Array.isArray(compiled.bundleFiles)) {
+        $('downloadBundle').textContent = 'Bundle (' + compiled.bundleFiles.length + ' Files)';
       }
       $('previewContent').innerHTML = highlight(tabText(state.previewTab, compiled));
       runSimulator();
@@ -1262,6 +1265,11 @@
         $('harnessFilter').value = '';
         $('languageFilter').value = '';
         $('platformFilter').value = '';
+        document.querySelectorAll('.kind-pill-btn').forEach(function (b) {
+          var act = (b.dataset.kindPill || '') === state.kindFilter;
+          b.classList.toggle('tab-active', act);
+          b.classList.toggle('text-slate-400', !act);
+        });
         buildCategoryTree();
         renderCards();
       });

@@ -20,7 +20,7 @@ Ported the 4-tier weighted classifier and its scout integration:
 | File | Change |
 |------|--------|
 | `src/core/classifier.js` | NEW — verbatim port of v2 reference (byte-identical). |
-| `scripts/scout.js` | Port of v2 reference (classifier require, Pi searches, confidence in candidates/issues, `parseClassifyArgs`/`cmdClassify`/routing/exports) + positional `<pkg|dir>` target, `--json`, `--deps=` form, unknown-flag rejection, `resolveClassifyInput` (npm/dir/flags), `formatClassifyHuman`. |
+| `scripts/scout.js` | Port of v2 reference (classifier require, Pi searches, confidence in candidates/issues, `parseClassifyArgs`/`cmdClassify`/routing/exports) + positional `<pkg/dir>` target, `--json`, `--deps=` form, unknown-flag rejection, `resolveClassifyInput` (npm/dir/flags), `formatClassifyHuman`. |
 | `test/classifier.test.js` | NEW — 16 tests as above. |
 | `docs/reports/v2-stage2.md` | NEW — this report. |
 

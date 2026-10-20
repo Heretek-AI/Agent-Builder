@@ -519,7 +519,9 @@
             allowedList.push(tk);
           }
         });
-        if (srv.exposure === 'hidden' && allowedList.length > 0) {
+        if (srv.exposure === 'hidden') {
+          // Fail-closed: a hidden server must never fall back to a wildcard
+          // allow. The explicit allow list stands even when empty (deny-only).
           tools = allowedList;
         }
       }

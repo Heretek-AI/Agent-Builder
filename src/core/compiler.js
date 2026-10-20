@@ -464,7 +464,13 @@
       var tr = serverTransport(sel, reg);
       var gEntry = {};
       if (tr.url !== undefined) {
-        gEntry.url = tr.url;
+        // Gemini CLI uses `httpUrl` for Streamable-HTTP remotes and `url`
+        // for SSE remotes; serverTransport reports the distinction via type.
+        if (tr.type === 'http') {
+          gEntry.httpUrl = tr.url;
+        } else {
+          gEntry.url = tr.url;
+        }
       } else {
         gEntry.command = tr.command;
         gEntry.args = tr.args;
@@ -473,7 +479,10 @@
         }
       }
       var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
-      if (!wildcard && sel.tools.length > 0) {
+      if (!wildcard) {
+        // Fail-closed: an explicit (possibly empty) tool list must always
+        // narrow Gemini; omitting includeTools would allow every tool.
+        // Wildcard selections omit includeTools (allow all) by design.
         gEntry.includeTools = sel.tools.slice();
       }
       if (sel.deniedTools.length > 0) {
@@ -493,6 +502,27 @@
       skills.length > 0 ? '\n## Active Skills\n' + skills.map(function (s) { return '- ' + s; }).join('\n') : ''
     ].join('\n').trim() + '\n';
 
+  // Cursor / Windsurf / Copilot MCP JSON has no per-tool allow/deny field,
+  // so a narrowed selection must never be emitted as an unrestricted server:
+  // record the enforced tool scope as a limitation note in the companion
+  // rules doc, where the host actually reads it.
+  function scopedMcpNote(selections) {
+    if (!Array.isArray(selections) || selections.length === 0) {
+      return '';
+    }
+    var lines = selections.map(function (sel) {
+      var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
+      var scope = wildcard ? 'all tools'
+        : sel.tools.length > 0 ? sel.tools.join(', ') : '(none - deny-only)';
+      if (sel.deniedTools.length > 0) {
+        scope += '; denied: ' + sel.deniedTools.join(', ');
+      }
+      return '- ' + sel.server + ': ' + scope;
+    });
+    return '\n## Scoped MCP Tools (host-enforced; mcp.json cannot restrict tools)\n'
+      + lines.join('\n');
+  }
+
     // 2. Cursor (`.cursor/mcp.json` + `.cursor/rules/<slug>.mdc`)
     var cursorMcpServers = {};
     selections.forEach(function (sel) {
@@ -510,7 +540,8 @@
       '# ' + slug,
       '',
       prompt || '',
-      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : '',
+      scopedMcpNote(selections)
     ].join('\n').trim() + '\n';
 
     // 3. Windsurf (`.windsurf/mcp_config.json` + `.windsurfrules`)
@@ -520,7 +551,8 @@
       description ? '# ' + description : '',
       '',
       prompt || '',
-      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- .windsurf/skills/' + s + '/SKILL.md'; }).join('\n') : ''
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- .windsurf/skills/' + s + '/SKILL.md'; }).join('\n') : '',
+      scopedMcpNote(selections)
     ].join('\n').trim() + '\n';
 
     // 4. GitHub Copilot (`.vscode/mcp.json` + `.github/copilot-instructions.md`)
@@ -530,7 +562,8 @@
       '',
       description ? '> ' + description + '\n' : '',
       prompt || '',
-      skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
+      skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : '',
+      scopedMcpNote(selections)
     ].join('\n').trim() + '\n';
 
     return {

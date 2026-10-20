@@ -326,17 +326,24 @@ async function resolveClassifyInput(args) {
       }
     }
     const description = args.description || String(parsed.description || '');
+    const hasExplicitDeps = args.deps.length > 0;
+    const explicitDeps = hasExplicitDeps
+      ? Object.fromEntries(args.deps.map((d) => [d, '*']))
+      : null;
     return {
       label: `${parsed.name} (${args.target})`,
       pkg: { name: parsed.name, description },
-      manifest: {
+      // Preserve the full manifest (pi/opencode markers, dev/peerDeps, files)
+      // so classifyManifest sees every Tier-1 signal; explicit --deps
+      // overrides dependencies and clears peer/devDeps.
+      manifest: Object.assign({}, parsed, {
         name: parsed.name,
         description: readme ? `${description} ${readme}` : description,
         keywords: args.keywords.length > 0 ? args.keywords : (parsed.keywords || []),
-        dependencies: args.deps.length > 0
-          ? Object.fromEntries(args.deps.map((d) => [d, '*']))
-          : Object.assign({}, parsed.dependencies, parsed.peerDependencies),
-      },
+        dependencies: hasExplicitDeps ? explicitDeps : (parsed.dependencies || {}),
+        peerDependencies: hasExplicitDeps ? {} : (parsed.peerDependencies || {}),
+        devDependencies: hasExplicitDeps ? {} : (parsed.devDependencies || {}),
+      }),
     };
   }
   // npm package target (positional or --name override wins).
@@ -364,17 +371,24 @@ async function resolveClassifyInput(args) {
     fail(`classify: package '${name}' is deprecated (${manifest.deprecated}); refusing to classify`);
   }
   const description = args.description || String(manifest.description || '');
+  const hasExplicitDeps = args.deps.length > 0;
+  const explicitDeps = hasExplicitDeps
+    ? Object.fromEntries(args.deps.map((d) => [d, '*']))
+    : null;
   return {
     label: name,
     pkg: { name, description },
-    manifest: {
+    // Preserve the full registry manifest (pi/opencode markers, dev/peerDeps,
+    // files, mcp) so classifyManifest sees every Tier-1 signal; explicit
+    // --deps overrides dependencies and clears peer/devDeps.
+    manifest: Object.assign({}, manifest, {
       name,
       description,
       keywords: args.keywords.length > 0 ? args.keywords : (manifest.keywords || []),
-      dependencies: args.deps.length > 0
-        ? Object.fromEntries(args.deps.map((d) => [d, '*']))
-        : Object.assign({}, manifest.dependencies, manifest.peerDependencies),
-    },
+      dependencies: hasExplicitDeps ? explicitDeps : (manifest.dependencies || {}),
+      peerDependencies: hasExplicitDeps ? {} : (manifest.peerDependencies || {}),
+      devDependencies: hasExplicitDeps ? {} : (manifest.devDependencies || {}),
+    }),
   };
 }
 

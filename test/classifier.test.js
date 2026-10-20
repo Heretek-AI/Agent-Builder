@@ -166,6 +166,24 @@ describe('classifier Tier-3 word-boundary domain matching', () => {
     assert.equal(res.category, 'mcp-servers/design-ui');
   });
 
+  it('never routes keyword "javascript"/"axios" to jvm-dotnet/mobile-ios via substring', () => {
+    // Regression: Tier-2 keyword matching was substring-based, so keyword
+    // "javascript" contained "java" (-> skills/coding/jvm-dotnet) and
+    // "axios" contained "ios" (-> skills/design/mobile-ios). Keywords are
+    // discrete tokens and must match exactly.
+    const res = classifyManifest(
+      { name: 'axios-har-client', description: 'promise http client skill playbook' },
+      {
+        name: 'axios-har-client',
+        description: 'promise http client skill playbook',
+        keywords: ['axios', 'javascript'],
+        dependencies: {},
+      },
+    );
+    assert.equal(res.kind, 'skill');
+    assert.equal(res.category, 'skills/coding/typescript-js');
+  });
+
   it('score helpers rank runner-up leaf categories', () => {
     const out = scoreBestSkillCategory('kubernetes helm service mesh docker skill playbook', 'kubernetes');
     assert.equal(out.bestId, 'skills/devops-cloud/containers-k8s');

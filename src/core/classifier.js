@@ -49,6 +49,22 @@
     return null;
   }
 
+  // Exact keyword match against the space-joined keywords string.
+  // Substring matching here is a routing bug: e.g. keyword "javascript"
+  // contains "java" (would route to jvm-dotnet) and "axios" contains "ios"
+  // (would route to mobile-ios). Keywords are discrete tokens, so compare
+  // per-token.
+  function keywordHit(keywordsStr, kw) {
+    var want = String(kw).toLowerCase();
+    var parts = String(keywordsStr || '').toLowerCase().split(/\s+/);
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] === want) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function hasAnyToken(text, list) {
     for (var i = 0; i < list.length; i++) {
       var needle = list[i];
@@ -282,7 +298,7 @@
       var s = 0;
       for (var j = 0; j < rule.tier2.length; j++) {
         var kw = rule.tier2[j].toLowerCase();
-        if (keywordsStr.indexOf(kw) !== -1) {
+        if (keywordHit(keywordsStr, kw)) {
           s += 8;
         } else if (hasAnyToken(text, [kw])) {
           s += 5;
@@ -316,7 +332,7 @@
       var s = 0;
       for (var j = 0; j < rule.tokens.length; j++) {
         var tk = rule.tokens[j];
-        if (keywordsStr.indexOf(tk) !== -1) {
+        if (keywordHit(keywordsStr, tk)) {
           s += 6;
         } else if (hasAnyToken(text, [tk])) {
           s += 3;
