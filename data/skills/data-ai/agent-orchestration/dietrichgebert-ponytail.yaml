@@ -1,0 +1,20 @@
+id: dietrichgebert-ponytail
+name: '@dietrichgebert/ponytail'
+repo: https://github.com/DietrichGebert/ponytail
+npm: '@dietrichgebert/ponytail'
+tagline: Lazy senior dev mode for AI agents. The best code is the code you never wrote.
+description: >-
+  Makes your AI agent think like the laziest senior dev in the room. The best code is the code you
+  never wrote.
+kind: skill
+category: skills/data-ai/agent-orchestration
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - skill
+  - agent
+  - plugin
+  - pi
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/DietrichGebert/ponytail (MIT).
