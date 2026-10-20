@@ -1,0 +1,20 @@
+id: anthonyhaussman-opencode-agy-auth
+name: '@anthonyhaussman/opencode-agy-auth'
+repo: https://github.com/anthonyhaussman/opencode-agy-auth
+npm: '@anthonyhaussman/opencode-agy-auth'
+tagline: '[![npm…'
+description: Antigravity auth plugin for opencode
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - rag
+  - typescript
+  - go
+license: Apache-2.0
+source_attribution: >-
+  Discovered by Agent-Builder scout from https://github.com/anthonyhaussman/opencode-agy-auth
+  (Apache-2.0).
