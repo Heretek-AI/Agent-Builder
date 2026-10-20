@@ -1,0 +1,21 @@
+id: pi-weave
+name: pi-weave
+repo: https://github.com/EranYonai/pi-weave
+npm: pi-weave
+tagline: >-
+  Local-first Markdown memory and knowledge graph for Pi and OpenCode: preserve decisions, recall
+  sessions, and explore…
+description: >-
+  Local-first Markdown memory and knowledge graph for Pi: preserve decisions, recall across
+  sessions, and explore notes with code.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - agent
+  - plugin
+  - rag
+  - playwright
+license: MIT
