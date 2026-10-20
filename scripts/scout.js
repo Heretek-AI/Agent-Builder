@@ -801,6 +801,31 @@ function gitExec(args, options) {
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...(options || {}) });
 }
 
+// Push/fetch auth matching actions/checkout: `AUTHORIZATION: basic
+// base64("x-access-token:<token>")`. The `bearer` scheme is not valid for
+// git smart-HTTP push and fails with "could not read Username".
+function gitAuthEnv(token) {
+  const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
+  return {
+    ...process.env,
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  };
+}
+
+// Redact both the raw token and its base64 form (the base64 blob would
+// otherwise leak the token to issue bodies/logs on push failure).
+function redactSecrets(text, token) {
+  let out = String(text || '');
+  if (token) {
+    out = out.split(token).join('[redacted]');
+    const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
+    out = out.split(basic).join('[redacted]');
+  }
+  return out;
+}
+
 function buildEntryYaml(input, taxonomyIds) {
   if (!input || typeof input !== 'object') return { ok: false, problems: ['empty candidate input'] };
   const problems = [];
@@ -908,10 +933,13 @@ async function cmdAccept(rootDir) {
     if (!candidate) continue;
     const id = candidate[2];
     const selected = candidate[1].toLowerCase() === 'x';
-    if (!selected || / → /.test(line) || opened >= ACCEPT_LIMIT) continue;
+    if (!selected || / → #\d+/.test(line) || opened >= ACCEPT_LIMIT) continue;
     if (!scoutData[id]) continue;
     const input = scoutData[id];
     const result = buildEntryYaml(input, ids);
+    // Strip any prior failure note (` → not added: ...` / ` → (...)`) so a
+    // re-ticked box retries cleanly and the new note cannot duplicate arrows.
+    const cleanLine = line.replace(/ → .*?(?= <!-- scout:)/, '');
     let note;
     if (!result.ok) {
       note = ` → not added: ${truncate(result.problems.join('; '), 200)}`;
@@ -920,7 +948,7 @@ async function cmdAccept(rootDir) {
       try {
         const outAbs = path.join(rootDir, result.file);
         // One PR per candidate: fresh branch from base, single file, push, PR.
-        try { gitExec(['fetch', 'origin', base]); } catch (_e) { /* offline-safe: use local base */ }
+        try { gitExec(['fetch', 'origin', base], { env: gitAuthEnv(token) }); } catch (_e) { /* offline-safe: use local base */ }
         try { gitExec(['checkout', '-B', branch, `origin/${base}`]); }
         catch (_e) { gitExec(['checkout', '-B', branch, base]); }
         fs.mkdirSync(path.dirname(outAbs), { recursive: true });
@@ -934,12 +962,7 @@ async function cmdAccept(rootDir) {
         gitExec(['-c', 'user.name=agent-builder-scout', '-c', 'user.email=agent-builder-scout@users.noreply.github.com',
           'commit', '-m', `docs: add ${input.name} to ${input.category}`]);
         gitExec(['push', '--set-upstream', 'origin', branch], {
-          env: {
-            ...process.env,
-            GIT_CONFIG_COUNT: '1',
-            GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
-            GIT_CONFIG_VALUE_0: `AUTHORIZATION: bearer ${token}`,
-          },
+          env: gitAuthEnv(token),
         });
         const { ok: pok, data: pr } = await rest(`/repos/${repo}/pulls`, {
           method: 'POST', token,
@@ -969,10 +992,10 @@ async function cmdAccept(rootDir) {
         // Roll back the working tree file so the next candidate starts clean.
         try { gitExec(['checkout', '--', result.file]); } catch (_e) { /* ignore */ }
         try { fs.unlinkSync(path.join(rootDir, result.file)); } catch (e) { if (e && e.code !== 'ENOENT') { /* ignore - best-effort rollback */ } }
-        note = ` → not added: ${truncate(token ? String(err.message || '').split(token).join('[redacted]') : String(err.message || ''), 200)}`;
+        note = ` → not added: ${truncate(redactSecrets(err.message || '', token), 200)}`;
       }
     }
-    body = body.replace(line, line.replace(/^- \[x\]/i, '- [x]').replace(/ <!-- scout:/, `${note} <!-- scout:`));
+    body = body.replace(line, cleanLine.replace(/^- \[x\]/i, '- [x]').replace(/ <!-- scout:/, `${note} <!-- scout:`));
   }
   if (body !== (issue.body || '')) {
     await rest(`/repos/${repo}/issues/${n}`, { method: 'PATCH', token, body: { body } });
@@ -1009,4 +1032,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, buildEntryYaml, truncate, canonicalRepoKey };
+module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, buildEntryYaml, truncate, canonicalRepoKey, gitAuthEnv, redactSecrets };
