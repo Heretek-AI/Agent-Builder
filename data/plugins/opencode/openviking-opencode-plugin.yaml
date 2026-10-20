@@ -1,0 +1,17 @@
+id: openviking-opencode-plugin
+name: '@openviking/opencode-plugin'
+repo: https://github.com/volcengine/OpenViking
+path: examples/opencode-plugin
+npm: '@openviking/opencode-plugin'
+tagline: Unified OpenCode plugin for OpenViking repository retrieval and long-term memory
+description: Self-evolving Context Database for AI Agents. Unify Agent Memory, Knowledge RAG and Skills.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+tags:
+  - opencode
+  - plugin
+  - rag
+license: AGPL-3.0
+source_attribution: Discovered by Agent-Builder scout from https://github.com/volcengine/OpenViking (AGPL-3.0).
