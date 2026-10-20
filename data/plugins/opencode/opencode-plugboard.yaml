@@ -1,0 +1,24 @@
+id: opencode-plugboard
+name: opencode-plugboard
+repo: https://github.com/jjjermiah/opencode-plugboard
+npm: opencode-plugboard
+tagline: >-
+  Use the ChatGPT, Claude, Copilot and OpenCode Go logins in your OpenCode server from any app: an
+  OpenCode V2 plugin…
+description: >-
+  OpenCode V2 plugin: serve OpenAI, Anthropic and Gemini compatible APIs from your OpenCode server's
+  provider logins, with per-app keys, fallbacks, limits, caching and usage stats.
+kind: plugin
+category: plugins/opencode
+harnesses:
+  - opencode
+  - claude-code
+  - copilot
+tags:
+  - opencode
+  - copilot
+  - plugin
+  - ml
+  - typescript
+license: MIT
+source_attribution: Discovered by Agent-Builder scout from https://github.com/jjjermiah/opencode-plugboard (MIT).
