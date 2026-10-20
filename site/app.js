@@ -834,8 +834,29 @@
     }, 500);
   }
 
+  // Multi-file previews keep a combined display in tabText, but downloading
+  // that combined text under a single-file name would be invalid (e.g. Pi
+  // preview concatenates settings JSON + mcp JSON + AGENTS.md). Download the
+  // selected bundleFiles artifact instead; display stays combined.
+  var SINGLE_DOWNLOAD_BY_TAB = {
+    pi: function (c) { return '.pi/settings.' + c.slug + '.json'; },
+    gemini: function (c) { return '.gemini/settings.' + c.slug + '.json'; },
+    cursor: function (c) { return '.cursor/rules/' + c.slug + '.mdc'; },
+    windsurf: function (c) { return '.windsurfrules.' + c.slug; },
+    copilot: function (c) { return '.github/copilot-instructions.' + c.slug + '.md'; }
+  };
+
   function downloadCurrentFile() {
     var compiled = compileCurrent();
+    if (SINGLE_DOWNLOAD_BY_TAB[state.previewTab] && compiled && Array.isArray(compiled.bundleFiles)) {
+      var wantPath = SINGLE_DOWNLOAD_BY_TAB[state.previewTab](compiled);
+      for (var i = 0; i < compiled.bundleFiles.length; i++) {
+        if (compiled.bundleFiles[i].path === wantPath) {
+          download(compiled.bundleFiles[i].path, compiled.bundleFiles[i].content);
+          return;
+        }
+      }
+    }
     download(TAB_FILES[state.previewTab](compiled), tabText(state.previewTab, compiled));
   }
 

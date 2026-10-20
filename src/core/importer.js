@@ -530,7 +530,7 @@
         tools = [];
       }
       // Gemini CLI `includeTools` / `excludeTools` support
-      if (Array.isArray(srv.includeTools) && srv.includeTools.length > 0) {
+      if (Array.isArray(srv.includeTools)) {
         tools = srv.includeTools.map(String);
       }
       if (Array.isArray(srv.excludeTools)) {
