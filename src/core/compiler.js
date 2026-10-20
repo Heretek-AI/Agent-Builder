@@ -10,10 +10,18 @@
 // (`<serverName>_<toolName>` preserving hyphens and underscores, all other
 // non-alphanumeric runs mapped to `_`, matching upstream OpenCode/Claude
 // `mcp__plugin_my-plugin_database-tools__query` style),
-// and deterministic exports for OpenCode v2 JSON, OpenCode v1 JSON,
-// OpenCode agent Markdown, Claude Code (`.mcp.json` + agent `.md`),
-// Codex CLI (`config.toml`), a safe placeholder install script, and a
-// workspace bundle file list.
+// and deterministic exports for:
+//   - OpenCode v2 JSON (`opencode.<slug>.v2.json`)
+//   - OpenCode v1 JSON (`opencode.<slug>.v1.json`)
+//   - OpenCode agent Markdown (`.opencode/agent/<slug>.md`)
+//   - Claude Code (`.mcp.<slug>.json` + `.claude/agents/<slug>.md`)
+//   - Codex CLI (`codex.<slug>.toml`)
+//   - Pi Coding Agent (`.pi/settings.json` + `.pi/mcp.json` + `AGENTS.md`)
+//   - Gemini CLI (`.gemini/settings.json` + `GEMINI.md`)
+//   - Cursor IDE (`.cursor/mcp.json` + `.cursor/rules/<slug>.mdc`)
+//   - Windsurf IDE (`.windsurf/mcp_config.json` + `.windsurfrules`)
+//   - GitHub Copilot (`.vscode/mcp.json` + `.github/copilot-instructions.md`)
+//   - Safe placeholder install script (`install-<slug>.sh`) and workspace bundle.
 
 (function (root, factory) {
   var api = factory();
@@ -29,6 +37,7 @@
   'use strict';
 
   var V1_SCHEMA_URL = 'https://opencode.ai/config.json';
+  var PI_SETTINGS_SCHEMA_URL = 'https://pi.dev/schemas/settings.schema.json';
   var RESOURCE_ACTIONS = ['opencode_list_mcp_resources', 'opencode_read_mcp_resource'];
 
   // Verified normalization: hyphens and underscores are preserved (upstream
@@ -82,6 +91,37 @@
       }
     }
     return decision;
+  }
+
+  // Detailed permission trace for the interactive UI simulator: returns
+  // `{ decision, matchedIndex, matchedRule, trace }`.
+  function traceV2Permission(permissions, action, resource) {
+    var decision = evaluateV2Permission(permissions, action, resource);
+    var res = resource === undefined ? '*' : String(resource);
+    var matchedIndex = -1;
+    var matchedRule = null;
+    var trace = [];
+    for (var i = 0; i < permissions.length; i++) {
+      var rule = permissions[i];
+      var hit = wildcardToRegExp(rule.action).test(action) && wildcardToRegExp(rule.resource).test(res);
+      if (hit) {
+        matchedIndex = i;
+        matchedRule = rule;
+      }
+      trace.push({
+        index: i,
+        action: rule.action,
+        resource: rule.resource,
+        effect: rule.effect,
+        matched: hit
+      });
+    }
+    return {
+      decision: decision,
+      matchedIndex: matchedIndex,
+      matchedRule: matchedRule,
+      trace: trace
+    };
   }
 
   function isPlainObject(v) {
@@ -319,6 +359,190 @@
       }
     });
     return tools;
+  }
+
+  // ---- Pi Coding Agent (`earendil-works/pi`) Exporters ----
+  // Generates `.pi/settings.json` and `.pi/mcp.json` (with `toolExposure`
+  // mapping explicit tool allows/denies to Pi's `direct` / `codemode` / `hidden`
+  // tool exposure system).
+  function buildPiOutputs(slug, description, model, prompt, skills, selections, registryEntries, piOpts) {
+    var opts = isPlainObject(piOpts) ? piOpts : {};
+    var settings = {
+      $schema: PI_SETTINGS_SCHEMA_URL
+    };
+    if (model !== undefined && model.length > 0) {
+      var slashIdx = model.indexOf('/');
+      if (slashIdx !== -1) {
+        settings.defaultProvider = model.slice(0, slashIdx);
+        settings.defaultModel = model.slice(slashIdx + 1);
+      } else {
+        settings.defaultModel = model;
+      }
+    }
+    settings.defaultThinkingLevel = opts.thinkingLevel || 'medium';
+    settings.defaultTools = Array.isArray(opts.defaultTools) && opts.defaultTools.length > 0
+      ? opts.defaultTools.slice()
+      : ['+codemode', '+tool_search'];
+    if (opts.tuiMode && opts.tuiMode !== 'fullscreen') {
+      settings.tuiMode = opts.tuiMode;
+    }
+    if (skills.length > 0) {
+      settings.skills = skills.map(function (s) { return '.pi/skills/' + s; });
+    }
+
+    var defaultExposure = opts.mcpExposure || 'codemode';
+    var piMcpServers = {};
+    selections.forEach(function (sel) {
+      var reg = findRegistryMcp(sel.server, registryEntries);
+      var tr = serverTransport(sel, reg);
+      var entry = {};
+      if (tr.url !== undefined) {
+        entry.url = tr.url;
+      } else {
+        entry.command = tr.command;
+        entry.args = tr.args;
+        if (tr.env && Object.keys(tr.env).length > 0) {
+          entry.env = tr.env;
+        }
+      }
+      if (reg && typeof reg.tagline === 'string' && reg.tagline.length > 0) {
+        entry.description = reg.tagline;
+      }
+      var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
+      entry.exposure = wildcard ? defaultExposure : 'hidden';
+      var toolExposure = {};
+      if (!wildcard) {
+        sel.tools.forEach(function (t) {
+          toolExposure[t] = defaultExposure === 'direct' ? 'direct' : 'codemode';
+        });
+      }
+      sel.deniedTools.forEach(function (d) {
+        var raw = String(d).trim();
+        if (raw !== '*') {
+          toolExposure[raw] = 'hidden';
+        }
+      });
+      if (Object.keys(toolExposure).length > 0) {
+        entry.toolExposure = toolExposure;
+      }
+      piMcpServers[sel.server] = entry;
+    });
+
+    var piMcpJson = { mcpServers: piMcpServers };
+    var agentsLines = [
+      '# Agent: ' + slug,
+      '',
+      description ? '> ' + description : '',
+      '',
+      '## System Instructions',
+      '',
+      prompt || 'Follow least-privilege tool and skill boundaries.',
+      ''
+    ];
+    if (skills.length > 0) {
+      agentsLines.push('## Enabled Skills', '');
+      skills.forEach(function (s) {
+        agentsLines.push('- `.pi/skills/' + s + '/SKILL.md`');
+      });
+      agentsLines.push('');
+    }
+    return {
+      piSettingsJson: settings,
+      piMcpJson: piMcpJson,
+      piAgentsMd: agentsLines.filter(function (l, i, a) {
+        return !(l === '' && a[i - 1] === '');
+      }).join('\n')
+    };
+  }
+
+  // ---- Gemini CLI, Cursor, Windsurf & Copilot Exporters ----
+  function buildAdditionalClients(slug, description, model, prompt, skills, selections, registryEntries) {
+    // 1. Gemini CLI (`.gemini/settings.json` + `GEMINI.md`)
+    var geminiServers = {};
+    selections.forEach(function (sel) {
+      var reg = findRegistryMcp(sel.server, registryEntries);
+      var tr = serverTransport(sel, reg);
+      var gEntry = {};
+      if (tr.url !== undefined) {
+        gEntry.url = tr.url;
+      } else {
+        gEntry.command = tr.command;
+        gEntry.args = tr.args;
+        if (tr.env && Object.keys(tr.env).length > 0) {
+          gEntry.env = tr.env;
+        }
+      }
+      var wildcard = sel.tools.some(function (t) { return String(t).trim() === '*'; });
+      if (!wildcard && sel.tools.length > 0) {
+        gEntry.includeTools = sel.tools.slice();
+      }
+      if (sel.deniedTools.length > 0) {
+        gEntry.excludeTools = sel.deniedTools.filter(function (d) { return d !== '*'; });
+      }
+      geminiServers[sel.server] = gEntry;
+    });
+    var geminiSettingsJson = {
+      mcpServers: geminiServers,
+      contextFileName: 'GEMINI.md'
+    };
+    var geminiMd = [
+      '# ' + slug + ' (Gemini CLI Agent)',
+      '',
+      description ? description + '\n' : '',
+      prompt || '',
+      skills.length > 0 ? '\n## Active Skills\n' + skills.map(function (s) { return '- ' + s; }).join('\n') : ''
+    ].join('\n').trim() + '\n';
+
+    // 2. Cursor (`.cursor/mcp.json` + `.cursor/rules/<slug>.mdc`)
+    var cursorMcpServers = {};
+    selections.forEach(function (sel) {
+      var reg = findRegistryMcp(sel.server, registryEntries);
+      cursorMcpServers[sel.server] = serverTransport(sel, reg);
+    });
+    var cursorMcpJson = { mcpServers: cursorMcpServers };
+    var cursorRuleMdc = [
+      '---',
+      'description: ' + yamlDq(description || slug),
+      'globs: ["**/*"]',
+      'alwaysApply: true',
+      '---',
+      '',
+      '# ' + slug,
+      '',
+      prompt || '',
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
+    ].join('\n').trim() + '\n';
+
+    // 3. Windsurf (`.windsurf/mcp_config.json` + `.windsurfrules`)
+    var windsurfMcpJson = { mcpServers: cursorMcpServers };
+    var windsurfRules = [
+      '# Windsurf Cascade Rules — ' + slug,
+      description ? '# ' + description : '',
+      '',
+      prompt || '',
+      skills.length > 0 ? '\n## Scoped Skills\n' + skills.map(function (s) { return '- .windsurf/skills/' + s + '/SKILL.md'; }).join('\n') : ''
+    ].join('\n').trim() + '\n';
+
+    // 4. GitHub Copilot (`.vscode/mcp.json` + `.github/copilot-instructions.md`)
+    var vscodeMcpJson = { servers: cursorMcpServers };
+    var copilotInstructionsMd = [
+      '# GitHub Copilot Instructions — ' + slug,
+      '',
+      description ? '> ' + description + '\n' : '',
+      prompt || '',
+      skills.length > 0 ? '\n## Referenced Playbooks\n' + skills.map(function (s) { return '- `' + s + '`'; }).join('\n') : ''
+    ].join('\n').trim() + '\n';
+
+    return {
+      geminiSettingsJson: geminiSettingsJson,
+      geminiMd: geminiMd,
+      cursorMcpJson: cursorMcpJson,
+      cursorRuleMdc: cursorRuleMdc,
+      windsurfMcpJson: windsurfMcpJson,
+      windsurfRules: windsurfRules,
+      vscodeMcpJson: vscodeMcpJson,
+      copilotInstructionsMd: copilotInstructionsMd
+    };
   }
 
   function compileAgentRecipe(recipe, registryEntries) {
@@ -562,6 +786,10 @@
       ? tomlBlocks.join('\n\n') + '\n'
       : '# No MCP servers selected for agent ' + tomlQ(slug) + '.\n';
 
+    // ---- Pi (`earendil-works/pi`) + Gemini CLI + Cursor + Windsurf + Copilot ----
+    var piOut = buildPiOutputs(slug, description, model, prompt, skills, selections, regs, recipe.piOptions);
+    var extraClients = buildAdditionalClients(slug, description, model, prompt, skills, selections, regs);
+
     // ---- Safe placeholder install script (no secrets, mkdir + echo only) ----
     var installScriptSh = [
       '#!/bin/sh',
@@ -569,24 +797,42 @@
       '# Safe placeholder script: creates directories and prints next steps. No secrets embedded.',
       'set -eu',
       'AGENT_SLUG=' + shQ(slug),
-      'mkdir -p ".opencode/agent" ".claude/agents" ".agents/skills"',
+      'mkdir -p ".opencode/agent" ".claude/agents" ".agents/skills" ".pi" ".gemini" ".cursor/rules" ".windsurf" ".vscode" ".github"',
       'echo "Installing agent ${AGENT_SLUG}..."',
       'echo " - OpenCode v2/v1 : merge opencode.${AGENT_SLUG}.v2.json / opencode.${AGENT_SLUG}.v1.json into opencode.json"',
       'echo " - OpenCode agent : .opencode/agent/${AGENT_SLUG}.md"',
+      'echo " - Pi (pi.dev)    : .pi/settings.json and .pi/mcp.json + AGENTS.md"',
       'echo " - Claude Code    : .claude/agents/${AGENT_SLUG}.md and .mcp.${AGENT_SLUG}.json"',
       'echo " - Codex CLI      : merge codex.${AGENT_SLUG}.toml into config.toml"',
+      'echo " - Gemini CLI     : .gemini/settings.json + GEMINI.md"',
+      'echo " - Cursor IDE     : .cursor/rules/${AGENT_SLUG}.mdc + .cursor/mcp.json"',
+      'echo " - Windsurf IDE   : .windsurfrules + .windsurf/mcp_config.json"',
+      'echo " - Copilot        : .github/copilot-instructions.md + .vscode/mcp.json"',
       'echo "Done. Review the deny-first permission rules before running the agent."',
       ''
     ].join('\n');
 
-    // ---- Workspace bundle ----
+    // ---- Workspace bundle (10 targets, slug-qualified for multi-agent safety) ----
+    // Canonical install locations are documented in installScriptSh; bundle
+    // paths are slug-qualified so multiple agents can coexist in one export.
     var bundleFiles = [
       { path: 'opencode.' + slug + '.v2.json', content: JSON.stringify(opencodeV2, null, 2) + '\n' },
       { path: 'opencode.' + slug + '.v1.json', content: JSON.stringify(opencodeV1, null, 2) + '\n' },
       { path: '.opencode/agent/' + slug + '.md', content: opencodeMarkdown },
+      { path: '.pi/settings.' + slug + '.json', content: JSON.stringify(piOut.piSettingsJson, null, 2) + '\n' },
+      { path: '.pi/mcp.' + slug + '.json', content: JSON.stringify(piOut.piMcpJson, null, 2) + '\n' },
+      { path: 'AGENTS.' + slug + '.md', content: piOut.piAgentsMd },
       { path: '.claude/agents/' + slug + '.md', content: claudeCodeAgentMd },
       { path: '.mcp.' + slug + '.json', content: JSON.stringify(claudeCodeMcp, null, 2) + '\n' },
       { path: 'codex.' + slug + '.toml', content: codexConfigToml },
+      { path: '.gemini/settings.' + slug + '.json', content: JSON.stringify(extraClients.geminiSettingsJson, null, 2) + '\n' },
+      { path: 'GEMINI.' + slug + '.md', content: extraClients.geminiMd },
+      { path: '.cursor/rules/' + slug + '.mdc', content: extraClients.cursorRuleMdc },
+      { path: '.cursor/mcp.' + slug + '.json', content: JSON.stringify(extraClients.cursorMcpJson, null, 2) + '\n' },
+      { path: '.windsurf/mcp_config.' + slug + '.json', content: JSON.stringify(extraClients.windsurfMcpJson, null, 2) + '\n' },
+      { path: '.windsurfrules.' + slug, content: extraClients.windsurfRules },
+      { path: '.vscode/mcp.' + slug + '.json', content: JSON.stringify(extraClients.vscodeMcpJson, null, 2) + '\n' },
+      { path: '.github/copilot-instructions.' + slug + '.md', content: extraClients.copilotInstructionsMd },
       { path: 'install-' + slug + '.sh', content: installScriptSh }
     ];
 
@@ -598,6 +844,17 @@
       claudeCodeMcp: claudeCodeMcp,
       claudeCodeAgentMd: claudeCodeAgentMd,
       codexConfigToml: codexConfigToml,
+      piSettingsJson: piOut.piSettingsJson,
+      piMcpJson: piOut.piMcpJson,
+      piAgentsMd: piOut.piAgentsMd,
+      geminiSettingsJson: extraClients.geminiSettingsJson,
+      geminiMd: extraClients.geminiMd,
+      cursorMcpJson: extraClients.cursorMcpJson,
+      cursorRuleMdc: extraClients.cursorRuleMdc,
+      windsurfMcpJson: extraClients.windsurfMcpJson,
+      windsurfRules: extraClients.windsurfRules,
+      vscodeMcpJson: extraClients.vscodeMcpJson,
+      copilotInstructionsMd: extraClients.copilotInstructionsMd,
       installScriptSh: installScriptSh,
       bundleFiles: bundleFiles
     };
@@ -606,6 +863,7 @@
   return {
     normalizeMcpId: normalizeMcpId,
     evaluateV2Permission: evaluateV2Permission,
+    traceV2Permission: traceV2Permission,
     compileAgentRecipe: compileAgentRecipe
   };
 }));

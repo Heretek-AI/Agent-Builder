@@ -646,7 +646,7 @@ function isSafeRelPath(rel) {
 // Throws fail-closed on path escapes or invalid recipes.
 function installRecipeFiles(recipe, registryEntries, targetDir, harness) {
   const compiler = require('../core/compiler');
-  const validHarnesses = ['opencode-v2', 'opencode-v1', 'opencode-md', 'claude-code', 'codex'];
+  const validHarnesses = ['opencode-v2', 'opencode-v1', 'opencode-md', 'claude-code', 'claude', 'codex', 'pi', 'gemini-cli', 'gemini', 'cursor', 'windsurf', 'copilot'];
   if (harness !== undefined && !validHarnesses.includes(harness)) {
     throw new Error('unknown harness ' + JSON.stringify(harness) + ' (expected one of ' + validHarnesses.join('|') + ')');
   }

@@ -1,25 +1,21 @@
 // scripts/scout.js
-// Multi-harness GitHub/npm discovery scout (CommonJS).
+// Multi-harness GitHub/npm discovery scout & multi-signal classifier (CommonJS).
 //   node scripts/scout.js run [--dry-run] [--limit 20]
 //   node scripts/scout.js accept --issue <n> [--sender <login>] [--dry-run]
+//   node scripts/scout.js classify --name <pkg> [--description <text>] [--keywords <a,b>]
 // --dry-run never touches the network and requires no tokens.
 //
-// Live `run` mirrors the awesome-opencode reference scout (npm search paged
-// 250/from, GitHub gating, downloads-then-stars ranking, one candidate per
-// repo, `scout` label issue with `<!-- scout-data {...} -->`), extended from
-// opencode-only to all Agent-Builder harnesses/topics. Only global fetch, fs,
-// path (+ js-yaml / catalog util) are used; no new npm dependencies.
+// Powered by `src/core/classifier.js` (weighted 4-tier multi-signal scoring
+// with word-boundary domain matching and confidence breakdown).
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const yaml = require('js-yaml');
 const { loadCatalog, loadTaxonomy } = require('./utils/catalog');
+const { classifyManifest, suggestTopics } = require('../src/core/classifier');
 
 // ---------------------------------------------------------------------------
 // Search coverage: npm text queries spanning every harness + topic family.
-// npm registry search (`/-/v1/search?text=...&size=250&from=...`) is the
-// primary source; GitHub code search (see githubCodeSearchFallback) is a
-// best-effort supplement when GITHUB_TOKEN is present.
 // ---------------------------------------------------------------------------
 const SEARCHES = [
   // OpenCode (reference behavior, kept first)
@@ -27,6 +23,10 @@ const SEARCHES = [
   '@opencode/plugin',
   'keywords:opencode',
   '@opencode-ai',
+  // Pi (earendil-works/pi)
+  'keywords:pi-package',
+  '@earendil-works/pi',
+  'pi-coding-agent',
   // Claude Code
   'keywords:claude-code',
   'claude-code skill',
@@ -84,8 +84,6 @@ const KEY_ORDER = [
 const DATA_RE = /<!-- scout-data (\{.*?\}) -->/s;
 const ACCEPT_LIMIT = 10;
 
-// GitHub code-search fallback: manifest/topic filenames worth probing when a
-// token is available (code search is authenticated-only). Best-effort.
 const CODE_SEARCH_QUERIES = [
   'filename:SKILL.md',
   'filename:DESIGN.md',
@@ -100,6 +98,8 @@ function printUsage() {
   console.log('Usage:');
   console.log('  node scripts/scout.js run [--dry-run] [--limit 20]');
   console.log('  node scripts/scout.js accept --issue <n> [--sender <login>] [--dry-run]');
+  console.log('  node scripts/scout.js classify <pkg|dir> [--description <text>] [--keywords <k1,k2>] [--deps <d1,d2>] [--json]');
+  console.log('  node scripts/scout.js classify --name <pkg> [--description <text>] [--keywords <k1,k2>] [--deps <d1,d2>] [--json]');
 }
 
 function parseRunArgs(argv) {
@@ -190,6 +190,211 @@ function parseAcceptArgs(argv) {
   return args;
 }
 
+function parseClassifyArgs(argv) {
+  const args = { target: '', name: '', description: '', keywords: [], deps: [], json: false };
+  for (let i = 3; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === '--help' || a === '-h') {
+      printUsage();
+      process.exit(0);
+    }
+    if (a === '--json') {
+      args.json = true;
+      continue;
+    }
+    if (a === '--name') {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--')) {
+        console.error('ERROR: --name requires a value');
+        process.exit(1);
+      }
+      args.name = next;
+      i += 1;
+      continue;
+    } else if (a.startsWith('--name=')) {
+      args.name = a.slice('--name='.length);
+      continue;
+    } else if (a === '--description') {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--')) {
+        console.error('ERROR: --description requires a value');
+        process.exit(1);
+      }
+      args.description = next;
+      i += 1;
+      continue;
+    } else if (a.startsWith('--description=')) {
+      args.description = a.slice('--description='.length);
+      continue;
+    } else if (a === '--keywords') {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--')) {
+        console.error('ERROR: --keywords requires a value');
+        process.exit(1);
+      }
+      args.keywords = String(next).split(',').map((s) => s.trim()).filter(Boolean);
+      i += 1;
+      continue;
+    } else if (a.startsWith('--keywords=')) {
+      args.keywords = a.slice('--keywords='.length).split(',').map((s) => s.trim()).filter(Boolean);
+      continue;
+    } else if (a === '--deps') {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--')) {
+        console.error('ERROR: --deps requires a value');
+        process.exit(1);
+      }
+      args.deps = String(next).split(',').map((s) => s.trim()).filter(Boolean);
+      i += 1;
+      continue;
+    } else if (a.startsWith('--deps=')) {
+      args.deps = a.slice('--deps='.length).split(',').map((s) => s.trim()).filter(Boolean);
+      continue;
+    } else if (a.startsWith('--')) {
+      console.error(`ERROR: unknown argument '${a}' (see --help)`);
+      process.exit(1);
+    }
+    if (args.target) {
+      console.error(`ERROR: classify accepts a single <pkg|dir> target (got '${args.target}' and '${a}')`);
+      process.exit(1);
+    }
+    args.target = a;
+  }
+  return args;
+}
+
+// Fail-closed npm name check (scoped packages allowed, no URLs/paths).
+function isNpmName(s) {
+  return /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/i.test(String(s || ''));
+}
+
+// Resolve a `classify <pkg|dir>` target (or legacy --name/flags) into a
+// { pkg, manifest } pair for classifyManifest. Local directories are read
+// from package.json (+ README.md as Tier-4 context); package names are
+// fetched live from the npm registry (`/.../latest`). Fail-closed: unknown
+// packages, unreadable dirs, and invalid manifests exit non-zero.
+async function resolveClassifyInput(args) {
+  // Legacy/override flags without a positional target: synthetic manifest.
+  if (!args.target) {
+    if (!args.name) {
+      fail('classify requires <pkg|dir> or --name <pkg> (see --help)');
+    }
+    const depsObj = {};
+    args.deps.forEach((d) => { depsObj[d] = '*'; });
+    return {
+      label: args.name,
+      pkg: { name: args.name, description: args.description },
+      manifest: {
+        name: args.name,
+        description: args.description,
+        keywords: args.keywords,
+        dependencies: depsObj,
+      },
+    };
+  }
+  // Local directory target: package.json (+ README.md context).
+  let stat = null;
+  try {
+    stat = fs.statSync(args.target);
+  } catch (_e) {
+    stat = null;
+  }
+  if (stat && stat.isDirectory()) {
+    const pkgPath = path.join(args.target, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      fail(`classify: directory '${args.target}' has no package.json`);
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    } catch (err) {
+      fail(`classify: invalid package.json in '${args.target}': ${err.message}`);
+    }
+    if (!parsed || typeof parsed !== 'object' || !parsed.name) {
+      fail(`classify: package.json in '${args.target}' has no name`);
+    }
+    let readme = '';
+    for (const candidate of ['README.md', 'readme.md', 'Readme.md']) {
+      const rp = path.join(args.target, candidate);
+      if (fs.existsSync(rp)) {
+        try {
+          readme = String(fs.readFileSync(rp, 'utf8')).slice(0, 2000);
+        } catch (_e) {
+          readme = '';
+        }
+        break;
+      }
+    }
+    const description = args.description || String(parsed.description || '');
+    return {
+      label: `${parsed.name} (${args.target})`,
+      pkg: { name: parsed.name, description },
+      manifest: {
+        name: parsed.name,
+        description: readme ? `${description} ${readme}` : description,
+        keywords: args.keywords.length > 0 ? args.keywords : (parsed.keywords || []),
+        dependencies: args.deps.length > 0
+          ? Object.fromEntries(args.deps.map((d) => [d, '*']))
+          : Object.assign({}, parsed.dependencies, parsed.peerDependencies),
+      },
+    };
+  }
+  // npm package target (positional or --name override wins).
+  const name = args.name || args.target;
+  if (!isNpmName(name)) {
+    fail(`classify: '${args.target}' is neither a directory nor a valid npm package name`);
+  }
+  let manifest;
+  try {
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`, {
+      headers: { 'User-Agent': 'agent-builder-scout' },
+    });
+    if (res.status === 404) {
+      fail(`classify: package '${name}' not found on npm (HTTP 404)`);
+    }
+    if (!res.ok) {
+      fail(`classify: npm lookup for '${name}' failed (HTTP ${res.status})`);
+    }
+    manifest = await res.json();
+  } catch (err) {
+    if (err && err.message && err.message.startsWith('classify:')) throw err;
+    fail(`classify: npm lookup for '${name}' failed: ${(err && err.message) || err}`);
+  }
+  if (manifest.deprecated) {
+    fail(`classify: package '${name}' is deprecated (${manifest.deprecated}); refusing to classify`);
+  }
+  const description = args.description || String(manifest.description || '');
+  return {
+    label: name,
+    pkg: { name, description },
+    manifest: {
+      name,
+      description,
+      keywords: args.keywords.length > 0 ? args.keywords : (manifest.keywords || []),
+      dependencies: args.deps.length > 0
+        ? Object.fromEntries(args.deps.map((d) => [d, '*']))
+        : Object.assign({}, manifest.dependencies, manifest.peerDependencies),
+    },
+  };
+}
+
+function formatClassifyHuman(label, res) {
+  const lines = [
+    `${label} => ${res.kind} / ${res.category}`,
+    `Harnesses: ${(res.harnesses || []).join(', ')}`,
+    `Confidence: ${res.confidence}%`,
+    'Breakdown:',
+    ...(Array.isArray(res.reasons) && res.reasons.length > 0 ? res.reasons.map((r) => `  - ${r}`) : ['  - (no signals)']),
+    'Runner-up categories:',
+    ...(Array.isArray(res.alternativeCategories) && res.alternativeCategories.length > 0
+      ? res.alternativeCategories.map((a) => `  - ${a.category} (score ${a.score})`)
+      : ['  - (none)']),
+    `Topics: ${(res.topics || []).join(', ') || '(none)'}`,
+    `Signal: ${res.signal ? 'yes' : 'no'}`,
+  ];
+  return lines.join('\n');
+}
+
 function loadDeclined(rootDir) {
   const declinedPath = path.join(rootDir, 'discovery', 'declined.txt');
   const ignored = new Set();
@@ -212,7 +417,6 @@ function slugify(s) {
   return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'entry';
 }
 
-// Canonical repo key: lowercased, no .git suffix, no trailing slash.
 function canonicalRepoKey(url) {
   return String(url || '').trim().toLowerCase().replace(/\.git$/, '').replace(/\/+$/, '');
 }
@@ -222,9 +426,6 @@ function fail(msg) {
   process.exit(1);
 }
 
-// ---------------------------------------------------------------------------
-// GitHub REST + npm helpers (inline; native fetch only, no new deps).
-// ---------------------------------------------------------------------------
 function githubHeaders(token) {
   const headers = {
     Accept: 'application/vnd.github+json',
@@ -298,8 +499,6 @@ function parseRepoUrl(url) {
   return { owner: m[1], name: m[2] };
 }
 
-// REST equivalent of the reference getRepos(): one GET per repo, tolerant of
-// failures (returns a Map of 'owner/name' -> normalized info).
 async function getRepos(pairs, token) {
   const out = new Map();
   await mapLimit(pairs, 8, async (p) => {
@@ -318,7 +517,7 @@ async function getRepos(pairs, token) {
         defaultBranch: data.default_branch || 'main',
       });
     } catch (_e) {
-      // Fail-open per repo: gated out later (info missing => rejected).
+      // Fail-open per repo
     }
   });
   return out;
@@ -356,185 +555,10 @@ function repoFromManifest(manifest) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Harness / kind / category classification.
-// Mapping table (manifest signals -> harness, kind, category):
-//   @opencode/* dep, opencode keywords      -> opencode,   plugin,     plugins/opencode
-//   claude-code/@anthropic-ai/agent-sdk     -> claude-code, plugin,    plugins/claude-code
-//   codex/@openai/codex keywords            -> codex,       plugin,    plugins/codex
-//   gemini/@google/gemini-cli keywords      -> gemini-cli,  plugin,    plugins/gemini-cli
-//   cursor keywords                         -> cursor,      plugin,    plugins/cursor-windsurf
-//   windsurf keywords                       -> windsurf,    plugin,    plugins/cursor-windsurf
-//   copilot keywords                        -> copilot,     plugin,    plugins/cross-harness*
-//   mcp-sdk/@modelcontextprotocol markers   -> universal+,  mcp-server,mcp-servers/* (by topic)
-//   SKILL.md/skill keywords                 -> universal+,  skill,     skills/* (by topic)
-//   DESIGN.md/design keywords               -> universal+,  design-md, design-md/*
-//   prompt/persona keywords                 -> universal+,  prompt,    prompts/*
-//   subagent/multi-agent keywords           -> universal+,  agent,     agents/*
-//   no signal                               -> universal,   plugin,    plugins/cross-harness
-// * copilot-only with no other harness falls back to cross-harness bridge row.
-// A package may list several harnesses when several signal families match.
-// ---------------------------------------------------------------------------
-function manifestSignalText(pkg, manifest) {
-  const deps = Object.assign({}, manifest.dependencies, manifest.peerDependencies, manifest.devDependencies);
-  return [
-    pkg.name,
-    manifest.description || '',
-    pkg.description || '',
-    (manifest.keywords || []).join(' '),
-    Object.keys(deps).join(' '),
-  ].join(' ').toLowerCase();
-}
-
-function hasAny(haystack, needles) {
-  return needles.some((n) => haystack.includes(n));
-}
-
-function classifyManifest(pkg, manifest) {
-  const text = manifestSignalText(pkg, manifest);
-  const deps = Object.assign({}, manifest.dependencies, manifest.peerDependencies, manifest.devDependencies);
-  const depNames = Object.keys(deps).map((d) => d.toLowerCase());
-
-  const harnesses = [];
-  if (hasAny(text, ['opencode', '@opencode'])) harnesses.push('opencode');
-  if (hasAny(text, ['claude-code', 'claude code', '@anthropic-ai', 'claude-agent-sdk'])) harnesses.push('claude-code');
-  if (hasAny(text, ['codex', '@openai/codex'])) harnesses.push('codex');
-  if (hasAny(text, ['gemini-cli', 'gemini cli', 'gemini extension', '@google/gemini'])) harnesses.push('gemini-cli');
-  if (hasAny(text, ['cursor', '.cursor', 'cursor-rules', 'cursor rules'])) harnesses.push('cursor');
-  if (hasAny(text, ['windsurf', '.windsurf', 'windsurfrules'])) harnesses.push('windsurf');
-  if (hasAny(text, ['copilot', 'copilot extension'])) harnesses.push('copilot');
-
-  const isMcp = hasAny(text, ['mcp-server', 'mcp server', 'modelcontextprotocol', 'model context protocol', '@modelcontextprotocol', 'mcp-sdk', 'mcp sdk']);
-  const isSkill = hasAny(text, ['skill.md', 'skil.md', 'skill bundle', 'skill playbook', 'slash-command', 'slash command'])
-    || /\bskills?\b/.test(text);
-  const isDesignMd = hasAny(text, ['design.md', 'design-md', 'design system', 'brand system']);
-  const isPrompt = hasAny(text, ['system prompt', 'meta-prompt', 'metaprompt', 'persona', 'reasoning workflow'])
-    || (/\bprompts?\b/.test(text) && !isSkill);
-  const isAgent = hasAny(text, ['subagent', 'sub-agent', 'multi-agent', 'multiagent', 'agent team', 'agent-team', 'agent preset', 'agent-preset']);
-  const isPlugin = depNames.some((d) => d === '@opencode/plugin' || d === '@opencode-ai/plugin')
-    || hasAny(text, ['opencode-plugin', 'opencode plugin', 'claude plugin', 'marketplace plugin', 'hook script', 'lifecycle hook', 'statusline', 'extension']);
-
-  let kind;
-  if (isMcp) kind = 'mcp-server';
-  else if (isSkill) kind = 'skill';
-  else if (isDesignMd) kind = 'design-md';
-  else if (isPrompt) kind = 'prompt';
-  else if (isAgent) kind = 'agent';
-  else kind = 'plugin';
-
-  // Any recognized topic/dependency signal keeps the package; fully
-  // signal-less packages are gated out by the caller.
-  const signal = harnesses.length > 0 || isMcp || isSkill || isDesignMd || isPrompt || isAgent || isPlugin;
-
-  if (harnesses.length === 0) harnesses.push('universal');
-
-  const category = categoryFor(kind, harnesses, text);
-  const topics = suggestTopics(text);
-  return { harnesses, kind, category, topics, signal };
-}
-
-function categoryFor(kind, harnesses, text) {
-  if (kind === 'plugin') {
-    if (harnesses.includes('opencode')) return 'plugins/opencode';
-    if (harnesses.includes('claude-code')) return 'plugins/claude-code';
-    if (harnesses.includes('codex')) return 'plugins/codex';
-    if (harnesses.includes('gemini-cli')) return 'plugins/gemini-cli';
-    if (harnesses.includes('cursor') || harnesses.includes('windsurf')) return 'plugins/cursor-windsurf';
-    return 'plugins/cross-harness';
-  }
-  if (kind === 'mcp-server') {
-    if (hasAny(text, ['postgres', 'sqlite', 'clickhouse', 'supabase', 'neon', 'redis', 'database', 'sql ', 'warehouse'])) return 'mcp-servers/databases';
-    if (hasAny(text, ['git', 'github', 'pull request', 'ast search', 'lsp ', 'code intelligence'])) return 'mcp-servers/git-repos';
-    if (hasAny(text, ['browser', 'playwright', 'puppeteer', 'chrome cdp', 'firecrawl', 'crawl', 'scrap', 'serp', 'search'])) return 'mcp-servers/browser-web';
-    if (hasAny(text, ['ghidra', 'vulnerab', 'malware', 'exploit', 'audit', '>yara', 'yara ', 'sandbox', 'sast', 'dast'])) return 'mcp-servers/security-re';
-    if (hasAny(text, ['figma', 'stitch', 'storybook', 'screenshot', 'design', ' ui '])) return 'mcp-servers/design-ui';
-    if (hasAny(text, ['cloudflare', 'kubernetes', 'docker', 'sentry', 'datadog', 'observab', 'cloud ', 'aws', 'gcp', 'azure'])) return 'mcp-servers/cloud-devops';
-    if (hasAny(text, ['notion', 'obsidian', 'notebooklm', 'slack', 'workspace', 'docs', 'knowledge'])) return 'mcp-servers/knowledge-productivity';
-    if (hasAny(text, ['file', 'shell', 'terminal', 'command', 'desktop', 'filesystem'])) return 'mcp-servers/filesystem-shell';
-    return 'mcp-servers/filesystem-shell';
-  }
-  if (kind === 'skill') {
-    if (hasAny(text, ['ghidra', 'ida pro', 'binary ninja', 'radare', 'firmware', 'reverse engineer'])) return 'skills/cybersecurity/reverse-engineering';
-    if (hasAny(text, ['yara', 'malware', 'deobfuscat', 'triage'])) return 'skills/cybersecurity/malware-analysis';
-    if (hasAny(text, ['pentest', 'burp', 'ssrf', 'idor', 'fuzz', 'red-team', 'red team'])) return 'skills/cybersecurity/web-network-pentesting';
-    if (hasAny(text, ['dfir', 'forensic', 'incident response', 'osint', 'threat intel', 'detection engineer'])) return 'skills/cybersecurity/dfir-threat-intel';
-    if (hasAny(text, ['iam ', 'sbom', 'cosign', 'secret scan', 'harden', 'supply chain', 'least-privilege'])) return 'skills/cybersecurity/cloud-devsecops';
-    if (hasAny(text, ['sast', 'dast', 'threat model', 'code review', 'smart contract audit', 'vulnerab'])) return 'skills/cybersecurity/security-auditing';
-    if (hasAny(text, ['docker', 'kubernetes', 'helm', 'service mesh'])) return 'skills/devops-cloud/containers-k8s';
-    if (hasAny(text, ['terraform', 'opentofu', 'pulumi', 'infrastructure'])) return 'skills/devops-cloud/iac-terraform';
-    if (hasAny(text, ['github actions', 'gitlab ci', 'opentelemetry', 'prometheus', 'runbook', 'ci/cd', 'pipeline'])) return 'skills/devops-cloud/ci-cd-observability';
-    if (hasAny(text, ['rag ', 'vector search', 'embedding', 'chunking', 'knowledge graph', 'memory'])) return 'skills/data-ai/rag-memory';
-    if (hasAny(text, ['lora', 'fine-tun', 'benchmark', 'bioinformat', 'geospatial', 'ml ', 'training'])) return 'skills/data-ai/ml-scientific';
-    if (hasAny(text, ['subagent', 'orchestrat', 'context compaction', 'evaluation harness', 'mcp author'])) return 'skills/data-ai/agent-orchestration';
-    if (hasAny(text, ['playwright', 'cypress', 'selenium', 'visual regression', 'e2e'])) return 'skills/testing-qa/browser-e2e';
-    if (hasAny(text, ['mutation test', 'property test', 'fixture', 'unit test', 'integration test'])) return 'skills/testing-qa/unit-property';
-    if (hasAny(text, ['react', 'next.js', 'vue', 'svelte', 'tailwind', 'accessib', 'frontend'])) return 'skills/design/webui';
-    if (hasAny(text, ['rust', 'cargo'])) return 'skills/coding/rust';
-    if (hasAny(text, ['c++', 'cmake', 'embedded c'])) return 'skills/coding/c-cpp';
-    if (hasAny(text, ['typescript', 'javascript', 'node.js', 'bun ', 'deno'])) return 'skills/coding/typescript-js';
-    if (hasAny(text, ['golang', ' grpc', ' goroutine'])) return 'skills/coding/go';
-    if (hasAny(text, ['zig ', 'bare-metal', 'kernel'])) return 'skills/coding/zig-systems';
-    if (hasAny(text, ['java', 'kotlin', 'spring', '.net', 'c#'])) return 'skills/coding/jvm-dotnet';
-    if (hasAny(text, ['sql', 'postgres', 'clickhouse', 'migration'])) return 'skills/coding/sql-databases';
-    if (hasAny(text, ['bash', 'posix', 'powershell', 'zsh', ' tui', ' cli '])) return 'skills/coding/shell-cli';
-    if (hasAny(text, ['lua', 'neovim'])) return 'skills/coding/lua';
-    if (hasAny(text, ['android', 'jetpack', 'gradle'])) return 'skills/design/mobile-android';
-    if (hasAny(text, ['swiftui', 'uikit', 'xcode', 'testflight'])) return 'skills/design/mobile-ios';
-    if (hasAny(text, ['react native', 'expo', 'flutter'])) return 'skills/design/mobile-cross-platform';
-    if (hasAny(text, ['tauri', 'electron', 'dear imgui'])) return 'skills/design/desktop-cross-platform';
-    if (hasAny(text, ['winui', 'wpf', 'win32'])) return 'skills/design/desktop-windows';
-    if (hasAny(text, ['appkit', 'applescript'])) return 'skills/design/desktop-macos';
-    if (hasAny(text, ['gtk', 'qt/qml', 'wayland', 'flatpak'])) return 'skills/design/desktop-linux';
-    return 'skills/data-ai/agent-orchestration';
-  }
-  if (kind === 'design-md') {
-    if (hasAny(text, ['saas', 'dashboard', 'analytic', 'workspace'])) return 'design-md/saas-productivity';
-    if (hasAny(text, ['fintech', 'banking', 'media', 'consumer brand'])) return 'design-md/fintech-consumer';
-    return 'design-md/ai-dev-tools';
-  }
-  if (kind === 'prompt') {
-    if (hasAny(text, ['threat', 'red-team', 'red team', 'audit', 'adversarial'])) return 'prompts/security-research';
-    if (hasAny(text, ['design', 'documentation', 'specification interview', 'technical writ'])) return 'prompts/product-design';
-    return 'prompts/coding-architecture';
-  }
-  if (kind === 'agent' || kind === 'agent-preset') {
-    if (hasAny(text, ['securit', 'reverse', 'malware', 'audit'])) return 'agents/security-auditors';
-    if (hasAny(text, ['design', 'frontend', ' ui', 'mobile'])) return 'agents/design-frontend';
-    if (hasAny(text, ['devops', 'database', 'sre', 'research'])) return 'agents/devops-data';
-    return 'agents/coding-specialists';
-  }
-  return 'plugins/cross-harness';
-}
-
-const TOPIC_VOCAB = [
-  'opencode', 'claude-code', 'codex', 'gemini-cli', 'cursor', 'windsurf', 'copilot',
-  'mcp-server', 'mcp', 'skill', 'agent', 'subagent', 'prompt', 'persona', 'plugin',
-  'extension', 'design-md', 'security', 'pentesting', 'reverse-engineering', 'malware',
-  'devops', 'terraform', 'kubernetes', 'docker', 'ci-cd', 'observability', 'rag',
-  'vector-search', 'ml', 'testing', 'playwright', 'browser', 'database', 'postgres',
-  'filesystem', 'git', 'github', 'figma', 'cloud', 'notion', 'typescript', 'python',
-  'rust', 'go',
-];
-
-function suggestTopics(text) {
-  const lower = String(text || '').toLowerCase();
-  const out = [];
-  for (const topic of TOPIC_VOCAB) {
-    if (lower.includes(topic) && !out.includes(topic)) out.push(topic);
-    if (out.length >= 5) break;
-  }
-  return out;
-}
-
-// ---------------------------------------------------------------------------
-// Dedupe helpers
-// ---------------------------------------------------------------------------
 function readDeclined(rootDir) {
   return loadDeclined(rootDir);
 }
 
-// Repo URLs + npm names already targeted by open PRs (best-effort: any
-// network error yields an empty set so the weekly run never crashes).
 async function openPullTargets(token, repo) {
   const targets = new Set();
   try {
@@ -550,11 +574,11 @@ async function openPullTargets(token, repo) {
           }
         }
       } catch (_e) {
-        // Per-PR failures are ignored (fail-open).
+        // Ignore
       }
     }
   } catch (_e) {
-    // Network failure => empty set (fail-open).
+    // Ignore
   }
   return targets;
 }
@@ -578,8 +602,6 @@ async function ensureLabels(token, repo, names) {
   }
 }
 
-// GitHub code-search fallback (authenticated-only). Returns candidate repo
-// URLs; any failure yields [] so the npm path is never blocked.
 async function githubCodeSearchFallback(token) {
   const urls = new Set();
   if (!token) return urls;
@@ -598,9 +620,6 @@ async function githubCodeSearchFallback(token) {
   return urls;
 }
 
-// ---------------------------------------------------------------------------
-// Offline mocks (dry-run only — never emitted as live results).
-// ---------------------------------------------------------------------------
 const MOCK_CANDIDATES = [
   { name: 'opencode-example-plugin', kind: 'plugin', repo: 'https://github.com/example/opencode-example-plugin', tagline: 'Example OpenCode session plugin (dry-run mock).', harnesses: ['opencode'] },
   { name: 'claude-code-example-bundle', kind: 'plugin', repo: 'https://github.com/example/claude-code-example-bundle', tagline: 'Example Claude Code slash-command bundle (dry-run mock).', harnesses: ['claude-code'] },
@@ -615,9 +634,6 @@ const MOCK_CANDIDATES = [
   { name: 'triage-agent-team', kind: 'agent', repo: 'https://github.com/example/triage-agent-team', tagline: 'Example multi-agent triage team (dry-run mock).', harnesses: ['universal'] },
 ];
 
-// ---------------------------------------------------------------------------
-// Live discovery
-// ---------------------------------------------------------------------------
 async function findCandidates(rootDir, limit, token, repo) {
   const { entries } = loadCatalog(rootDir);
   const known = new Set();
@@ -668,8 +684,6 @@ async function findCandidates(rootDir, limit, token, repo) {
     if (!info) continue;
     if (info.isArchived || info.isFork || info.isPrivate) continue;
     if (!(info.licenseInfo || c.manifest.license)) continue;
-    // npm repository links often point at a pre-transfer name; dedupe on
-    // GitHub's canonical name.
     c.source.repo = `https://github.com/${info.nameWithOwner}`;
     const key = canonicalRepoKey(c.source.repo);
     if (known.has(key) || pending.has(key) || declined.has(key)) continue;
@@ -678,7 +692,6 @@ async function findCandidates(rootDir, limit, token, repo) {
   }
   console.log(`${gated.length} pass the gates (public, licensed, not archived/fork)`);
 
-  // Best-effort code-search fallback: log-only; npm remains authoritative.
   if (token) {
     const extra = await githubCodeSearchFallback(token);
     if (extra.size > 0) console.log(`code-search fallback: ${extra.size} additional repo(s) noted`);
@@ -687,8 +700,6 @@ async function findCandidates(rootDir, limit, token, repo) {
   await mapLimit(gated, 8, async (c) => {
     c.downloads = await getNpmWeeklyDownloads(c.pkg.name);
   });
-  // One candidate per repo (monorepos publish several packages; keep the
-  // most downloaded).
   const byRepo = new Map();
   for (const c of gated) {
     const key = canonicalRepoKey(c.source.repo);
@@ -715,6 +726,7 @@ function candidateInput(c) {
     kind: c.cls.kind,
     harnesses: c.cls.harnesses,
     topics: c.cls.topics,
+    confidence: c.cls.confidence,
     ...(license ? { license } : {}),
     tagline: truncate(c.manifest.description || description || c.pkg.name, 120),
     description: description || c.pkg.name,
@@ -743,14 +755,14 @@ async function cmdRunLive(rootDir, limit) {
   const lines = candidates.map((c, i) => {
     const id = `c${i + 1}`;
     data[id] = candidateInput(c);
-    const label = data[id].kind;
+    const label = `${data[id].kind} → ${data[id].category} (${c.cls.confidence || 80}% conf)`;
     return `- [ ] **${c.pkg.name}** (${label}) — ${truncate(c.manifest.description || c.info.description || '', 140)} · ⭐ ${c.info.stargazerCount} · ⬇ ${c.downloads || 0}/wk · [repo](${c.source.repo}) · [npm](https://www.npmjs.com/package/${c.pkg.name}) <!-- scout:${id} -->`;
   });
   const harnessList = 'opencode, claude-code, codex, gemini-cli, cursor, windsurf, copilot, universal';
   const body = [
     `Multi-harness npm packages not in the catalog yet (${harnessList}; kinds plugin / skill / mcp-server / design-md / prompt / agent per \`data/taxonomy.json\`). Public, licensed, not archived or forked. Ranked by weekly downloads, then stars.`,
     '',
-    '**Tick a box to open a pull request for that candidate** (maintainers only; harness/kind/category/topics are keyword guesses, fix them in the PR). To stop suggesting a package, add it to [`discovery/declined.txt`](https://github.com/Heretek-AI/Agent-Builder/blob/main/discovery/declined.txt).',
+    '**Tick a box to open a pull request for that candidate** (maintainers only; harness/kind/category/topics are weighted multi-signal classifications, fix them in the PR if needed). To stop suggesting a package, add it to [`discovery/declined.txt`](https://github.com/Heretek-AI/Agent-Builder/blob/main/discovery/declined.txt).',
     '',
     ...(lines.length ? lines : ['_No new candidates this week._']),
     '',
@@ -779,7 +791,6 @@ async function cmdRunLive(rootDir, limit) {
 function cmdRun(rootDir) {
   const args = parseRunArgs(process.argv);
   const declined = loadDeclined(rootDir);
-  // Dry-run returns before any fetch: guaranteed offline, no tokens needed.
   if (args.dryRun) {
     const candidates = MOCK_CANDIDATES
       .filter((c) => !declined.has(c.repo.toLowerCase()))
@@ -793,17 +804,21 @@ function cmdRun(rootDir) {
   return cmdRunLive(rootDir, args.limit);
 }
 
-// ---------------------------------------------------------------------------
-// Accept: open PRs for ticked candidates.
-// ---------------------------------------------------------------------------
+async function cmdClassify(rootDir) {
+  const args = parseClassifyArgs(process.argv);
+  const input = await resolveClassifyInput(args);
+  const res = classifyManifest(input.pkg, input.manifest);
+  if (args.json) {
+    console.log(JSON.stringify({ package: input.label, ...res }, null, 2));
+    return;
+  }
+  console.log(formatClassifyHuman(input.label, res));
+}
+
 function gitExec(args, options) {
-  // argv-array only: issue text is untrusted and never interpolated into shell.
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...(options || {}) });
 }
 
-// Push/fetch auth matching actions/checkout: `AUTHORIZATION: basic
-// base64("x-access-token:<token>")`. The `bearer` scheme is not valid for
-// git smart-HTTP push and fails with "could not read Username".
 function gitAuthEnv(token) {
   const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
   return {
@@ -814,8 +829,6 @@ function gitAuthEnv(token) {
   };
 }
 
-// Redact both the raw token and its base64 form (the base64 blob would
-// otherwise leak the token to issue bodies/logs on push failure).
 function redactSecrets(text, token) {
   let out = String(text || '');
   if (token) {
@@ -884,7 +897,6 @@ async function cmdAccept(rootDir) {
     console.error(`ERROR: invalid --issue '${args.issue}': must be a positive integer`);
     process.exit(1);
   }
-  // Dry-run returns before any fetch: guaranteed offline, no tokens needed.
   if (args.dryRun) {
     console.log(`ACCEPT_OK (dry-run): would accept scout issue #${n}`
       + (args.sender ? ` (sender ${args.sender})` : '')
@@ -937,8 +949,6 @@ async function cmdAccept(rootDir) {
     if (!scoutData[id]) continue;
     const input = scoutData[id];
     const result = buildEntryYaml(input, ids);
-    // Strip any prior failure note (` → not added: ...` / ` → (...)`) so a
-    // re-ticked box retries cleanly and the new note cannot duplicate arrows.
     const cleanLine = line.replace(/ → .*?(?= <!-- scout:)/, '');
     let note;
     if (!result.ok) {
@@ -947,8 +957,7 @@ async function cmdAccept(rootDir) {
       const branch = `scout/${result.id}`;
       try {
         const outAbs = path.join(rootDir, result.file);
-        // One PR per candidate: fresh branch from base, single file, push, PR.
-        try { gitExec(['fetch', 'origin', base], { env: gitAuthEnv(token) }); } catch (_e) { /* offline-safe: use local base */ }
+        try { gitExec(['fetch', 'origin', base], { env: gitAuthEnv(token) }); } catch (_e) { /* offline-safe */ }
         try { gitExec(['checkout', '-B', branch, `origin/${base}`]); }
         catch (_e) { gitExec(['checkout', '-B', branch, base]); }
         fs.mkdirSync(path.dirname(outAbs), { recursive: true });
@@ -975,7 +984,7 @@ async function cmdAccept(rootDir) {
               '',
               ...result.notes.map((t) => `- ${t}`),
               '',
-              'Harness/kind/category/topics are keyword guesses; adjust them before merging.',
+              'Harness/kind/category/topics are weighted multi-signal guesses; adjust them before merging.',
             ].join('\n'),
           },
         });
@@ -989,9 +998,8 @@ async function cmdAccept(rootDir) {
         }
         opened += 1;
       } catch (err) {
-        // Roll back the working tree file so the next candidate starts clean.
         try { gitExec(['checkout', '--', result.file]); } catch (_e) { /* ignore */ }
-        try { fs.unlinkSync(path.join(rootDir, result.file)); } catch (e) { if (e && e.code !== 'ENOENT') { /* ignore - best-effort rollback */ } }
+        try { fs.unlinkSync(path.join(rootDir, result.file)); } catch (_e) { /* ignore */ }
         note = ` → not added: ${truncate(redactSecrets(err.message || '', token), 200)}`;
       }
     }
@@ -1024,7 +1032,14 @@ function main() {
     });
     return;
   }
-  console.error(`ERROR: unknown command '${cmd}' (expected 'run' or 'accept'; see --help)`);
+  if (cmd === 'classify') {
+    Promise.resolve(cmdClassify(rootDir)).catch((err) => {
+      console.error(`ERROR: ${err && err.message ? err.message : err}`);
+      process.exit(1);
+    });
+    return;
+  }
+  console.error(`ERROR: unknown command '${cmd}' (expected 'run', 'accept', or 'classify'; see --help)`);
   process.exit(1);
 }
 
@@ -1032,4 +1047,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, buildEntryYaml, truncate, canonicalRepoKey, gitAuthEnv, redactSecrets };
+module.exports = { DATA_RE, ACCEPT_LIMIT, SEARCHES, classifyManifest, suggestTopics, buildEntryYaml, truncate, canonicalRepoKey, gitAuthEnv, redactSecrets, parseClassifyArgs, resolveClassifyInput, formatClassifyHuman };

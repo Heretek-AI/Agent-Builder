@@ -5,7 +5,7 @@
 // every run unless SOURCE_DATE_EPOCH is set — see below):
 //   1. mkdir _site/ (and _site/core/, _site/content/).
 //   2. Copy site/index.html, site/styles.css, site/app.js -> _site/.
-//   3. Copy src/core/compiler.js, src/core/importer.js -> _site/core/.
+//   3. Copy src/core/compiler.js, src/core/importer.js, src/core/classifier.js -> _site/core/.
 //   4. Regenerate _site/registry.json from the validated catalog
 //      (same deterministic output as scripts/export-json.js).
 //   5. Copy dist/content/*.md -> _site/content/ when present.
@@ -30,10 +30,6 @@ const VERSION = '1.0.0';
 const REPOSITORY = 'https://github.com/Heretek-AI/Agent-Builder';
 const REGISTRY_URL = 'https://heretek-ai.github.io/Agent-Builder/registry.json';
 
-// Timestamp source for `generated_at` fields. Honors SOURCE_DATE_EPOCH
-// (seconds since epoch) for reproducible builds; otherwise wall-clock time.
-// Fail-closed: a present-but-unparseable value aborts the build rather than
-// silently stamping a bogus date.
 function resolveGeneratedAt() {
   const raw = process.env.SOURCE_DATE_EPOCH;
   if (raw === undefined || raw === '') {
@@ -72,9 +68,6 @@ function main() {
     process.exit(1);
   }
 
-  // 0. Hygiene (AB-5.3-nojekyll-hygiene): start from a clean _site/ so a stale
-  // artifact (e.g. a leftover .nojekyll) can never mask a build regression.
-  // Fail-closed: abort if the old tree cannot be removed.
   try {
     if (fs.existsSync(outDir)) {
       fs.rmSync(outDir, { recursive: true, force: true });
@@ -95,6 +88,7 @@ function main() {
   // 2. Shared core (UMD: works via plain <script> tags, no bundler).
   copyFile(path.join(rootDir, 'src', 'core', 'compiler.js'), path.join(outDir, 'core', 'compiler.js'));
   copyFile(path.join(rootDir, 'src', 'core', 'importer.js'), path.join(outDir, 'core', 'importer.js'));
+  copyFile(path.join(rootDir, 'src', 'core', 'classifier.js'), path.join(outDir, 'core', 'classifier.js'));
 
   // 3. Registry JSON (regenerated from catalog so _site is never stale).
   const { entries, errors } = loadCatalog(rootDir);

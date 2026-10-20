@@ -17,7 +17,32 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const VALID_HARNESSES = ['opencode-v2', 'opencode-v1', 'opencode-md', 'claude-code', 'codex'];
+const VALID_HARNESSES = [
+  'opencode-v2',
+  'opencode-v1',
+  'opencode-md',
+  'claude-code',
+  'codex',
+  'pi',
+  'gemini-cli',
+  'gemini',
+  'cursor',
+  'windsurf',
+  'copilot'
+];
+
+// Canonical aliases: `gemini` <-> `gemini-cli`, `claude` <-> `claude-code`.
+// Fail-closed: unknown ids are rejected by callers; this only normalizes
+// known spellings to the canonical render path.
+function canonicalHarness(harness) {
+  if (harness === 'gemini') {
+    return 'gemini-cli';
+  }
+  if (harness === 'claude') {
+    return 'claude-code';
+  }
+  return harness;
+}
 
 function loadVersion() {
   try {
@@ -116,8 +141,6 @@ function decodeBase64Url(s) {
   return Buffer.from(padded, 'base64').toString('utf8');
 }
 
-// Accepts a recipe as: existing file path, base64/base64url-encoded JSON,
-// or raw inline JSON. Fail-closed on every bad input.
 function loadRecipe(spec) {
   if (typeof spec !== 'string' || spec.trim().length === 0) {
     fail('--recipe <file.json|base64> is required');
@@ -131,7 +154,6 @@ function loadRecipe(spec) {
       fail('cannot parse recipe file ' + JSON.stringify(trimmed) + ': ' + e.message);
     }
   }
-  // Try base64url / base64 decode first, then raw JSON.
   const candidates = [];
   try {
     candidates.push(decodeBase64Url(trimmed));
@@ -158,7 +180,7 @@ function unwrapRecipe(parsed) {
 }
 
 function renderCompiled(compiled, harness) {
-  switch (harness) {
+  switch (canonicalHarness(harness)) {
     case 'opencode-v2':
       return JSON.stringify(compiled.opencodeV2, null, 2) + '\n';
     case 'opencode-v1':
@@ -172,6 +194,32 @@ function renderCompiled(compiled, harness) {
       }, null, 2) + '\n';
     case 'codex':
       return compiled.codexConfigToml;
+    case 'pi':
+      return JSON.stringify({
+        settings: compiled.piSettingsJson,
+        mcp: compiled.piMcpJson,
+        agentsMd: compiled.piAgentsMd
+      }, null, 2) + '\n';
+    case 'gemini-cli':
+      return JSON.stringify({
+        settings: compiled.geminiSettingsJson,
+        geminiMd: compiled.geminiMd
+      }, null, 2) + '\n';
+    case 'cursor':
+      return JSON.stringify({
+        mcp: compiled.cursorMcpJson,
+        ruleMdc: compiled.cursorRuleMdc
+      }, null, 2) + '\n';
+    case 'windsurf':
+      return JSON.stringify({
+        mcp: compiled.windsurfMcpJson,
+        windsurfRules: compiled.windsurfRules
+      }, null, 2) + '\n';
+    case 'copilot':
+      return JSON.stringify({
+        vscodeMcp: compiled.vscodeMcpJson,
+        copilotInstructionsMd: compiled.copilotInstructionsMd
+      }, null, 2) + '\n';
     default:
       fail('unknown harness ' + JSON.stringify(harness) + ' (expected one of ' + VALID_HARNESSES.join('|') + ')');
       return '';
@@ -242,7 +290,6 @@ function cmdInstall(argv) {
     fail('install: ' + e.message);
   }
   const root = path.resolve(targetDir);
-  // Path-traversal validation: every bundle path must resolve inside root.
   for (const file of compiled.bundleFiles) {
     if (path.isAbsolute(file.path) || file.path.split(/[\\/]/).includes('..')) {
       fail('install: refusing unsafe bundle path ' + JSON.stringify(file.path));
@@ -274,7 +321,6 @@ function cmdMcp() {
     process.exit(1);
   }
   try {
-    // Strict argv array; never interpolate into a shell string.
     execFileSync(process.execPath, [serverFile], { stdio: 'inherit' });
   } catch (e) {
     process.exit(typeof e.status === 'number' ? e.status : 1);

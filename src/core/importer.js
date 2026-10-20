@@ -4,16 +4,15 @@
 // Usable in both Node.js (CommonJS `require`) and the browser WebUI
 // (plain `<script>` tag: exposes `Importer` on the global scope).
 //
-// `parseUploadedConfig(filename, rawContent)` accepts `opencode.json` /
-// `opencode.jsonc` (JSON with `//` and `/* ... */` comments stripped safely
-// outside strings; both the v2 `agents.<name>.permissions` array form and
-// the v1 `agent.<name>.permission` object form), `.opencode/agent/<name>.md`
-// agent Markdown (YAML frontmatter + prompt body), or Claude
-// `claude.json` / `.mcp.json` (`mcpServers`), and returns a normalized list
-// of AgentRecipe objects ready to edit in the WebUI:
+// `parseUploadedConfig(filename, rawContent)` accepts:
+//   - `opencode.json` / `opencode.jsonc` (v2 `agents.<name>.permissions` array
+//     or v1 `agent.<name>.permission` object)
+//   - `.opencode/agent/<name>.md` or `.claude/agents/<name>.md` or `.cursor/rules/<name>.mdc`
+//   - Claude / Pi / Cursor / Gemini `.mcp.json`, `mcp.json`, `claude.json`, `.gemini/settings.json` (`mcpServers`)
+//   - Pi `settings.json` (`$schema: "https://pi.dev/schemas/settings.schema.json"` or `defaultTools`/`defaultModel`)
+//   - VS Code `.vscode/mcp.json` (`servers`)
+// and returns a normalized list of AgentRecipe objects ready to edit in the WebUI:
 //   [{ slug, description, mode, model, prompt, skills, mcpSelections }]
-// Only `allow` entries are extracted (deny `"*"` hygiene rules are skipped;
-// explicit per-tool denies are preserved as `deniedTools`).
 
 (function (root, factory) {
   var api = factory();
@@ -28,14 +27,6 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // Prefer js-yaml under Node.js; fall back to a minimal built-in
-  // frontmatter parser (used in the browser and when js-yaml is absent).
-  // NOTE: `normalizeMcpId` is intentionally duplicated from
-  // `src/core/compiler.js` so this module stays dependency-free in the
-  // browser (no cross-file `require` needed). It must stay identical to the
-  // compiler's copy: hyphens and underscores preserved (upstream OpenCode /
-  // Claude Code keep `-` in MCP ids); all other non-alphanumeric runs map
-  // to a single `_` (AB-7.4 fail-closed: deny rules match real names).
   var yamlLib = null;
   try {
     if (typeof require === 'function' && typeof module !== 'undefined' && module.exports) {
@@ -55,10 +46,6 @@
     return v !== null && typeof v === 'object' && !Array.isArray(v);
   }
 
-  // Strip `//` line comments and `/* ... */` block comments, tracking
-  // double-quoted JSON strings (with backslash escapes) so comment-like
-  // sequences inside strings (e.g. `"a // b"`) are preserved. Newlines
-  // inside block comments are preserved to keep error line numbers sane.
   function stripJsonComments(input) {
     var text = String(input);
     var out = '';
@@ -142,7 +129,6 @@
     return v;
   }
 
-  // Index of the first `:` that is outside single/double quotes.
   function colonOutsideQuotes(s) {
     var quote = null;
     for (var i = 0; i < s.length; i++) {
@@ -162,9 +148,6 @@
     return -1;
   }
 
-  // Minimal indentation-based YAML-subset parser: nested string maps and
-  // `- item` lists. Sufficient for our own agent frontmatter
-  // (description/mode/model/permission/skill maps, tools lists).
   function parseYamlish(lines) {
     var ls = lines.map(function (l) { return String(l).replace(/\r$/, ''); });
     var pos = 0;
@@ -317,10 +300,6 @@
     return best;
   }
 
-  // Shared reconstruction of `{ skills, selections }` from an ordered v2
-  // rule list. Server-level `deny "<norm>_*"` hygiene rules are skipped;
-  // per-tool allows become `tools`, per-tool denies become `deniedTools`,
-  // and resource allows set `allowResources` on the matching server.
   function buildSelectionsFromRules(rules) {
     var knownNorms = [];
     rules.forEach(function (r) {
@@ -393,7 +372,6 @@
         return;
       }
       if (a.length > 2 && a.slice(-2) === '_*') {
-        // Server-level rule: `allow` means wildcard, `deny` is hygiene.
         if (r.effect === 'allow') {
           accFor(a.slice(0, -2)).wildcard = true;
         }
@@ -432,7 +410,7 @@
     order.forEach(function (norm) {
       var acc = accs[norm];
       if (!acc.wildcard && acc.tools.length === 0 && acc.denied.length === 0 && !acc.allowResources) {
-        return; // pure deny-"*" hygiene entry, nothing to edit
+        return;
       }
       selections.push({
         server: norm,
@@ -458,10 +436,6 @@
     };
   }
 
-  // AB-3.3 (silent default): a recipe with zero `allow` rules compiles to a
-  // deny-only (fully locked) agent. That is the safe deny-closed outcome,
-  // but an empty upload is almost always a mistake, so warn loudly instead
-  // of silently succeeding. Shape is unchanged (fail-closed, deny-only).
   function warnDenyOnly(slug) {
     if (typeof console !== 'undefined' && typeof console.warn === 'function') {
       console.warn(
@@ -522,14 +496,43 @@
     };
   }
 
-  function recipesFromClaude(parsed, filename) {
-    var servers = parsed.mcpServers;
+  // Supports Claude `.mcp.json`, Pi `mcp.json` (with `toolExposure`),
+  // Gemini `.gemini/settings.json` (with `includeTools`/`excludeTools`),
+  // and Cursor/Windsurf `mcpServers`.
+  function recipesFromMcpServers(servers, filename) {
     if (!isPlainObject(servers)) {
       throw new Error('parseUploadedConfig: "' + filename + '" mcpServers must be an object');
     }
     var slug = slugFromFilename(filename);
     var selections = Object.keys(servers).map(function (s) {
-      return { server: s, tools: ['*'], deniedTools: [], allowResources: false };
+      var srv = servers[s] || {};
+      var tools = ['*'];
+      var denied = [];
+      // Pi `toolExposure` support
+      if (isPlainObject(srv.toolExposure)) {
+        var allowedList = [];
+        Object.keys(srv.toolExposure).forEach(function (tk) {
+          var exp = srv.toolExposure[tk];
+          if (exp === 'hidden') {
+            if (tk !== '*') denied.push(tk);
+          } else if (tk !== '*') {
+            allowedList.push(tk);
+          }
+        });
+        if (srv.exposure === 'hidden' && allowedList.length > 0) {
+          tools = allowedList;
+        }
+      }
+      // Gemini CLI `includeTools` / `excludeTools` support
+      if (Array.isArray(srv.includeTools) && srv.includeTools.length > 0) {
+        tools = srv.includeTools.map(String);
+      }
+      if (Array.isArray(srv.excludeTools)) {
+        srv.excludeTools.forEach(function (d) {
+          if (denied.indexOf(String(d)) === -1) denied.push(String(d));
+        });
+      }
+      return { server: s, tools: tools, deniedTools: denied, allowResources: false };
     });
     if (selections.length === 0) {
       warnDenyOnly(slug);
@@ -545,9 +548,110 @@
     }];
   }
 
-  // Claude Code agent Markdown (`.claude/agents/<slug>.md`): frontmatter
-  // `name`/`tools` (`mcp__<server>__<tool>`) plus skill references in the
-  // body (`` `.claude/skills/<id>/SKILL.md` ``).
+  // Pi `settings.json` (`https://pi.dev/schemas/settings.schema.json`)
+  function recipesFromPiSettings(parsed, filename) {
+    var slug = slugFromFilename(filename);
+    var model;
+    if (typeof parsed.defaultProvider === 'string' && typeof parsed.defaultModel === 'string') {
+      model = parsed.defaultProvider + '/' + parsed.defaultModel;
+    } else if (typeof parsed.defaultModel === 'string') {
+      model = parsed.defaultModel;
+    }
+    var skills = [];
+    if (Array.isArray(parsed.skills)) {
+      parsed.skills.forEach(function (sp) {
+        var clean = String(sp).replace(/^\.?\/?(?:\.pi\/)?skills\//, '').replace(/\/+$/, '');
+        if (clean) skills.push(clean);
+      });
+    }
+    if (skills.length === 0) {
+      warnDenyOnly(slug);
+    }
+    return [{
+      slug: slug,
+      description: 'Imported Pi settings from ' + String(filename).split('/').pop(),
+      mode: 'primary',
+      model: model,
+      prompt: '',
+      skills: skills,
+      mcpSelections: []
+    }];
+  }
+
+  function extractGenericSkills(body) {
+    var skills = [];
+    function pushSkill(s) {
+      var v = String(s).trim();
+      if (v && skills.indexOf(v) === -1) {
+        skills.push(v);
+      }
+    }
+    var patterns = [
+      /\.claude\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
+      /\.pi\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
+      /\.windsurf\/skills\/([^/\s`'"]+)\/SKILL\.md/g,
+      /\.cursor\/rules\/([^/\s`'"]+)\.mdc/g
+    ];
+    patterns.forEach(function (re) {
+      var m;
+      re.lastIndex = 0;
+      while ((m = re.exec(body)) !== null) {
+        pushSkill(m[1]);
+      }
+    });
+    // Backticked skill refs under Scoped Skills / Active Skills / Referenced
+    // Playbooks / Enabled Skills sections (Cursor, Windsurf, Copilot, Pi, Gemini).
+    var sectionRe = /##\s+(?:Scoped Skills|Active Skills|Referenced Playbooks|Enabled Skills)[^\n]*\n([\s\S]*?)(?=\n##\s+|\n?$)/i;
+    var sec = sectionRe.exec(body);
+    if (sec) {
+      var backtickRe = /`([^`\n]+)`/g;
+      var b;
+      while ((b = backtickRe.exec(sec[1])) !== null) {
+        var raw = String(b[1]).trim();
+        var pathSkill = /(?:\.pi\/skills\/|\.windsurf\/skills\/|\.claude\/skills\/)([^/\s`'"]+)\/SKILL\.md/.exec(raw);
+        if (pathSkill) {
+          pushSkill(pathSkill[1]);
+        } else {
+          pushSkill(raw);
+        }
+      }
+      // Plain `- skill-id` list items (Gemini `## Active Skills` emits no
+      // backticks): accept kebab-case tokens so the round-trip preserves them.
+      var lines = sec[1].split('\n');
+      lines.forEach(function (ln) {
+        var t = ln.trim();
+        if (t.indexOf('- ') !== 0) {
+          return;
+        }
+        var item = t.slice(2).trim().replace(/^`|`$/g, '').trim();
+        if (/^[a-z0-9][a-z0-9_-]*$/i.test(item)) {
+          pushSkill(item);
+        }
+      });
+    }
+    return skills;
+  }
+
+  function recipeFromPlainMarkdown(filename, raw) {
+    var text = String(raw).replace(/\r\n/g, '\n').trim() + '\n';
+    var slug = slugFromFilename(filename);
+    var skills = extractGenericSkills(text);
+    var descMatch = /^#\s+([^\n]+)/.exec(text);
+    var description = descMatch ? descMatch[1].trim().slice(0, 512) : 'Imported from ' + String(filename).split('/').pop();
+    if (skills.length === 0) {
+      warnDenyOnly(slug);
+    }
+    return [{
+      slug: slug,
+      description: description,
+      mode: 'subagent',
+      model: undefined,
+      prompt: text.trim() + '\n',
+      skills: skills,
+      mcpSelections: []
+    }];
+  }
+
   function recipeFromClaudeMarkdown(data, body, filename) {
     var rawName = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : slugFromFilename(filename);
     var tools = Array.isArray(data.tools) ? data.tools : [];
@@ -581,17 +685,10 @@
     var selections = order.map(function (server) {
       return { server: server, tools: byServer[server].length > 0 ? byServer[server] : ['*'], deniedTools: [], allowResources: false };
     });
-    var skills = [];
-    var skillRe = /\.claude\/skills\/([^/\s`'"]+)\/SKILL\.md/g;
-    var m;
-    while ((m = skillRe.exec(body)) !== null) {
-      if (skills.indexOf(m[1]) === -1) {
-        skills.push(m[1]);
-      }
-    }
+    var skills = extractGenericSkills(body);
     return {
       slug: rawName,
-      description: data.description === undefined ? '' : String(data.description),
+      description: data.description === undefined ? (typeof data.globs === 'string' || Array.isArray(data.globs) ? slugFromFilename(filename) + ' cursor rule' : '') : String(data.description),
       mode: 'subagent',
       model: data.model === undefined ? undefined : String(data.model),
       prompt: body,
@@ -600,7 +697,47 @@
     };
   }
 
+  function isMarkdownFilename(filename) {
+    var base = String(filename).split('/').pop().split('\\').pop();
+    if (/\.markdown?$/i.test(filename) || /\.(md|mdc)$/i.test(filename)) {
+      return true;
+    }
+    if (/^(AGENTS|GEMINI)(\..*)?$/i.test(base)) {
+      return true;
+    }
+    if (/windsurfrules/i.test(base) || /copilot-instructions/i.test(base)) {
+      return true;
+    }
+    if (/\.windsurfrules(\..*)?$/i.test(filename)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isPlainMarkdownFilename(filename) {
+    var base = String(filename).split('/').pop().split('\\').pop();
+    if (/^(AGENTS|GEMINI)(\..*)?$/i.test(base)) {
+      return true;
+    }
+    if (/windsurfrules/i.test(base) || /copilot-instructions/i.test(base)) {
+      return true;
+    }
+    return false;
+  }
+
   function recipeFromMarkdown(filename, raw) {
+    var text = String(raw);
+    var trimmedStart = text.replace(/^\s+/, '');
+    if (trimmedStart.slice(0, 3) !== '---') {
+      // Plain client markdown without frontmatter (GEMINI.md, AGENTS.md,
+      // .windsurfrules, copilot-instructions.md): prompt + skill refs.
+      // All other agent markdown (.opencode/agent/*.md, .claude/agents/*.md,
+      // .cursor/rules/*.mdc) requires frontmatter — fail closed.
+      if (isPlainMarkdownFilename(filename)) {
+        return recipeFromPlainMarkdown(filename, text);
+      }
+      throw new Error('parseUploadedConfig: "' + filename + '" must start with --- YAML frontmatter');
+    }
     var fm = parseFrontmatter(raw, filename);
     var data = fm.data;
     if (isPlainObject(data.permission)) {
@@ -633,7 +770,6 @@
         mcpSelections: parts.selections
       }];
     }
-    // Otherwise treat it as Claude Code agent Markdown.
     return [recipeFromClaudeMarkdown(data, fm.body, filename)];
   }
 
@@ -644,7 +780,7 @@
     if (typeof rawContent !== 'string') {
       throw new Error('parseUploadedConfig: rawContent must be a string');
     }
-    if (/\.markdown?$/i.test(filename) || /\.md$/i.test(filename)) {
+    if (isMarkdownFilename(filename)) {
       return recipeFromMarkdown(filename, rawContent);
     }
     var stripped = stripJsonComments(rawContent);
@@ -668,11 +804,21 @@
       });
     }
     if (parsed.mcpServers !== undefined) {
-      return recipesFromClaude(parsed, filename);
+      return recipesFromMcpServers(parsed.mcpServers, filename);
+    }
+    if (isPlainObject(parsed.servers)) {
+      return recipesFromMcpServers(parsed.servers, filename);
+    }
+    if (
+      (typeof parsed.$schema === 'string' && parsed.$schema.indexOf('pi.dev/schemas/settings') !== -1) ||
+      parsed.defaultTools !== undefined ||
+      parsed.defaultThinkingLevel !== undefined
+    ) {
+      return recipesFromPiSettings(parsed, filename);
     }
     throw new Error(
       'parseUploadedConfig: "' + filename + '" does not look like opencode.json ' +
-      '(agents/agent), claude.json / .mcp.json (mcpServers), or agent Markdown'
+      '(agents/agent), claude.json / .mcp.json (mcpServers), Pi settings.json, or agent Markdown'
     );
   }
 
