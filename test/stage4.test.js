@@ -252,3 +252,207 @@ describe('AB-7.4 claude transport key stays absent (Stage 4 re-verification)', (
     assert.ok(!JSON.stringify(out.claudeCodeMcp).includes('"transport"'), 'claude output must not emit the non-spec transport key');
   });
 });
+
+describe('v2-overhaul: traceV2Permission winning-rule trace (simulator)', () => {
+  const { traceV2Permission } = require('../src/core/compiler');
+
+  it('reports the winning rule index, rule, and per-rule matched flags', () => {
+    const perms = [
+      { action: 'skill', resource: '*', effect: 'deny' },
+      { action: 'skill', resource: 'a-skill', effect: 'allow' },
+    ];
+    const hit = traceV2Permission(perms, 'skill', 'a-skill');
+    assert.equal(hit.decision, 'allow');
+    assert.equal(hit.matchedIndex, 1);
+    assert.deepEqual(hit.matchedRule, { action: 'skill', resource: 'a-skill', effect: 'allow' });
+    assert.equal(hit.trace.length, 2);
+    assert.ok(hit.trace.every((t) => t.matched), 'both rules match skill/a-skill; last one wins');
+
+    const miss = traceV2Permission(perms, 'skill', 'other-skill');
+    assert.equal(miss.decision, 'deny');
+    assert.equal(miss.matchedIndex, 0);
+    assert.deepEqual(miss.matchedRule, { action: 'skill', resource: '*', effect: 'deny' });
+    assert.equal(miss.trace[1].matched, false);
+  });
+
+  it('falls back to allow with matchedIndex -1 when nothing matches', () => {
+    const res = traceV2Permission([], 'anything', 'anything');
+    assert.equal(res.decision, 'allow');
+    assert.equal(res.matchedIndex, -1);
+    assert.equal(res.matchedRule, null);
+    assert.deepEqual(res.trace, []);
+  });
+
+  it('fails closed on malformed permission lists', () => {
+    assert.throws(() => traceV2Permission({}, 'a', 'b'), /must be an array/);
+    assert.throws(
+      () => traceV2Permission([{ action: 'a', resource: 'b', effect: 'maybe' }], 'a', 'b'),
+      /invalid effect/
+    );
+  });
+});
+
+describe('v2-overhaul: Pi + extra-client exports cover all 10 compile targets', () => {
+  const { compileAgentRecipe } = require('../src/core/compiler');
+  const REG = [
+    {
+      id: 'pg',
+      kind: 'mcp-server',
+      mcp: { server_name: 'postgres-prod', transport: 'stdio', command: 'npx', args: ['-y', 'mcp-postgres'], tools: ['query', 'drop-table'] },
+    },
+  ];
+  const out = compileAgentRecipe(
+    {
+      slug: 'v2probe',
+      description: 'v2 overhaul probe',
+      mode: 'primary',
+      model: 'anthropic/claude-sonnet-4-5',
+      prompt: 'Probe body.',
+      skills: ['s1'],
+      mcpSelections: [{ server: 'postgres-prod', tools: ['query'], deniedTools: ['drop-table'], allowResources: true }],
+    },
+    REG
+  );
+
+  it('exposes every documented export key on the compiled recipe', () => {
+    for (const key of [
+      'opencodeV2', 'opencodeV1', 'opencodeMarkdown',
+      'piSettingsJson', 'piMcpJson', 'piAgentsMd',
+      'claudeCodeMcp', 'claudeCodeAgentMd', 'codexConfigToml',
+      'geminiSettingsJson', 'geminiMd',
+      'cursorMcpJson', 'cursorRuleMdc',
+      'windsurfMcpJson', 'windsurfRules',
+      'vscodeMcpJson', 'copilotInstructionsMd',
+      'installScriptSh', 'bundleFiles',
+    ]) {
+      assert.ok(out[key] !== undefined && out[key] !== null, `missing export key: ${key}`);
+    }
+  });
+
+  it('piSettingsJson splits provider/model and pins the pi.dev $schema', () => {
+    assert.equal(out.piSettingsJson.$schema, 'https://pi.dev/schemas/settings.schema.json');
+    assert.equal(out.piSettingsJson.defaultProvider, 'anthropic');
+    assert.equal(out.piSettingsJson.defaultModel, 'claude-sonnet-4-5');
+    assert.ok(out.piSettingsJson.skills.includes('.pi/skills/s1'));
+  });
+
+  it('piMcpJson maps explicit allows to codemode and denies to hidden', () => {
+    const srv = out.piMcpJson.mcpServers['postgres-prod'];
+    assert.equal(srv.toolExposure.query, 'codemode');
+    assert.equal(srv.toolExposure['drop-table'], 'hidden');
+    assert.ok(out.piAgentsMd.includes('# Agent: v2probe'));
+    assert.ok(out.piAgentsMd.includes('.pi/skills/s1/SKILL.md'));
+  });
+
+  it('gemini/cursor/windsurf/copilot exports carry the server and slug', () => {
+    assert.ok(out.geminiSettingsJson.mcpServers['postgres-prod']);
+    assert.ok(out.geminiMd.includes('v2probe'));
+    assert.ok(out.cursorMcpJson.mcpServers['postgres-prod']);
+    assert.ok(out.cursorRuleMdc.includes('alwaysApply: true'));
+    assert.ok(out.windsurfMcpJson.mcpServers['postgres-prod']);
+    assert.ok(out.windsurfRules.includes('v2probe'));
+    assert.ok(out.vscodeMcpJson.servers['postgres-prod']);
+    assert.ok(out.copilotInstructionsMd.includes('v2probe'));
+  });
+
+  it('bundleFiles ships 18 slug-qualified files including every pi/client path', () => {
+    assert.equal(out.bundleFiles.length, 18);
+    const paths = out.bundleFiles.map((f) => f.path);
+    for (const p of [
+      '.pi/settings.v2probe.json', '.pi/mcp.v2probe.json', 'AGENTS.v2probe.md',
+      '.gemini/settings.v2probe.json', 'GEMINI.v2probe.md',
+      '.cursor/rules/v2probe.mdc', '.cursor/mcp.v2probe.json',
+      '.windsurf/mcp_config.v2probe.json', '.windsurfrules.v2probe',
+      '.vscode/mcp.v2probe.json', '.github/copilot-instructions.v2probe.md',
+      'install-v2probe.sh',
+    ]) {
+      assert.ok(paths.includes(p), `bundle missing ${p}`);
+    }
+  });
+});
+
+describe('copilot tools allowlist content (fail-closed copilotToolsFor)', () => {
+  const { compileAgentRecipe } = require('../src/core/compiler');
+  const REG = [
+    {
+      id: 'known',
+      kind: 'mcp-server',
+      mcp: { server_name: 'known-srv', tools: ['read', 'write', 'admin'] },
+    },
+  ];
+  function copilotTools(recipe, registry) {
+    const out = compileAgentRecipe(recipe, registry === undefined ? REG : registry);
+    assert.ok(out.vscodeMcpJson && out.vscodeMcpJson.servers, 'vscodeMcpJson.servers must exist');
+    return out.vscodeMcpJson.servers;
+  }
+  function toolsFor(server, selections, registry) {
+    const servers = copilotTools(
+      { slug: 'copilot-probe', description: 'd', prompt: 'p', skills: [], mcpSelections: selections },
+      registry
+    );
+    assert.ok(servers[server], `expected .vscode/mcp.json server entry for ${server}`);
+    assert.ok(Array.isArray(servers[server].tools), `tools for ${server} must be an array (fail-closed)`);
+    return servers[server].tools;
+  }
+
+  it('explicit tools are preserved verbatim', () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: ['read', 'write'] }]), ['read', 'write']);
+  });
+
+  it('explicit tools minus denies (deny wins)', () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['read', 'write'], deniedTools: ['write'] }]),
+      ['read']
+    );
+  });
+
+  it("wildcard with no denies emits ['*']", () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'] }]), ['*']);
+  });
+
+  it('wildcard + deny resolves against the known registry universe minus denies', () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'], deniedTools: ['write'] }]),
+      ['read', 'admin']
+    );
+  });
+
+  it('wildcard + deny with no known universe emits [] (never [*\'])', () => {
+    assert.deepEqual(
+      toolsFor('ghost-srv', [{ server: 'ghost-srv', tools: ['*'], deniedTools: ['write'] }], []),
+      []
+    );
+  });
+
+  it('deny-only (empty tools) emits []', () => {
+    assert.deepEqual(toolsFor('known-srv', [{ server: 'known-srv', tools: [] }]), []);
+  });
+
+  it("deniedTools ['*'] emits [] even with a wildcard allow", () => {
+    assert.deepEqual(
+      toolsFor('known-srv', [{ server: 'known-srv', tools: ['*'], deniedTools: ['*'] }]),
+      []
+    );
+  });
+});
+
+describe('v2-overhaul: Studio site wires all 5 agent presets', () => {
+  it('index.html preset dropdown offers the 5 curated presets', () => {
+    const html = fs.readFileSync(path.join(ROOT, 'site', 'index.html'), 'utf8');
+    for (const id of [
+      'db-security-auditor', 'fullstack-polyglot-agent', 'frontend-design-agent',
+      'sre-database-agent', 'pi-codemode-architect',
+    ]) {
+      assert.ok(html.includes(`value="${id}"`), `preset dropdown missing option ${id}`);
+    }
+  });
+
+  it('app.js implements the pi-codemode-architect fallback and all 11 preview tabs', () => {
+    const app = fs.readFileSync(path.join(ROOT, 'site', 'app.js'), 'utf8');
+    assert.ok(app.includes("presetId === 'pi-codemode-architect'"), 'app.js must special-case the pi preset');
+    for (const tab of ['pi:', 'gemini:', 'cursor:', 'windsurf:', 'copilot:']) {
+      assert.ok(app.includes(tab), `TAB_FILES missing ${tab} preview target`);
+    }
+    assert.ok(app.includes('data-tab') || app.includes('preview-tab'), 'preview tab wiring must exist');
+  });
+});

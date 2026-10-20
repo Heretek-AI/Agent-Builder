@@ -1,0 +1,21 @@
+id: pi-review
+name: Pi Review
+repo: https://github.com/earendil-works/pi-review
+tagline: Practical /review and /end-review code-review workflow extension for Pi.
+description: >-
+  earendil-works/pi-review (MIT) adds a practical code review workflow to the Pi coding agent via
+  /review and /end-review slash commands: reviews uncommitted changes, base-branch diffs, single
+  commits, GitHub pull requests (via gh), or folder/file snapshots, with prioritized findings,
+  a clear verdict, actionable follow-ups, and optional shared REVIEW_GUIDELINES.md instructions.
+kind: plugin
+category: plugins/cross-harness
+harnesses:
+  - universal
+tags:
+  - pi
+  - pi-package
+  - pi-extension
+  - code-review
+installation: "pi install git:github.com/earendil-works/pi-review"
+license: MIT
+source_attribution: Curated for Agent-Builder; inspired by earendil-works/pi-review (MIT).

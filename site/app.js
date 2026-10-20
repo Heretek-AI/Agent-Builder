@@ -1,8 +1,8 @@
-/* Agent Builder WebUI — zero-build plain JS (no bundler, no npm deps).
+/* Agent-Builder Studio v2.0 — zero-build plain JS (no bundler, no npm deps).
  *
- * Depends on ./core/compiler.js (global `Compiler`) and
- * ./core/importer.js (global `Importer`), loaded via <script> tags.
- * Registry: fetch('./registry.json') first, fall back to the GitHub Pages URL.
+ * Depends on ./core/compiler.js (`Compiler`), ./core/importer.js (`Importer`),
+ * and ./core/classifier.js (`Classifier`).
+ * Registry: embedded fallback or fetch('./registry.json') -> GitHub Pages URL.
  */
 (function () {
   'use strict';
@@ -13,17 +13,20 @@
   var GITHUB_ISSUE_BASE = 'https://github.com/Heretek-AI/Agent-Builder/issues/new';
 
   var state = {
-    registry: null, // { taxonomy, entries, stats }
+    registry: null,
     entries: [],
     categoryFilter: '',
+    kindFilter: '',
     harnessFilter: '',
     languageFilter: '',
     platformFilter: '',
     query: '',
-    selectedIds: [], // registry entry ids (skills, plugins, design-md, prompts)
+    selectedIds: [],
     harness: 'opencode-v2',
     previewTab: 'v2',
+    studioTab: 'explorer',
     lastCompiled: null,
+    lastScoutClassification: null,
   };
 
   function $(id) { return document.getElementById(id); }
@@ -36,7 +39,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Minimal JSON/YAML-ish syntax highlight for <code> preview blocks.
   function highlight(text) {
     var esc = escHtml(text);
     esc = esc.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)(\s*:)?/g, function (m, str, colon) {
@@ -80,11 +82,35 @@
 
   function setStatus(text, ok) {
     var el = $('registryStatus');
+    if (!el) return;
     el.textContent = text;
     el.style.borderColor = ok === undefined ? '' : (ok ? 'var(--allow)' : 'var(--deny)');
   }
 
+  function applyRegistryData(data) {
+    if (!data || !Array.isArray(data.entries)) {
+      throw new Error('registry payload has no entries array');
+    }
+    state.registry = data;
+    state.entries = data.entries;
+    setStatus(data.entries.length + ' entries loaded', true);
+    if ($('badgeRegistryCount')) {
+      $('badgeRegistryCount').textContent = String(data.entries.length);
+    }
+    buildFilters();
+    buildCategoryTree();
+    renderCards();
+    restoreRecipeFromUrl();
+    renderAll();
+  }
+
   function loadRegistry() {
+    if (typeof window !== 'undefined' && window.__EMBEDDED_REGISTRY__ && Array.isArray(window.__EMBEDDED_REGISTRY__.entries)) {
+      try {
+        applyRegistryData(window.__EMBEDDED_REGISTRY__);
+        return Promise.resolve();
+      } catch (_e) { /* fall through to fetch */ }
+    }
     return fetch(REGISTRY_LOCAL, { cache: 'no-store' })
       .then(function (res) {
         if (!res.ok) { throw new Error('local registry HTTP ' + res.status); }
@@ -96,19 +122,7 @@
           return res.json();
         });
       })
-      .then(function (data) {
-        if (!data || !Array.isArray(data.entries)) {
-          throw new Error('registry payload has no entries array');
-        }
-        state.registry = data;
-        state.entries = data.entries;
-        setStatus(data.entries.length + ' entries loaded', true);
-        buildFilters();
-        buildCategoryTree();
-        renderCards();
-        restoreRecipeFromUrl();
-        renderAll();
-      })
+      .then(applyRegistryData)
       .catch(function (err) {
         setStatus('registry failed: ' + err.message, false);
         $('resultCount').textContent = 'Could not load registry.json locally or remotely.';
@@ -144,6 +158,7 @@
   }
 
   function fillSelect(sel, values) {
+    if (!sel) return;
     var first = sel.options[0];
     sel.innerHTML = '';
     sel.appendChild(first);
@@ -155,16 +170,29 @@
     });
   }
 
+  function countForCategoryPrefix(catId) {
+    if (!catId) return state.entries.length;
+    var c = 0;
+    for (var i = 0; i < state.entries.length; i++) {
+      var ec = state.entries[i].category || '';
+      if (ec === catId || ec.indexOf(catId + '/') === 0) {
+        c++;
+      }
+    }
+    return c;
+  }
+
   function categoryLabel(node) {
     return node.title || node.id;
   }
 
   function buildCategoryTree() {
     var tree = $('categoryTree');
+    if (!tree) return;
     tree.innerHTML = '';
     var root = document.createElement('ul');
     var allLi = document.createElement('li');
-    allLi.appendChild(treeItem('', 'All entries'));
+    allLi.appendChild(treeItem('', 'All Registry Entries (' + state.entries.length + ')'));
     root.appendChild(allLi);
     var cats = (state.registry && state.registry.taxonomy && state.registry.taxonomy.categories) || [];
     cats.forEach(function (top) {
@@ -175,7 +203,8 @@
 
   function treeNode(node) {
     var li = document.createElement('li');
-    li.appendChild(treeItem(node.id, categoryLabel(node)));
+    var count = countForCategoryPrefix(node.id);
+    li.appendChild(treeItem(node.id, categoryLabel(node) + ' (' + count + ')'));
     if (Array.isArray(node.children) && node.children.length > 0) {
       var ul = document.createElement('ul');
       node.children.forEach(function (child) {
@@ -209,11 +238,13 @@
           e.category.indexOf(state.categoryFilter + '/') === 0)) {
         return false;
       }
+      if (state.kindFilter && e.kind !== state.kindFilter) { return false; }
       if (state.harnessFilter && (e.harnesses || []).indexOf(state.harnessFilter) === -1) { return false; }
       if (state.languageFilter && (e.languages || []).indexOf(state.languageFilter) === -1) { return false; }
       if (state.platformFilter && (e.platforms || []).indexOf(state.platformFilter) === -1) { return false; }
       if (q) {
-        var hay = [e.id, e.name, e.tagline, e.description, e.category, (e.tags || []).join(' ')]
+        var toolStr = toolsOf(e).join(' ');
+        var hay = [e.id, e.name, e.tagline, e.description, e.category, (e.tags || []).join(' '), toolStr]
           .join(' ').toLowerCase();
         if (hay.indexOf(q) === -1) { return false; }
       }
@@ -221,47 +252,135 @@
     });
   }
 
+  function kindBadgeColor(kind) {
+    switch (kind) {
+      case 'mcp-server': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+      case 'skill': return 'bg-teal-500/20 text-teal-300 border-teal-500/30';
+      case 'plugin': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      case 'design-md': return 'bg-pink-500/20 text-pink-300 border-pink-500/30';
+      case 'prompt': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+      case 'agent': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+      default: return 'bg-slate-800 text-slate-300 border-slate-700';
+    }
+  }
+
   function renderCards() {
     var list = filteredEntries();
-    $('resultCount').textContent = list.length + ' of ' + state.entries.length + ' entries';
+    $('resultCount').textContent = 'Showing ' + list.length + ' of ' + state.entries.length + ' registry entries';
     var wrap = $('cards');
     wrap.innerHTML = '';
     list.slice(0, 400).forEach(function (e) {
       var card = document.createElement('div');
       card.className = 'entry-card';
       var badges = (e.harnesses || []).map(function (h) {
-        return '<span class="badge">' + escHtml(h) + '</span>';
+        return '<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">' + escHtml(h) + '</span>';
       }).join('');
-      var toolInfo = e.kind === 'mcp-server' ? ' <span class="badge">' + toolsOf(e).length + ' tools</span>' : '';
-      card.innerHTML =
-        '<h3>' + escHtml(e.name) + '</h3>' +
-        '<p class="tagline">' + escHtml(e.tagline || '') + '</p>' +
-        '<div class="badges"><span class="badge">' + escHtml(e.kind) + '</span>' +
-        '<span class="badge">' + escHtml(e.category) + '</span>' + badges + toolInfo + '</div>';
+      var tools = toolsOf(e);
+      var toolInfo = e.kind === 'mcp-server'
+        ? '<div class="mt-1.5 flex flex-wrap gap-1">' + tools.map(function (t) {
+            return '<code class="text-[10px] px-1.5 py-0.2 rounded bg-slate-900 text-teal-300 border border-slate-800">' + escHtml(t) + '</code>';
+          }).join('') + '</div>'
+        : '';
+
+      var topDiv = document.createElement('div');
+      topDiv.innerHTML =
+        '<div class="flex items-start justify-between gap-2 mb-1">' +
+          '<h3>' + escHtml(e.name) + '</h3>' +
+          '<span class="px-2 py-0.5 rounded text-[10px] font-mono border shrink-0 ' + kindBadgeColor(e.kind) + '">' + escHtml(e.kind) + '</span>' +
+        '</div>' +
+        '<p class="text-xs text-slate-400 mb-2">' + escHtml(e.tagline || '') + '</p>' +
+        '<div class="flex flex-wrap gap-1 mb-1">' +
+          '<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-800">' + escHtml(e.category) + '</span>' +
+          badges +
+        '</div>' +
+        toolInfo;
+
+      var actionsDiv = document.createElement('div');
+      actionsDiv.className = 'flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80';
+
+      var repoLink = document.createElement('a');
+      repoLink.href = e.repo || '#';
+      repoLink.target = '_blank';
+      repoLink.rel = 'noopener noreferrer';
+      repoLink.className = 'text-[11px] font-mono text-slate-400 hover:text-teal-300 truncate';
+      repoLink.textContent = e.id;
+      actionsDiv.appendChild(repoLink);
+
       var btn = document.createElement('button');
       btn.type = 'button';
       var already = state.selectedIds.indexOf(e.id) !== -1;
-      btn.textContent = already ? 'Added ✓' : '+ Add to Agent';
-      btn.disabled = already;
-      btn.addEventListener('click', function () { addToAgent(e.id); });
-      card.appendChild(btn);
+      if (e.kind === 'agent' && e.agent_preset) {
+        btn.className = 'px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition shrink-0';
+        btn.textContent = '⚡ Load Preset';
+        btn.addEventListener('click', function () { loadAgentPresetById(e.id); });
+      } else {
+        btn.className = already
+          ? 'px-2.5 py-1 rounded text-xs font-medium bg-teal-500/20 text-teal-300 border border-teal-500/40 shrink-0'
+          : 'px-2.5 py-1 rounded text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition shrink-0';
+        btn.textContent = already ? 'Added ✓' : '+ Add to Agent';
+        btn.addEventListener('click', function () {
+          if (already) { removeFromAgent(e.id); }
+          else { addToAgent(e.id); }
+        });
+      }
+      actionsDiv.appendChild(btn);
+
+      card.appendChild(topDiv);
+      card.appendChild(actionsDiv);
       wrap.appendChild(card);
     });
-    if (list.length > 400) {
-      var more = document.createElement('p');
-      more.className = 'muted';
-      more.textContent = 'Showing first 400 — refine filters to narrow.';
-      wrap.appendChild(more);
-    }
   }
 
-  // ---- Recipe ----
+  // ---- Recipe & Presets ----
 
   function entryById(id) {
     for (var i = 0; i < state.entries.length; i++) {
       if (state.entries[i].id === id) { return state.entries[i]; }
     }
     return null;
+  }
+
+  function loadAgentPresetById(presetId) {
+    if (presetId === 'pi-codemode-architect') {
+      $('agentSlug').value = 'pi-codemode-architect';
+      $('agentDescription').value = 'Pi coding architect using QuickJS codemode and scoped GitHub/Filesystem MCP tools';
+      $('agentMode').value = 'primary';
+      $('agentModel').value = 'anthropic/claude-sonnet-4-5';
+      $('agentPrompt').value = 'Architect, implement, and verify multi-file changes using Pi codemode scripts and least-privilege MCP tools.';
+      state.selectedIds = ['typescript-strict-patterns', 'rust-secure-coding', 'github-code-intel-mcp', 'filesystem-shell-mcp'].filter(function (id) {
+        return Boolean(entryById(id));
+      });
+      state.previewTab = 'pi';
+      syncPreviewTabs();
+      renderAll();
+      return;
+    }
+
+    var e = entryById(presetId);
+    if (!e || !e.agent_preset) return;
+    var ap = e.agent_preset;
+    $('agentSlug').value = e.id;
+    $('agentDescription').value = e.tagline || e.description || '';
+    $('agentMode').value = ap.mode || 'subagent';
+    $('agentModel').value = ap.model || 'anthropic/claude-sonnet-4-5';
+    $('agentPrompt').value = ap.prompt || '';
+    state.selectedIds = [];
+    (ap.skills || []).forEach(function (s) {
+      if (entryById(s) && state.selectedIds.indexOf(s) === -1) {
+        state.selectedIds.push(s);
+      }
+    });
+    (ap.mcp_selections || []).forEach(function (ms) {
+      state.entries.forEach(function (ce) {
+        if (ce.kind === 'mcp-server' &&
+            Compiler.normalizeMcpId(serverNameOf(ce)) === Compiler.normalizeMcpId(ms.server)) {
+          if (state.selectedIds.indexOf(ce.id) === -1) {
+            state.selectedIds.push(ce.id);
+          }
+        }
+      });
+    });
+    renderAll();
   }
 
   function addToAgent(id) {
@@ -280,10 +399,6 @@
     return state.selectedIds.map(entryById).filter(Boolean);
   }
 
-  // The permission simulator and exports need stable tool-level state per
-  // MCP server: which tools are allowed, which are explicitly denied, and
-  // whether resource access is granted. This is derived from the DOM
-  // checkboxes when present, otherwise defaults to wildcard-allow.
   function readMcpSelections() {
     var selections = [];
     selectedEntries().forEach(function (e) {
@@ -320,6 +435,8 @@
     var skillIds = selectedEntries()
       .filter(function (e) { return e.kind !== 'mcp-server'; })
       .map(function (e) { return e.id; });
+    var piToolsRaw = $('piDefaultTools') ? $('piDefaultTools').value : '+codemode, +tool_search';
+    var piTools = piToolsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     return {
       slug: ($('agentSlug').value || 'my-agent').trim() || 'my-agent',
       description: $('agentDescription').value || '',
@@ -328,11 +445,19 @@
       prompt: $('agentPrompt').value || '',
       skills: skillIds,
       mcpSelections: readMcpSelections(),
+      piOptions: {
+        thinkingLevel: $('piThinkingLevel') ? $('piThinkingLevel').value : 'medium',
+        mcpExposure: $('piMcpExposure') ? $('piMcpExposure').value : 'codemode',
+        defaultTools: piTools
+      }
     };
   }
 
   function compileCurrent() {
     var recipe = currentRecipe();
+    if ($('activeSlugPill')) {
+      $('activeSlugPill').textContent = recipe.slug;
+    }
     state.lastCompiled = Compiler.compileAgentRecipe(recipe, state.entries);
     return state.lastCompiled;
   }
@@ -344,10 +469,12 @@
     list.innerHTML = '';
     selectedEntries().forEach(function (e) {
       var li = document.createElement('li');
-      li.innerHTML = '<span><strong>' + escHtml(e.id) + '</strong> <span class="muted">' +
-        escHtml(e.kind) + '</span></span> ';
+      li.className = 'px-2.5 py-1 rounded-full text-xs font-mono bg-slate-900 border border-slate-700 flex items-center gap-2';
+      li.innerHTML = '<span><strong class="text-teal-300">' + escHtml(e.id) + '</strong> <span class="text-slate-400">(' +
+        escHtml(e.kind) + ')</span></span> ';
       var rm = document.createElement('button');
       rm.type = 'button';
+      rm.className = 'text-slate-400 hover:text-rose-400';
       rm.textContent = '✕';
       rm.title = 'Remove ' + e.id;
       rm.addEventListener('click', function () { removeFromAgent(e.id); });
@@ -362,7 +489,7 @@
     wrap.innerHTML = '';
     var sel = selectedEntries();
     if (sel.length === 0) {
-      wrap.innerHTML = '<p class="muted">Nothing selected yet — use “+ Add to Agent” in the explorer.</p>';
+      wrap.innerHTML = '<div class="p-6 text-center rounded-xl border border-dashed border-slate-800 text-xs text-slate-400">Nothing selected yet &mdash; click <strong>+ Add to Agent</strong> on any Skill or MCP Server in the Registry Explorer, or pick a preset from the top bar.</div>';
       return;
     }
     var nonMcp = sel.filter(function (e) { return e.kind !== 'mcp-server'; });
@@ -370,11 +497,13 @@
       var div = document.createElement('div');
       div.className = 'scope-server';
       div.innerHTML = '<h3>Skills / Plugins / DESIGN.md / Prompts (' + nonMcp.length + ')</h3>' +
-        '<p class="muted">Each becomes an <code>allow</code> skill rule after the leading <code>deny "*"</code>.</p>';
+        '<p class="text-xs text-slate-400 mb-2">Each item compiles to an explicit <code>allow</code> rule immediately after the leading <code>deny "*"</code> rule.</p>';
       var ul = document.createElement('ul');
+      ul.className = 'flex flex-wrap gap-2 list-none p-0 m-0';
       nonMcp.forEach(function (e) {
         var li = document.createElement('li');
-        li.innerHTML = '<code>' + escHtml(e.id) + '</code> <span class="muted">' + escHtml(e.kind) + '</span>';
+        li.className = 'px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-300';
+        li.innerHTML = 'allow skill: <code>' + escHtml(e.id) + '</code>';
         ul.appendChild(li);
       });
       div.appendChild(ul);
@@ -389,9 +518,9 @@
     var server = serverNameOf(entry);
     var tools = toolsOf(entry);
     var div = document.createElement('div');
-    div.className = 'scope-server';
+    div.className = 'scope-server space-y-3';
     var norm = Compiler.normalizeMcpId(server);
-    div.innerHTML = '<h3>' + escHtml(server) + ' <span class="muted">(<code>' +
+    div.innerHTML = '<h3>MCP Server: <span class="text-teal-300 font-mono">' + escHtml(server) + '</span> <span class="text-xs text-slate-400">(<code>' +
       escHtml(norm) + '_*</code>)</span></h3>';
     var grid = document.createElement('div');
     grid.className = 'tool-grid';
@@ -402,7 +531,7 @@
     allowAll.checked = true;
     allowAll.setAttribute('data-server-allow-all', server);
     allowAllLabel.appendChild(allowAll);
-    allowAllLabel.appendChild(document.createTextNode(' Allow all tools (' + norm + '_*)'));
+    allowAllLabel.appendChild(document.createTextNode(' Allow all (' + norm + '_*)'));
     grid.appendChild(allowAllLabel);
 
     tools.forEach(function (t) {
@@ -425,13 +554,13 @@
     div.appendChild(grid);
 
     var resLabel = document.createElement('label');
-    resLabel.className = 'radio';
+    resLabel.className = 'flex items-center gap-2 text-xs text-slate-300 pt-1 cursor-pointer';
     var resCb = document.createElement('input');
     resCb.type = 'checkbox';
     resCb.setAttribute('data-server-resources', server);
     resLabel.appendChild(resCb);
     resLabel.appendChild(document.createTextNode(
-      ' Allow resource access (opencode_list_mcp_resources / opencode_read_mcp_resource)'));
+      ' Allow MCP resource access (opencode_list_mcp_resources / opencode_read_mcp_resource)'));
     div.appendChild(resLabel);
 
     allowAll.addEventListener('change', renderPreview);
@@ -445,6 +574,7 @@
     var action = ($('simAction').value || '').trim();
     var resource = ($('simResource').value || '').trim() || '*';
     var out = $('simResult');
+    var traceEl = $('simTraceOutput');
     if (!action) {
       out.textContent = 'enter an action';
       out.className = 'sim-result';
@@ -456,10 +586,148 @@
       var decision = Compiler.evaluateV2Permission(perms, action, resource);
       out.textContent = decision.toUpperCase();
       out.className = 'sim-result ' + decision;
+      if (traceEl && Compiler.traceV2Permission) {
+        var tr = Compiler.traceV2Permission(perms, action, resource);
+        if (tr.matchedRule) {
+          traceEl.textContent = 'Winning rule [#' + tr.matchedIndex + ']: action="' +
+            tr.matchedRule.action + '", resource="' + tr.matchedRule.resource +
+            '" -> ' + tr.matchedRule.effect.toUpperCase();
+        } else {
+          traceEl.textContent = 'No rule matched; default fallback decision is ALLOW.';
+        }
+      }
     } catch (err) {
       out.textContent = 'error: ' + err.message;
       out.className = 'sim-result';
     }
+  }
+
+  // ---- Smart Scout & Multi-Signal Categorizer Lab ----
+
+  var SCOUT_SAMPLES = {
+    pi: {
+      name: '@earendil-works/pi-review',
+      repo: 'https://github.com/earendil-works/pi-review',
+      desc: 'Practical code review workflow extension for Pi adding /review and /end-review slash commands.',
+      keywords: 'pi-package, code-review, extension',
+      deps: '@earendil-works/pi-coding-agent'
+    },
+    ghidra: {
+      name: 'ghidra-binary-triage-mcp',
+      repo: 'https://github.com/example/ghidra-binary-triage-mcp',
+      desc: 'Model Context Protocol server for Ghidra reverse engineering, firmware unpacking, decompilation, and YARA malware triage.',
+      keywords: 'mcp-server, ghidra, reverse-engineering, security',
+      deps: '@modelcontextprotocol/sdk'
+    },
+    rust: {
+      name: 'tokio-unsafe-audit-skill',
+      repo: 'https://github.com/example/tokio-unsafe-audit-skill',
+      desc: 'SKILL.md playbook for auditing unsafe Rust blocks, async Tokio cancellation safety, and Cargo workspace lifetimes.',
+      keywords: 'skill, rust, cargo, tokio',
+      deps: ''
+    },
+    design: {
+      name: 'linear-saas-design-md',
+      repo: 'https://github.com/example/linear-saas-design-md',
+      desc: 'Drop-in DESIGN.md brand and UI design system for high-density SaaS dashboards and analytics workspaces.',
+      keywords: 'design-md, saas, dashboard',
+      deps: ''
+    }
+  };
+
+  function runScoutLab() {
+    if (!window.Classifier) return;
+    var name = ($('scoutPkgName').value || 'sample-pkg').trim();
+    var repo = ($('scoutRepoUrl').value || 'https://github.com/example/' + name).trim();
+    var desc = ($('scoutDescription').value || '').trim();
+    var kw = ($('scoutKeywords').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var depsList = ($('scoutDeps').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var depsObj = {};
+    depsList.forEach(function (d) { depsObj[d] = '*'; });
+
+    var cls = window.Classifier.classifyManifest(
+      { name: name, description: desc },
+      { name: name, description: desc, keywords: kw, dependencies: depsObj }
+    );
+    state.lastScoutClassification = { name: name, repo: repo, desc: desc, cls: cls };
+
+    var card = $('scoutResultCard');
+    var reasonsHtml = (cls.reasons || []).map(function (r) {
+      return '<li class="text-slate-300">' + escHtml(r) + '</li>';
+    }).join('');
+    var altHtml = (cls.alternativeCategories || []).map(function (a) {
+      return '<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">' + escHtml(a.category) + ' (' + a.score + 'pt)</span>';
+    }).join(' ');
+
+    card.innerHTML =
+      '<div class="flex items-center justify-between border-b border-slate-800 pb-2">' +
+        '<div><span class="text-slate-400">Predicted Kind &amp; Category:</span> <strong class="text-teal-300 font-mono">' + escHtml(cls.kind) + ' &rarr; ' + escHtml(cls.category) + '</strong></div>' +
+        '<span class="px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">' + escHtml(cls.confidence) + '% Confidence</span>' +
+      '</div>' +
+      '<div class="flex flex-wrap gap-1.5 items-center">' +
+        '<span class="text-slate-400">Harnesses:</span> ' +
+        cls.harnesses.map(function (h) { return '<code class="px-1.5 py-0.2 rounded bg-slate-800 text-teal-300">' + escHtml(h) + '</code>'; }).join(' ') +
+      '</div>' +
+      (altHtml ? '<div class="flex flex-wrap gap-1.5 items-center"><span class="text-slate-400">Runner-up leaves:</span> ' + altHtml + '</div>' : '') +
+      '<ul class="list-disc pl-4 space-y-0.5 text-[11px] pt-1">' + reasonsHtml + '</ul>';
+
+    var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'custom-entry';
+    var folderMap = { plugin: 'plugins', skill: 'skills', 'mcp-server': 'mcp-servers', 'design-md': 'design-md', prompt: 'prompts', agent: 'agents' };
+    var folder = folderMap[cls.kind] || 'plugins';
+    var sub = cls.category.indexOf(folder + '/') === 0 ? cls.category.slice(folder.length + 1) : cls.category;
+    $('scoutTargetFile').textContent = 'data/' + folder + '/' + sub + '/' + slug + '.yaml';
+
+    var yamlLines = [
+      'id: ' + slug,
+      'name: ' + JSON.stringify(name),
+      'repo: ' + repo,
+      'tagline: ' + JSON.stringify(desc.slice(0, 110) || name),
+      'description: ' + JSON.stringify(desc || name),
+      'kind: ' + cls.kind,
+      'category: ' + cls.category,
+      'harnesses:'
+    ];
+    cls.harnesses.forEach(function (h) { yamlLines.push('  - ' + h); });
+    if (cls.topics && cls.topics.length > 0) {
+      yamlLines.push('tags:');
+      cls.topics.forEach(function (t) { yamlLines.push('  - ' + t); });
+    }
+    yamlLines.push('license: UNKNOWN');
+    $('scoutYamlOutput').textContent = yamlLines.join('\n') + '\n';
+  }
+
+  function injectScoutCandidateIntoSession() {
+    if (!state.lastScoutClassification) { runScoutLab(); }
+    var sc = state.lastScoutClassification;
+    if (!sc) return;
+    var slug = sc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'custom-entry';
+    if (!entryById(slug)) {
+      var newEntry = {
+        id: slug,
+        name: sc.name,
+        repo: sc.repo,
+        tagline: sc.desc.slice(0, 120) || sc.name,
+        description: sc.desc || sc.name,
+        kind: sc.cls.kind,
+        category: sc.cls.category,
+        harnesses: sc.cls.harnesses,
+        tags: sc.cls.topics || [],
+        license: 'UNKNOWN'
+      };
+      if (sc.cls.kind === 'mcp-server') {
+        newEntry.mcp = {
+          server_name: slug,
+          transport: 'stdio',
+          command: 'npx',
+          args: ['-y', sc.name],
+          tools: ['inspect', 'query', 'analyze']
+        };
+      }
+      state.entries.unshift(newEntry);
+    }
+    addToAgent(slug);
+    buildCategoryTree();
+    renderAll();
   }
 
   // ---- Preview + export ----
@@ -468,16 +736,20 @@
     v2: function (c) { return 'opencode.' + c.slug + '.v2.json'; },
     v1: function (c) { return 'opencode.' + c.slug + '.v1.json'; },
     opencodeMd: function (c) { return '.opencode/agent/' + c.slug + '.md'; },
+    pi: function (c) { return '.pi/settings.' + c.slug + '.json'; },
     claude: function (c) { return '.claude/agents/' + c.slug + '.md'; },
     codex: function (c) { return 'codex.' + c.slug + '.toml'; },
+    gemini: function (c) { return '.gemini/settings.' + c.slug + '.json'; },
+    cursor: function (c) { return '.cursor/rules/' + c.slug + '.mdc'; },
+    windsurf: function (c) { return '.windsurfrules'; },
+    copilot: function (c) { return '.github/copilot-instructions.md'; },
     install: function (c) { return 'install-' + c.slug + '.txt'; },
   };
 
   // AB-5.2: the CLI (`bin/agent-builder.js install`) accepts
   // `--recipe <file.json|base64url|inline JSON>` via loadRecipe and has no
   // `--slug` flag, so the Install tab emits a pastable
-  // `--recipe <base64url>` command. base64url is shell-safe (no
-  // spaces/quotes) and the CLI decodes it with decodeBase64Url.
+  // `--recipe <base64url>` command.
   function installCommand(recipe) {
     var r = (recipe && typeof recipe === 'object') ? recipe : currentRecipe();
     return 'node bin/agent-builder.js install --recipe ' + base64UrlEncode(JSON.stringify(r));
@@ -488,20 +760,61 @@
       case 'v2': return JSON.stringify(compiled.opencodeV2, null, 2) + '\n';
       case 'v1': return JSON.stringify(compiled.opencodeV1, null, 2) + '\n';
       case 'opencodeMd': return compiled.opencodeMarkdown;
+      case 'pi':
+        return '// --- .pi/settings.json ---\n' +
+          JSON.stringify(compiled.piSettingsJson, null, 2) +
+          '\n\n// --- .pi/mcp.json (with per-tool exposure) ---\n' +
+          JSON.stringify(compiled.piMcpJson, null, 2) +
+          '\n\n# --- AGENTS.md ---\n' +
+          compiled.piAgentsMd;
       case 'claude':
         return compiled.claudeCodeAgentMd +
           '\n--- .mcp.json ---\n' +
           JSON.stringify(compiled.claudeCodeMcp, null, 2) + '\n';
       case 'codex': return compiled.codexConfigToml;
-      case 'install': return installCommand(currentRecipe()) + '\n';
+      case 'gemini':
+        return '// --- .gemini/settings.json ---\n' +
+          JSON.stringify(compiled.geminiSettingsJson, null, 2) +
+          '\n\n# --- GEMINI.md ---\n' +
+          compiled.geminiMd;
+      case 'cursor':
+        return compiled.cursorRuleMdc +
+          '\n// --- .cursor/mcp.json ---\n' +
+          JSON.stringify(compiled.cursorMcpJson, null, 2) + '\n';
+      case 'windsurf':
+        return compiled.windsurfRules +
+          '\n// --- .windsurf/mcp_config.json ---\n' +
+          JSON.stringify(compiled.windsurfMcpJson, null, 2) + '\n';
+      case 'copilot':
+        return compiled.copilotInstructionsMd +
+          '\n// --- .vscode/mcp.json ---\n' +
+          JSON.stringify(compiled.vscodeMcpJson, null, 2) + '\n';
+      case 'install':
+        return installCommand(currentRecipe()) + '\n\n' + compiled.installScriptSh;
       default: return '';
     }
+  }
+
+  function syncPreviewTabs() {
+    var tabs = document.querySelectorAll('.preview-tab');
+    tabs.forEach(function (x) {
+      var active = x.dataset.tab === state.previewTab;
+      x.classList.toggle('tab-active', active);
+      x.classList.toggle('active', active);
+    });
   }
 
   function renderPreview() {
     try {
       var compiled = compileCurrent();
+      if ($('previewTargetPath') && TAB_FILES[state.previewTab]) {
+        $('previewTargetPath').textContent = TAB_FILES[state.previewTab](compiled);
+      }
+      if ($('downloadBundle') && compiled && Array.isArray(compiled.bundleFiles)) {
+        $('downloadBundle').textContent = 'Bundle (' + compiled.bundleFiles.length + ' Files)';
+      }
       $('previewContent').innerHTML = highlight(tabText(state.previewTab, compiled));
+      runSimulator();
     } catch (err) {
       $('previewContent').textContent = 'Error: ' + err.message;
     }
@@ -521,16 +834,36 @@
     }, 500);
   }
 
+  // Multi-file previews keep a combined display in tabText, but downloading
+  // that combined text under a single-file name would be invalid (e.g. Pi
+  // preview concatenates settings JSON + mcp JSON + AGENTS.md). Download the
+  // selected bundleFiles artifact instead; display stays combined.
+  var SINGLE_DOWNLOAD_BY_TAB = {
+    pi: function (c) { return '.pi/settings.' + c.slug + '.json'; },
+    gemini: function (c) { return '.gemini/settings.' + c.slug + '.json'; },
+    cursor: function (c) { return '.cursor/rules/' + c.slug + '.mdc'; },
+    windsurf: function (c) { return '.windsurfrules.' + c.slug; },
+    copilot: function (c) { return '.github/copilot-instructions.' + c.slug + '.md'; }
+  };
+
   function downloadCurrentFile() {
     var compiled = compileCurrent();
+    if (SINGLE_DOWNLOAD_BY_TAB[state.previewTab] && compiled && Array.isArray(compiled.bundleFiles)) {
+      var wantPath = SINGLE_DOWNLOAD_BY_TAB[state.previewTab](compiled);
+      for (var i = 0; i < compiled.bundleFiles.length; i++) {
+        if (compiled.bundleFiles[i].path === wantPath) {
+          download(compiled.bundleFiles[i].path, compiled.bundleFiles[i].content);
+          return;
+        }
+      }
+    }
     download(TAB_FILES[state.previewTab](compiled), tabText(state.previewTab, compiled));
   }
 
   function downloadBundle() {
     var compiled = compileCurrent();
-    // Download every workspace file sequentially (Blob, no server needed).
     compiled.bundleFiles.forEach(function (f, i) {
-      setTimeout(function () { download(f.path.replace(/\//g, '_'), f.content); }, i * 400);
+      setTimeout(function () { download(f.path.replace(/\//g, '_'), f.content); }, i * 350);
     });
   }
 
@@ -543,7 +876,6 @@
       if (!recipes || recipes.length === 0) {
         throw new Error('no agent recipes found in file');
       }
-      // Merge the first recipe into the active one (append skills, union MCP).
       var r = recipes[0];
       $('agentSlug').value = r.slug || $('agentSlug').value;
       if (r.description) { $('agentDescription').value = r.description; }
@@ -553,8 +885,6 @@
       (r.skills || []).forEach(function (s) {
         if (state.selectedIds.indexOf(s) === -1) { state.selectedIds.push(s); }
       });
-      // MCP selections from the upload are applied via the matrix on next
-      // render: ensure those servers are selected when known in the registry.
       (r.mcpSelections || []).forEach(function (ms) {
         var match = null;
         state.entries.forEach(function (e) {
@@ -595,14 +925,13 @@
   }
 
   function saveHelperSettings() {
-    // API key lives in localStorage only — never in exports or URLs.
     try {
       localStorage.setItem(LS_LLM_KEY, JSON.stringify({
         baseUrl: $('helperBaseUrl').value || '',
         model: $('helperModel').value || '',
         apiKey: $('helperKey').value || '',
       }));
-    } catch (e) { /* storage unavailable: keep session-only */ }
+    } catch (e) { /* storage unavailable */ }
   }
 
   function registrySummary() {
@@ -614,8 +943,6 @@
   }
 
   function keywordSuggest(request) {
-    // Offline fallback when no LLM endpoint is configured: match request
-    // keywords against entry ids/names/tags.
     var words = String(request).toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2; });
     var scored = state.entries.map(function (e) {
       var hay = [e.id, e.name, e.tagline, e.description, e.category, (e.tags || []).join(' ')]
@@ -670,17 +997,14 @@
   }
 
   // Same-origin per-boot token bridge (getRequestToken contract: x-ab-token
-  // header or ?token= query param). The local server injects
-  // <meta name="ab-token" content="..."> into same-origin index.html (or
-  // window.__AB_TOKEN__ / ?token= launch URL). All same-origin /api/*
-  // callers (/api/llm/chat, /api/mcp/introspect, /api/install) must send it.
+  // header or ?token= query param).
   function getAbToken() {
     try {
       var m = document.querySelector('meta[name="ab-token"]');
       if (m && m.getAttribute('content')) {
         return m.getAttribute('content');
       }
-    } catch (_e) { /* no DOM meta: fall through */ }
+    } catch (_e) { /* ignore */ }
     try {
       if (typeof window !== 'undefined' && window.__AB_TOKEN__) {
         return String(window.__AB_TOKEN__);
@@ -708,7 +1032,6 @@
     if (!t) {
       return url;
     }
-    // Header is primary; ?token= is the fallback getRequestToken also accepts.
     if (url.indexOf('/api/') !== -1 && url.indexOf('token=') === -1) {
       return url + (url.indexOf('?') === -1 ? '?token=' : '&token=') + encodeURIComponent(t);
     }
@@ -743,8 +1066,6 @@
         var actions = data && data.actions ? data.actions : data;
         out.textContent = applyHelperActions(actions) + '\n' + JSON.stringify(actions, null, 2);
       }).catch(function (err) {
-        // Fall back to offline keyword suggestions so the drawer is useful
-        // without a running local server.
         var sug = keywordSuggest(request);
         sug.forEach(function (e) { addToAgentSilent(e.id); });
         renderAll();
@@ -761,7 +1082,7 @@
       var sug = keywordSuggest(request);
       sug.forEach(function (e) { addToAgentSilent(e.id); });
       renderAll();
-      out.textContent = 'No endpoint configured — keyword fallback selected: ' +
+      out.textContent = 'Smart Offline Keyword Match selected: ' +
         sug.map(function (e) { return e.id; }).join(', ');
       return;
     }
@@ -864,23 +1185,61 @@
           state.selectedIds.push(String(id));
         }
       });
-    } catch (e) { /* malformed permalink: ignore, fail closed to defaults */ }
+    } catch (e) { /* malformed permalink: ignore */ }
   }
 
   // ---- Theme ----
 
   function toggleTheme() {
     var current = document.body.dataset.theme;
-    if (current === 'dark') { document.body.dataset.theme = 'light'; }
-    else if (current === 'light') { document.body.dataset.theme = 'dark'; }
-    else {
-      var dark = window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.body.dataset.theme = dark ? 'light' : 'dark';
+    if (current === 'light') {
+      document.body.dataset.theme = 'dark';
+    } else {
+      document.body.dataset.theme = 'light';
     }
   }
 
-  // ---- Wiring ----
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () { fallbackCopyText(text); });
+    } else {
+      fallbackCopyText(text);
+    }
+  }
+
+  function fallbackCopyText(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_e) { /* ignore */ }
+    ta.remove();
+  }
+
+  // ---- Studio Navigation ----
+
+  function switchStudioTab(tabName) {
+    state.studioTab = tabName;
+    document.querySelectorAll('.studio-tab-btn').forEach(function (btn) {
+      var active = btn.dataset.studioTab === tabName;
+      btn.classList.toggle('tab-active', active);
+      btn.classList.toggle('text-slate-400', !active);
+    });
+    var mapId = {
+      explorer: 'view-explorer',
+      harness: 'view-harness',
+      scope: 'view-scope',
+      scout: 'view-scout'
+    };
+    Object.keys(mapId).forEach(function (k) {
+      var el = $(mapId[k]);
+      if (el) {
+        el.classList.toggle('hidden', k !== tabName);
+      }
+    });
+  }
 
   function renderAll() {
     renderSelected();
@@ -894,6 +1253,65 @@
       setStatus('core scripts failed to load (./core/*.js)', false);
       return;
     }
+
+    // Studio top navigation tabs
+    document.querySelectorAll('.studio-tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        switchStudioTab(btn.dataset.studioTab);
+      });
+    });
+
+    // Kind filter pills
+    document.querySelectorAll('.kind-pill-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.kindFilter = btn.dataset.kindPill || '';
+        document.querySelectorAll('.kind-pill-btn').forEach(function (b) {
+          var act = (b.dataset.kindPill || '') === state.kindFilter;
+          b.classList.toggle('tab-active', act);
+          b.classList.toggle('text-slate-400', !act);
+        });
+        renderCards();
+      });
+    });
+
+    if ($('clearFiltersBtn')) {
+      $('clearFiltersBtn').addEventListener('click', function () {
+        state.categoryFilter = '';
+        state.kindFilter = '';
+        state.harnessFilter = '';
+        state.languageFilter = '';
+        state.platformFilter = '';
+        state.query = '';
+        $('searchInput').value = '';
+        $('harnessFilter').value = '';
+        $('languageFilter').value = '';
+        $('platformFilter').value = '';
+        document.querySelectorAll('.kind-pill-btn').forEach(function (b) {
+          var act = (b.dataset.kindPill || '') === state.kindFilter;
+          b.classList.toggle('tab-active', act);
+          b.classList.toggle('text-slate-400', !act);
+        });
+        buildCategoryTree();
+        renderCards();
+      });
+    }
+
+    if ($('clearSelectedBtn')) {
+      $('clearSelectedBtn').addEventListener('click', function () {
+        state.selectedIds = [];
+        renderAll();
+      });
+    }
+
+    if ($('presetAgentSelect')) {
+      $('presetAgentSelect').addEventListener('change', function (e) {
+        if (e.target.value) {
+          loadAgentPresetById(e.target.value);
+          e.target.value = '';
+        }
+      });
+    }
+
     $('searchInput').addEventListener('input', function (e) {
       state.query = e.target.value;
       renderCards();
@@ -911,17 +1329,37 @@
       renderCards();
     });
 
+    var harnessMapToTab = {
+      'opencode-v2': 'v2',
+      'opencode-v1': 'v1',
+      'opencode-md': 'opencodeMd',
+      'pi': 'pi',
+      'claude': 'claude',
+      'codex': 'codex',
+      'gemini': 'gemini',
+      'cursor': 'cursor',
+      'windsurf': 'windsurf',
+      'copilot': 'copilot'
+    };
+
     var harnessRadios = document.querySelectorAll('input[name="harness"]');
     harnessRadios.forEach(function (r) {
       r.addEventListener('change', function () {
         state.harness = document.querySelector('input[name="harness"]:checked').value;
+        if (harnessMapToTab[state.harness]) {
+          state.previewTab = harnessMapToTab[state.harness];
+          syncPreviewTabs();
+        }
         renderPreview();
       });
     });
 
-    ['agentSlug', 'agentDescription', 'agentPrompt', 'agentMode', 'agentModel'].forEach(function (id) {
-      $(id).addEventListener('input', renderPreview);
-      $(id).addEventListener('change', renderPreview);
+    ['agentSlug', 'agentDescription', 'agentPrompt', 'agentMode', 'agentModel', 'piThinkingLevel', 'piMcpExposure', 'piDefaultTools'].forEach(function (id) {
+      var el = $(id);
+      if (el) {
+        el.addEventListener('input', renderPreview);
+        el.addEventListener('change', renderPreview);
+      }
     });
 
     $('fileInput').addEventListener('change', function (e) {
@@ -946,14 +1384,44 @@
     var tabs = document.querySelectorAll('.preview-tab');
     tabs.forEach(function (t) {
       t.addEventListener('click', function () {
-        tabs.forEach(function (x) { x.classList.remove('active'); });
-        t.classList.add('active');
         state.previewTab = t.dataset.tab;
+        syncPreviewTabs();
         renderPreview();
       });
     });
     $('downloadFile').addEventListener('click', downloadCurrentFile);
     $('downloadBundle').addEventListener('click', downloadBundle);
+    if ($('copyPreviewBtn')) {
+      $('copyPreviewBtn').addEventListener('click', function () {
+        var compiled = compileCurrent();
+        copyText(tabText(state.previewTab, compiled));
+      });
+    }
+
+    // Scout Lab wiring
+    if ($('runScoutClassifyBtn')) {
+      $('runScoutClassifyBtn').addEventListener('click', runScoutLab);
+    }
+    if ($('injectScoutEntryBtn')) {
+      $('injectScoutEntryBtn').addEventListener('click', injectScoutCandidateIntoSession);
+    }
+    if ($('copyScoutYamlBtn')) {
+      $('copyScoutYamlBtn').addEventListener('click', function () {
+        copyText($('scoutYamlOutput').textContent || '');
+      });
+    }
+    document.querySelectorAll('.scout-sample-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var s = SCOUT_SAMPLES[btn.dataset.scoutSample];
+        if (!s) return;
+        $('scoutPkgName').value = s.name;
+        $('scoutRepoUrl').value = s.repo;
+        $('scoutDescription').value = s.desc;
+        $('scoutKeywords').value = s.keywords;
+        $('scoutDeps').value = s.deps;
+        runScoutLab();
+      });
+    });
 
     $('helperBtn').addEventListener('click', function () {
       $('helperDrawer').hidden = false;
@@ -970,19 +1438,15 @@
     $('copyPermalink').addEventListener('click', function () {
       var input = $('permalink');
       input.select();
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(input.value).catch(function () {
-          document.execCommand('copy');
-        });
-      } else {
-        document.execCommand('copy');
-      }
+      copyText(input.value);
     });
 
     $('themeToggle').addEventListener('click', toggleTheme);
 
     loadHelperSettings();
-    loadRegistry();
+    loadRegistry().then(function () {
+      runScoutLab();
+    });
   }
 
   if (document.readyState === 'loading') {

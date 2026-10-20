@@ -1,191 +1,482 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent Builder — Heretek-AI/Agent-Builder</title>
-  <meta name="description" content="Interactive workbench: explore the multi-harness agent registry, scope skills and MCP tools with deny-first hygiene, and export ready-to-run agent bundles.">
+  <title>Agent-Builder Studio — Heretek-AI/Agent-Builder</title>
+  <meta name="description" content="Interactive multi-client AI agent workbench: explore the curated registry, auto-categorize packages with multi-signal scouting, enforce deny-first MCP/skill scoping, and compile configs for OpenCode, Pi, Claude Code, Codex, Gemini CLI, Cursor, Windsurf, and Copilot.">
   <!-- AB-5.1: inline SVG favicon (data URI) so browsers never fetch /favicon.ico (no 404 noise). -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14'%3E%E2%9A%99%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">&#9881;</span>
-      <div>
-        <h1>Agent Builder</h1>
-        <p class="subtitle"><a href="https://github.com/Heretek-AI/Agent-Builder">Heretek-AI/Agent-Builder</a> registry workbench</p>
+<body class="min-h-screen flex flex-col selection:bg-teal-500/30 selection:text-teal-200">
+
+  <!-- Sticky Top Command Header -->
+  <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur-md">
+    <div class="max-w-[1640px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400/20 to-emerald-600/20 border border-teal-500/40 flex items-center justify-center shadow-inner">
+          <span class="font-mono font-bold text-lg text-teal-400" aria-hidden="true">&#9881;</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">Agent-Builder Studio</h1>
+            <a href="https://github.com/Heretek-AI/Agent-Builder" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30 hover:bg-teal-500/25 transition">Heretek-AI/Agent-Builder</a>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Multi-Harness Registry Workbench, Deny-First Scoping Compiler &amp; Smart Scout Categorizer</p>
+        </div>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="registryStatus" class="px-2.5 py-1 rounded-full text-xs font-mono bg-slate-900 text-teal-300 border border-slate-700" role="status">loading registry&hellip;</span>
+
+        <!-- Load Preset Agent Dropdown -->
+        <select id="presetAgentSelect" aria-label="Load curated agent preset" class="input-field text-xs rounded-lg px-2.5 py-1.5 font-medium cursor-pointer">
+          <option value="">⚡ Load Agent Preset...</option>
+          <option value="db-security-auditor">🛡️ DB Security Auditor (Rust/SQL + Postgres Read-Only)</option>
+          <option value="fullstack-polyglot-agent">🚀 Full-Stack Polyglot Agent (Py/TS/Go + GitHub MCP)</option>
+          <option value="frontend-design-agent">🎨 Frontend Design Agent (WebUI + SaaS DESIGN.md + Figma)</option>
+          <option value="sre-database-agent">📟 SRE Database Responder (K8s + Postgres Read-Only)</option>
+          <option value="pi-codemode-architect">π Pi Codemode Architect (Pi + Codemode + GitHub/FS)</option>
+        </select>
+
+        <button id="themeToggle" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Toggle dark / light theme">Theme</button>
+        <button id="helperBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 hover:bg-slate-700 text-teal-300 border border-teal-500/30 transition" title="Open the AI Helper Agent drawer">✨ AI Helper</button>
+        <button id="publishBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition shadow-lg shadow-teal-500/10" title="Publish or share this agent">Share / Publish</button>
       </div>
     </div>
-    <div class="topbar-actions">
-      <span id="registryStatus" class="status-pill" role="status">loading registry&hellip;</span>
-      <button id="themeToggle" type="button" title="Toggle dark / light theme">Theme</button>
-      <button id="helperBtn" type="button" title="Open the helper agent drawer">Helper Agent</button>
-      <button id="publishBtn" type="button" class="primary" title="Publish or share this agent">Publish</button>
+
+    <!-- Studio Navigation Bar -->
+    <div class="max-w-[1640px] mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2 py-2 border-t border-slate-800/60">
+      <div class="flex items-center gap-1.5 overflow-x-auto">
+        <button type="button" data-studio-tab="explorer" class="studio-tab-btn tab-active px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-800 transition flex items-center gap-2 whitespace-nowrap">
+          <span>1. Registry Explorer</span>
+          <span id="badgeRegistryCount" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-teal-500/20 text-teal-300">0</span>
+        </button>
+        <button type="button" data-studio-tab="harness" class="studio-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent transition flex items-center gap-2 whitespace-nowrap">
+          <span>2. Agent Recipe &amp; Clients</span>
+        </button>
+        <button type="button" data-studio-tab="scope" class="studio-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent transition flex items-center gap-2 whitespace-nowrap">
+          <span>3. Deny-First Scoping &amp; Simulator</span>
+          <span id="selectedCount" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-800 text-teal-300">0</span>
+        </button>
+        <button type="button" data-studio-tab="scout" class="studio-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 border border-transparent transition flex items-center gap-2 whitespace-nowrap">
+          <span>4. Smart Scout &amp; Categorizer Lab</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-purple-500/20 text-purple-300">NEW</span>
+        </button>
+      </div>
+
+      <!-- Active Agent Quick Pill -->
+      <div class="hidden xl:flex items-center gap-2 text-xs text-slate-400">
+        <span>Active Agent:</span>
+        <code id="activeSlugPill" class="font-mono text-teal-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">my-agent</code>
+      </div>
     </div>
   </header>
 
-  <main class="layout">
-    <!-- 1. Registry explorer -->
-    <section id="view-explorer" class="card" aria-labelledby="explorerHeading">
-      <h2 id="explorerHeading">1. Registry Explorer</h2>
-      <div class="filters">
-        <label>Search
-          <input id="searchInput" type="search" placeholder="name, tagline, tag, id&hellip;" autocomplete="off">
-        </label>
-        <label>Harness
-          <select id="harnessFilter"><option value="">All harnesses</option></select>
-        </label>
-        <label>Language
-          <select id="languageFilter"><option value="">All languages</option></select>
-        </label>
-        <label>Platform
-          <select id="platformFilter"><option value="">All platforms</option></select>
-        </label>
-      </div>
-      <div class="explorer-grid">
-        <nav id="categoryTree" class="category-tree" aria-label="Category tree"></nav>
-        <div>
-          <p id="resultCount" class="muted" role="status"></p>
-          <div id="cards" class="cards"></div>
-        </div>
-      </div>
-    </section>
+  <!-- Main 12-Column Split Studio Layout -->
+  <main class="flex-1 max-w-[1640px] w-full mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-    <!-- 2. Harness selector + config upload -->
-    <section id="view-harness" class="card" aria-labelledby="harnessHeading">
-      <h2 id="harnessHeading">2. Agent Recipe, Harness &amp; Config Upload</h2>
-      <div class="two-col">
-        <div>
-          <label>Agent slug
-            <input id="agentSlug" type="text" value="my-agent" spellcheck="false">
-          </label>
-          <label>Description
-            <input id="agentDescription" type="text" value="My scoped agent" spellcheck="false">
-          </label>
-          <label>System prompt
-            <textarea id="agentPrompt" rows="5" placeholder="You are a&hellip;"></textarea>
-          </label>
-          <div class="row">
-            <label>Mode
-              <select id="agentMode">
-                <option value="subagent">subagent</option>
-                <option value="primary">primary</option>
-              </select>
-            </label>
-            <label>Model (optional)
-              <input id="agentModel" type="text" placeholder="anthropic/claude-sonnet-4-5" spellcheck="false">
-            </label>
+    <!-- Left 7/8 Columns: Interactive Workbench Views -->
+    <div class="lg:col-span-7 xl:col-span-8 space-y-5">
+
+      <!-- ===============================================================
+           VIEW 1: REGISTRY EXPLORER & FACETED TAXONOMY
+           =============================================================== -->
+      <section id="view-explorer" class="studio-view glass-panel p-5 space-y-4" aria-labelledby="explorerHeading">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 id="explorerHeading" class="text-sm font-semibold text-white">1. Multi-Harness Registry Explorer</h2>
+            <p class="text-xs text-slate-400">Browse curated Plugins, Skills, MCP Servers (with introspected tool lists), <code class="text-slate-300">DESIGN.md</code> specs, Prompts, and Agent Presets.</p>
+          </div>
+          <!-- Kind Filter Pills -->
+          <div class="flex flex-wrap items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+            <button type="button" data-kind-pill="" class="kind-pill-btn tab-active px-2.5 py-1 rounded text-[11px] font-mono border border-slate-800 transition">All</button>
+            <button type="button" data-kind-pill="skill" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">Skills</button>
+            <button type="button" data-kind-pill="mcp-server" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">MCP Servers</button>
+            <button type="button" data-kind-pill="plugin" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">Plugins</button>
+            <button type="button" data-kind-pill="design-md" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">DESIGN.md</button>
+            <button type="button" data-kind-pill="prompt" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">Prompts</button>
+            <button type="button" data-kind-pill="agent" class="kind-pill-btn px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition">Agents</button>
           </div>
         </div>
-        <div>
-          <fieldset>
-            <legend>Target harness</legend>
-            <label class="radio"><input type="radio" name="harness" value="opencode-v2" checked> OpenCode v2 JSON</label>
-            <label class="radio"><input type="radio" name="harness" value="opencode-v1"> OpenCode v1 JSON</label>
-            <label class="radio"><input type="radio" name="harness" value="opencode-md"> OpenCode Agent Markdown</label>
-            <label class="radio"><input type="radio" name="harness" value="claude"> Claude Code</label>
-            <label class="radio"><input type="radio" name="harness" value="codex"> Codex CLI</label>
-          </fieldset>
-          <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-labelledby="dropZoneText">
-            <p id="dropZoneText">Drag &amp; drop <code>opencode.json</code>, <code>claude.json</code>, <code>.mcp.json</code> or an agent <code>.md</code> here, or</p>
-            <input id="fileInput" type="file" aria-label="Choose config file" accept=".json,.jsonc,.md,.markdown,.mcp.json,application/json">
-          </div>
-          <p id="uploadStatus" class="muted" role="status"></p>
+
+        <!-- Search & Facet Dropdowns -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <label class="block text-xs text-slate-300">
+            <span class="block mb-1 font-medium">Search Registry</span>
+            <input id="searchInput" type="search" placeholder="Search id, name, tool, tag&hellip;" autocomplete="off" class="input-field w-full px-3 py-1.5 text-xs">
+          </label>
+          <label class="block text-xs text-slate-300">
+            <span class="block mb-1 font-medium">Client / Harness</span>
+            <select id="harnessFilter" class="input-field w-full px-2.5 py-1.5 text-xs font-mono"><option value="">All harnesses</option></select>
+          </label>
+          <label class="block text-xs text-slate-300">
+            <span class="block mb-1 font-medium">Language</span>
+            <select id="languageFilter" class="input-field w-full px-2.5 py-1.5 text-xs font-mono"><option value="">All languages</option></select>
+          </label>
+          <label class="block text-xs text-slate-300">
+            <span class="block mb-1 font-medium">Platform</span>
+            <select id="platformFilter" class="input-field w-full px-2.5 py-1.5 text-xs font-mono"><option value="">All platforms</option></select>
+          </label>
         </div>
-      </div>
-      <h3>Selected for this agent (<span id="selectedCount">0</span>)</h3>
-      <ul id="selectedList" class="selected-list"></ul>
-    </section>
 
-    <!-- 3. Scoping matrix + permission simulator -->
-    <section id="view-scope" class="card" aria-labelledby="scopeHeading">
-      <h2 id="scopeHeading">3. Skill &amp; MCP Tool Scoping Matrix</h2>
-      <p class="muted">Deny-first hygiene: <code>deny "*"</code> ships first, then explicit allows. Uncheck a tool to add an explicit deny (wins over the allow).</p>
-      <div id="scopeMatrix"></div>
-      <h3>Permission Simulator</h3>
-      <div class="row sim-row">
-        <label>Action
-          <input id="simAction" type="text" value="skill" spellcheck="false">
-        </label>
-        <label>Resource
-          <input id="simResource" type="text" value="*" spellcheck="false">
-        </label>
-        <button id="simButton" type="button">Evaluate</button>
-        <span id="simResult" class="sim-result" role="status"></span>
-      </div>
-    </section>
+        <!-- Explorer Split Grid: Category Tree + Entry Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
+          <nav id="categoryTree" class="category-tree md:col-span-4 lg:col-span-4 bg-slate-950/60 border border-slate-800/90 rounded-xl p-2.5 max-h-[600px] overflow-y-auto" aria-label="Category tree"></nav>
+          <div class="md:col-span-8 lg:col-span-8 space-y-3">
+            <div class="flex items-center justify-between">
+              <p id="resultCount" class="text-xs font-mono text-slate-400" role="status"></p>
+              <button id="clearFiltersBtn" type="button" class="text-xs text-teal-400 hover:underline">Reset Filters</button>
+            </div>
+            <div id="cards" class="cards max-h-[560px] overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </section>
 
-    <!-- 5. Live preview & export -->
-    <section id="view-preview" class="card" aria-labelledby="previewHeading">
-      <h2 id="previewHeading">4. Live Config Preview &amp; Export</h2>
-      <div class="tabs" role="tablist" aria-label="Export formats">
-        <button class="preview-tab active" type="button" data-tab="v2" role="tab">opencode.json (v2)</button>
-        <button class="preview-tab" type="button" data-tab="v1" role="tab">opencode.json (v1)</button>
-        <button class="preview-tab" type="button" data-tab="opencodeMd" role="tab">.opencode/agent/&lt;slug&gt;.md</button>
-        <button class="preview-tab" type="button" data-tab="claude" role="tab">Claude (.md + .mcp.json)</button>
-        <button class="preview-tab" type="button" data-tab="codex" role="tab">Codex config.toml</button>
-        <button class="preview-tab" type="button" data-tab="install" role="tab">Install command</button>
-      </div>
-      <pre class="preview"><code id="previewContent"></code></pre>
-      <div class="row">
-        <button id="downloadFile" type="button">Download File</button>
-        <button id="downloadBundle" type="button">Download Workspace Bundle</button>
-      </div>
-    </section>
+      <!-- ===============================================================
+           VIEW 2: AGENT RECIPE, MULTI-CLIENT OPTIONS & CONFIG IMPORT
+           =============================================================== -->
+      <section id="view-harness" class="studio-view hidden glass-panel p-5 space-y-5" aria-labelledby="harnessHeading">
+        <div class="border-b border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="harnessHeading" class="text-sm font-semibold text-white">2. Agent Recipe, Multi-Client Settings &amp; Config Upload</h2>
+            <p class="text-xs text-slate-400">Configure core identity, model, system prompt, client-specific tuning (including <code class="text-teal-300">earendil-works/pi</code>), or import an existing config file.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Left: Core Agent Identity & Prompt -->
+          <div class="space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">Agent Slug (<code class="font-mono text-teal-300">slug</code>)</span>
+                <input id="agentSlug" type="text" value="my-agent" spellcheck="false" class="input-field w-full px-3 py-2 text-xs font-mono">
+              </label>
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">Execution Mode</span>
+                <select id="agentMode" class="input-field w-full px-3 py-2 text-xs font-mono">
+                  <option value="subagent">subagent (scoped specialist)</option>
+                  <option value="primary">primary (main session agent)</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="block text-xs text-slate-300">
+              <span class="block mb-1 font-medium">Description</span>
+              <input id="agentDescription" type="text" value="My scoped multi-harness agent" spellcheck="false" class="input-field w-full px-3 py-2 text-xs">
+            </label>
+
+            <label class="block text-xs text-slate-300">
+              <span class="block mb-1 font-medium">Default Model (<code class="font-mono text-slate-400">provider/modelId</code>)</span>
+              <input id="agentModel" list="agentModelSuggestions" type="text" placeholder="anthropic/claude-sonnet-4-5" spellcheck="false" class="input-field w-full px-3 py-2 text-xs font-mono">
+              <datalist id="agentModelSuggestions">
+                <option value="anthropic/claude-sonnet-4-5">anthropic/claude-sonnet-4-5</option>
+                <option value="anthropic/claude-opus-4-7">anthropic/claude-opus-4-7</option>
+                <option value="openai/gpt-5.4">openai/gpt-5.4</option>
+                <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
+                <option value="deepseek/deepseek-v4-pro">deepseek/deepseek-v4-pro</option>
+                <option value="ollama/qwen2.5-coder:7b">ollama/qwen2.5-coder:7b</option>
+              </datalist>
+            </label>
+
+            <label class="block text-xs text-slate-300">
+              <span class="block mb-1 font-medium">System Prompt &amp; Persona Instructions</span>
+              <textarea id="agentPrompt" rows="6" placeholder="You are a least-privilege specialist agent..." class="input-field w-full p-3 text-xs font-mono leading-relaxed"></textarea>
+            </label>
+          </div>
+
+          <!-- Right: Target Client Tuning & Config Import Dropzone -->
+          <div class="space-y-4">
+            <fieldset class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+              <legend class="text-xs font-semibold text-teal-300 px-1">Target Client / Harness Family</legend>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="opencode-v2" checked class="text-teal-500"> <span>OpenCode v2 JSON</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="opencode-v1" class="text-teal-500"> <span>OpenCode v1 JSON</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="opencode-md" class="text-teal-500"> <span>OpenCode Agent .md</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="pi" class="text-teal-500"> <span>Pi (<code class="font-mono text-teal-300">earendil-works/pi</code>)</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="claude" class="text-teal-500"> <span>Claude Code</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="codex" class="text-teal-500"> <span>Codex CLI (<code class="font-mono">config.toml</code>)</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="gemini" class="text-teal-500"> <span>Gemini CLI</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="cursor" class="text-teal-500"> <span>Cursor (<code class="font-mono">.mdc</code> + MCP)</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="windsurf" class="text-teal-500"> <span>Windsurf Cascade</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="harness" value="copilot" class="text-teal-500"> <span>GitHub Copilot</span></label>
+              </div>
+            </fieldset>
+
+            <!-- Pi-Specific Tuning Controls -->
+            <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white">Pi (<code class="font-mono text-teal-300">pi.dev</code>) Client Settings</span>
+                <span class="text-[10px] font-mono text-slate-400">.pi/settings.json &amp; .pi/mcp.json</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <label class="block text-[11px] text-slate-300">
+                  <span class="block mb-1 font-mono">defaultThinkingLevel</span>
+                  <select id="piThinkingLevel" class="input-field w-full px-2 py-1.5 text-xs font-mono">
+                    <option value="medium">medium</option>
+                    <option value="off">off</option>
+                    <option value="minimal">minimal</option>
+                    <option value="low">low</option>
+                    <option value="high">high</option>
+                    <option value="xhigh">xhigh</option>
+                    <option value="max">max</option>
+                  </select>
+                </label>
+                <label class="block text-[11px] text-slate-300">
+                  <span class="block mb-1 font-mono">MCP exposure</span>
+                  <select id="piMcpExposure" class="input-field w-full px-2 py-1.5 text-xs font-mono">
+                    <option value="codemode">codemode (QuickJS)</option>
+                    <option value="deferred">deferred (tool_search)</option>
+                    <option value="direct">direct</option>
+                  </select>
+                </label>
+                <label class="block text-[11px] text-slate-300">
+                  <span class="block mb-1 font-mono">defaultTools</span>
+                  <input id="piDefaultTools" type="text" value="+codemode, +tool_search" class="input-field w-full px-2 py-1.5 text-xs font-mono">
+                </label>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Config Importer (Preserves exact #dropZone / #dropZoneText / #fileInput contract) -->
+            <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-labelledby="dropZoneText">
+              <p id="dropZoneText" class="text-xs text-slate-300 mb-2">
+                Drag &amp; drop <code>opencode.json</code>, <code>.mcp.json</code>, Pi <code>settings.json</code>, Cursor <code>.mdc</code>, or an agent <code>.md</code> here, or
+              </p>
+              <input id="fileInput" type="file" aria-label="Choose config file" accept=".json,.jsonc,.md,.markdown,.mdc,.mcp.json,application/json">
+            </div>
+            <p id="uploadStatus" class="text-xs text-teal-300 font-mono" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           VIEW 3: DENY-FIRST SCOPING MATRIX & PERMISSION SIMULATOR
+           =============================================================== -->
+      <section id="view-scope" class="studio-view hidden glass-panel p-5 space-y-5" aria-labelledby="scopeHeading">
+        <div class="border-b border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="scopeHeading" class="text-sm font-semibold text-white">3. Deny-First Skill &amp; MCP Tool Scoping Matrix</h2>
+            <p class="text-xs text-slate-400">
+              Enforces strict least-privilege context hygiene: <code class="text-rose-300 font-mono">deny "*"</code> ships first, followed by explicit allows. Uncheck any MCP tool to append a trailing <code class="text-rose-300 font-mono">deny</code> rule that wins on evaluation.
+            </p>
+          </div>
+        </div>
+
+        <!-- Selected Items Pill Bar -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Selected Registry Items</h3>
+            <button id="clearSelectedBtn" type="button" class="text-xs text-rose-400 hover:underline">Clear All Selected</button>
+          </div>
+          <ul id="selectedList" class="selected-list flex flex-wrap gap-2 list-none p-0 m-0"></ul>
+        </div>
+
+        <!-- Per-Server Tool Matrix -->
+        <div id="scopeMatrix" class="space-y-3"></div>
+
+        <!-- Interactive Permission Simulator + Rule Evaluation Trace -->
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-teal-300">Interactive Permission Simulator (Last-Match-Wins)</h3>
+              <p class="text-[11px] text-slate-400">Test any action and resource (supports <code class="font-mono">*</code> multi-char and <code class="font-mono">?</code> single-char wildcards).</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+            <label class="sm:col-span-5 block text-xs text-slate-300">
+              <span class="block mb-1 font-mono">Action</span>
+              <input id="simAction" type="text" value="skill" spellcheck="false" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+            </label>
+            <label class="sm:col-span-4 block text-xs text-slate-300">
+              <span class="block mb-1 font-mono">Resource</span>
+              <input id="simResource" type="text" value="*" spellcheck="false" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+            </label>
+            <div class="sm:col-span-3 flex items-center gap-2">
+              <button id="simButton" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition">Evaluate</button>
+              <span id="simResult" class="sim-result" role="status"></span>
+            </div>
+          </div>
+          <div id="simTraceOutput" class="text-[11px] font-mono text-slate-400 pt-1"></div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           VIEW 4: SMART SCOUT & AUTO-CATEGORIZER LAB
+           =============================================================== -->
+      <section id="view-scout" class="studio-view hidden glass-panel p-5 space-y-5" aria-labelledby="scoutHeading">
+        <div class="border-b border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="scoutHeading" class="text-sm font-semibold text-white">4. Smart Scout &amp; Multi-Signal Taxonomy Categorizer</h2>
+            <p class="text-xs text-slate-400">
+              Test the 4-tier weighted categorization engine (<code class="text-teal-300 font-mono">src/core/classifier.js</code>) used by <code class="text-slate-300 font-mono">scripts/scout.js</code> to classify packages across all 8 harnesses and 55+ taxonomy leaf categories.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-scout-sample="pi" class="scout-sample-btn px-2.5 py-1 rounded text-xs font-mono bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700">Sample: Pi Package</button>
+            <button type="button" data-scout-sample="ghidra" class="scout-sample-btn px-2.5 py-1 rounded text-xs font-mono bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700">Sample: Ghidra RE MCP</button>
+            <button type="button" data-scout-sample="rust" class="scout-sample-btn px-2.5 py-1 rounded text-xs font-mono bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700">Sample: Rust Tokio Skill</button>
+            <button type="button" data-scout-sample="design" class="scout-sample-btn px-2.5 py-1 rounded text-xs font-mono bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700">Sample: SaaS DESIGN.md</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">Package / Repo Name</span>
+                <input id="scoutPkgName" type="text" value="ghidra-binary-triage-mcp" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+              </label>
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">GitHub Repo URL</span>
+                <input id="scoutRepoUrl" type="text" value="https://github.com/example/ghidra-binary-triage-mcp" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+              </label>
+            </div>
+            <label class="block text-xs text-slate-300">
+              <span class="block mb-1 font-medium">Description / README Summary</span>
+              <textarea id="scoutDescription" rows="3" class="input-field w-full p-2.5 text-xs">Model Context Protocol server for Ghidra reverse engineering, firmware unpacking, decompilation, and YARA malware triage.</textarea>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">Keywords (comma-separated)</span>
+                <input id="scoutKeywords" type="text" value="mcp-server, ghidra, reverse-engineering, security" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+              </label>
+              <label class="block text-xs text-slate-300">
+                <span class="block mb-1 font-medium">Dependencies (comma-separated)</span>
+                <input id="scoutDeps" type="text" value="@modelcontextprotocol/sdk" class="input-field w-full px-3 py-1.5 text-xs font-mono">
+              </label>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button id="runScoutClassifyBtn" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition">Run Multi-Signal Classifier</button>
+              <button id="injectScoutEntryBtn" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/30 transition">+ Add to Live Session Registry</button>
+            </div>
+          </div>
+
+          <!-- Classification Breakdown & Generated Catalog YAML -->
+          <div class="space-y-3">
+            <div id="scoutResultCard" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs"></div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span id="scoutTargetFile" class="text-[11px] font-mono text-teal-300">data/mcp-servers/security-re/ghidra-binary-triage-mcp.yaml</span>
+                <button id="copyScoutYamlBtn" type="button" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 px-2 py-0.5 rounded">Copy YAML</button>
+              </div>
+              <pre class="bg-[#05080f] p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-teal-100 max-h-48 overflow-y-auto"><code id="scoutYamlOutput"></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right 5/4 Columns: Sticky Live Multi-Client Preview & Exporter -->
+    <aside class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-28 space-y-4">
+      <section id="view-preview" class="glass-panel overflow-hidden shadow-2xl" aria-labelledby="previewHeading">
+        <div class="p-3.5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h2 id="previewHeading" class="text-xs font-semibold uppercase tracking-wider text-slate-200">4. Live Multi-Client Artifact Preview</h2>
+          </div>
+          <span class="text-[11px] font-mono text-teal-400">Deny-First Verified</span>
+        </div>
+
+        <!-- Client Format Tabs -->
+        <div class="px-3 pt-2.5 pb-2 border-b border-slate-800/80 bg-slate-950/60 flex items-center gap-1 overflow-x-auto" role="tablist" aria-label="Export formats">
+          <button class="preview-tab tab-active px-2.5 py-1 rounded text-[11px] font-mono border border-slate-800 transition whitespace-nowrap" type="button" data-tab="v2" role="tab">opencode (v2)</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="v1" role="tab">opencode (v1)</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="opencodeMd" role="tab">opencode .md</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="pi" role="tab">Pi (pi.dev)</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="claude" role="tab">Claude Code</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="codex" role="tab">Codex TOML</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="gemini" role="tab">Gemini CLI</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="cursor" role="tab">Cursor .mdc</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="windsurf" role="tab">Windsurf</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="copilot" role="tab">Copilot</button>
+          <button class="preview-tab px-2.5 py-1 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 border border-transparent transition whitespace-nowrap" type="button" data-tab="install" role="tab">Install CLI</button>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="px-3.5 py-2 bg-slate-900/50 border-b border-slate-800/80 flex items-center justify-between gap-2 text-[11px]">
+          <code id="previewTargetPath" class="font-mono text-slate-300 truncate">opencode.my-agent.v2.json</code>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="copyPreviewBtn" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">Copy</button>
+            <button id="downloadFile" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/30 font-medium transition">Download File</button>
+            <button id="downloadBundle" type="button" class="px-2.5 py-1 rounded bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold transition">Bundle</button>
+          </div>
+        </div>
+
+        <!-- Code Output -->
+        <pre class="preview m-0 p-4 bg-[#05080f] max-h-[500px] overflow-y-auto text-xs font-mono leading-relaxed text-teal-100 whitespace-pre-wrap break-words"><code id="previewContent"></code></pre>
+      </section>
+    </aside>
+
   </main>
 
-  <footer class="footer muted">
-    <p>Static zero-build WebUI. Registry: <code>./registry.json</code> with fallback to <code>https://heretek-ai.github.io/Agent-Builder/registry.json</code>. API keys stay in <code>localStorage</code> only &mdash; never exported or shared in URLs.</p>
+  <footer class="border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500">
+    <p>Static zero-build Multi-Harness Studio. Registry: <code>./registry.json</code> with fallback to <code>https://heretek-ai.github.io/Agent-Builder/registry.json</code>. API keys stay in <code>localStorage</code> only &mdash; never exported or shared in URLs.</p>
   </footer>
 
-  <!-- 4. Helper agent drawer -->
-  <aside id="helperDrawer" class="drawer" aria-labelledby="helperHeading" hidden>
-    <div class="drawer-head">
-      <h2 id="helperHeading">Helper Agent</h2>
-      <button id="helperClose" type="button" title="Close drawer">Close</button>
+  <!-- Helper Agent Drawer (No display property on .drawer in CSS so [hidden] works natively) -->
+  <aside id="helperDrawer" class="drawer space-y-3" aria-labelledby="helperHeading" hidden>
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <h2 id="helperHeading" class="text-sm font-semibold text-white">✨ AI Helper Agent</h2>
+      <button id="helperClose" type="button" class="px-2.5 py-1 rounded bg-slate-800 text-xs text-slate-300 hover:text-white" title="Close drawer">Close</button>
     </div>
-    <p class="muted">Describe the agent you want (e.g. &ldquo;Build me a Linux Rust reverse-engineering subagent with Ghidra MCP read-only tools&rdquo;). The helper sees the registry summary + current recipe and returns structured tool actions.</p>
-    <label>Base URL (OpenAI-compatible)
-      <input id="helperBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false">
+    <p class="text-xs text-slate-400">Describe the agent you want (e.g. &ldquo;Build me a Linux Rust reverse-engineering subagent with Ghidra MCP read-only tools&rdquo;). Works with any OpenAI-compatible endpoint or offline via multi-signal keyword matching.</p>
+    <label class="block text-xs text-slate-300">
+      <span class="block mb-1">Base URL (OpenAI-compatible)</span>
+      <input id="helperBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false" class="input-field w-full px-3 py-1.5 text-xs font-mono">
     </label>
-    <div class="row">
-      <label>Model
-        <input id="helperModel" type="text" placeholder="gpt-4o-mini" spellcheck="false">
+    <div class="grid grid-cols-2 gap-2">
+      <label class="block text-xs text-slate-300">
+        <span class="block mb-1">Model</span>
+        <input id="helperModel" type="text" placeholder="gpt-4o-mini" spellcheck="false" class="input-field w-full px-3 py-1.5 text-xs font-mono">
       </label>
-      <label>API key (localStorage only)
-        <input id="helperKey" type="password" placeholder="sk-..." autocomplete="off">
+      <label class="block text-xs text-slate-300">
+        <span class="block mb-1">API key (localStorage only)</span>
+        <input id="helperKey" type="password" placeholder="sk-..." autocomplete="off" class="input-field w-full px-3 py-1.5 text-xs font-mono">
       </label>
     </div>
-    <label class="radio"><input id="helperProxyToggle" type="checkbox"> Route via local CLI proxy <code>/api/llm/chat</code> (<code>npx @heretek-ai/agent-builder serve</code>)</label>
-    <label class="radio"><input id="helperMcpToggle" type="checkbox"> Use local MCP connector <code>/api/mcp/call</code></label>
-    <label>Request
-      <textarea id="helperPrompt" rows="4" placeholder="Build me a&hellip;"></textarea>
+    <label class="flex items-center gap-2 text-xs text-slate-300"><input id="helperProxyToggle" type="checkbox"> Route via local CLI proxy <code>/api/llm/chat</code></label>
+    <label class="flex items-center gap-2 text-xs text-slate-300"><input id="helperMcpToggle" type="checkbox"> Use local MCP connector <code>/api/mcp/call</code></label>
+    <label class="block text-xs text-slate-300">
+      <span class="block mb-1">Request</span>
+      <textarea id="helperPrompt" rows="4" placeholder="Build me a..." class="input-field w-full p-2.5 text-xs"></textarea>
     </label>
-    <button id="helperSend" type="button" class="primary">Ask Helper</button>
-    <div id="helperOutput" class="helper-output" role="status"></div>
+    <button id="helperSend" type="button" class="w-full py-2 rounded-lg text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition">Ask Helper (or Run Smart Offline Match)</button>
+    <div id="helperOutput" class="helper-output text-xs font-mono text-teal-300 bg-slate-950 p-3 rounded-lg border border-slate-800" role="status"></div>
   </aside>
 
-  <!-- 6. Publish modal -->
+  <!-- Publish Modal (.modal-backdrop[hidden] { display: none; } in styles.css) -->
   <div id="publishModal" class="modal-backdrop" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="publishHeading">
-      <h2 id="publishHeading">Publish Agent</h2>
-      <label>Shareable permalink
-        <input id="permalink" type="text" readonly spellcheck="false">
-      </label>
-      <div class="row">
-        <button id="copyPermalink" type="button">Copy Link</button>
-        <a id="publishIssueLink" class="button" href="https://github.com/Heretek-AI/Agent-Builder/issues/new?template=publish-agent.yml" target="_blank" rel="noopener">Submit to GitHub Registry</a>
-        <button id="publishClose" type="button">Close</button>
+    <div class="modal space-y-4" role="dialog" aria-modal="true" aria-labelledby="publishHeading">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 id="publishHeading" class="text-sm font-semibold text-white">Share &amp; Publish Agent Recipe</h2>
+        <button id="publishClose" type="button" class="px-2.5 py-1 rounded bg-slate-800 text-xs text-slate-300 hover:text-white">Close</button>
       </div>
-      <h3>Scoped recipe (YAML preview)</h3>
-      <pre class="preview small"><code id="recipeYamlPreview"></code></pre>
+      <label class="block text-xs text-slate-300">
+        <span class="block mb-1">Shareable Permalink (Base64URL Encoded State)</span>
+        <input id="permalink" type="text" readonly spellcheck="false" class="input-field w-full px-3 py-2 text-xs font-mono">
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button id="copyPermalink" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950">Copy Permalink</button>
+        <a id="publishIssueLink" class="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/30 no-underline" href="https://github.com/Heretek-AI/Agent-Builder/issues/new?template=publish-agent.yml" target="_blank" rel="noopener">Submit to GitHub Registry</a>
+      </div>
+      <div>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Scoped Recipe (YAML Preview)</h3>
+        <pre class="preview small bg-[#05080f] p-3 rounded-xl border border-slate-800 text-xs font-mono text-teal-200"><code id="recipeYamlPreview"></code></pre>
+      </div>
     </div>
   </div>
 
   <script src="./core/compiler.js"></script>
   <script src="./core/importer.js"></script>
+  <script src="./core/classifier.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
